@@ -575,28 +575,28 @@ export class CoreController {
           this.addMessage('assistant', result.response);
         }
 
-        // TTS で読み上げ（既存の speakTextGCP() を流用）— 仕様書02 セクション5.4
-        if (result.response && this.isTTSEnabled && this.isUserInteracted) {
-          try {
-            this.isAISpeaking = true;
-            await this.speakTextGCP(this.t('ttsIntro'), true, false, false);
-            await this.speakTextGCP(result.response, false, false, false);
-            this.isAISpeaking = false;
-          } catch (_e) {
-            this.isAISpeaking = false;
-          }
-        }
-
         if (window.innerWidth < 1024) {
           setTimeout(() => {
             const shopSection = document.getElementById('shopListSection');
             if (shopSection) shopSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }, 300);
         }
+
+        // TTS で読み上げ（既存の speakTextGCP() を流用）— 仕様書02 セクション5.4
+        if (result.response && this.isTTSEnabled && this.isUserInteracted) {
+          (async () => {
+            try {
+              this.isAISpeaking = true;
+              await this.speakTextGCP(this.t('ttsIntro'), true, false, false);
+              await this.speakTextGCP(result.response, false, false, false);
+            } catch (_e) {}
+            this.isAISpeaking = false;
+          })();
+        }
       } else if (result.response) {
         this.addMessage('assistant', result.response);
         if (this.isTTSEnabled && this.isUserInteracted) {
-          await this.speakTextGCP(result.response, true, false, false);
+          this.speakTextGCP(result.response, true, false, false);
         }
       }
 
