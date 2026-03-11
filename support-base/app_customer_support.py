@@ -16,6 +16,7 @@ import time
 import base64
 import logging
 import threading
+import asyncio
 import queue
 import requests
 from datetime import datetime
@@ -40,6 +41,7 @@ from support_core import (
     SupportSession,
     SupportAssistant
 )
+from live_api_handler import LiveAPISession, build_system_instruction
 
 # ロギング設定
 logging.basicConfig(
@@ -736,6 +738,94 @@ def health_check():
 
 
 # ========================================
+# LiveAPI セッション管理（仕様書02 セクション3.5）
+# ========================================
+
+active_live_sessions = {}  # {client_sid: LiveAPISession}
+
+@socketio.on('live_start')
+def handle_live_start(data):
+    """LiveAPIセッション開始"""
+    client_sid = request.sid
+    session_id = data.get('session_id')
+    mode = data.get('mode', 'chat')
+    language = data.get('language', 'ja')
+
+    # 既存のLiveAPIセッションがあれば停止
+    if client_sid in active_live_sessions:
+        old_session = active_live_sessions[client_sid]
+        old_session.stop()
+        del active_live_sessions[client_sid]
+
+    # プロンプト構築（03_prompt_modification_spec.md セクション7.1参照）
+    # テストフェーズ: build_system_instruction() でハードコードから構築
+    # 将来: GCSから取得する形に差し替え可能
+    system_prompt = build_system_instruction(mode)
+
+    # LiveAPIセッション作成
+    live_session = LiveAPISession(
+        session_id=session_id,
+        mode=mode,
+        language=language,
+        system_prompt=system_prompt,
+        socketio=socketio,
+        client_sid=client_sid
+    )
+    active_live_sessions[client_sid] = live_session
+
+    # 別スレッドでasyncioイベントループを実行（セクション10.3参照）
+    def start_live_session_thread(session):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(session.run())
+        except Exception as e:
+            logger.error(f"[LiveAPI] スレッドエラー: {e}")
+        finally:
+            loop.close()
+
+    thread = threading.Thread(
+        target=start_live_session_thread,
+        args=(live_session,),
+        daemon=True
+    )
+    thread.start()
+
+    emit('live_ready', {'status': 'connected'})
+
+
+@socketio.on('live_audio_in')
+def handle_live_audio_in(data):
+    """ブラウザ → LiveAPI 音声データ"""
+    client_sid = request.sid
+    live_session = active_live_sessions.get(client_sid)
+
+    if not live_session or not live_session.is_running:
+        return
+
+    audio_b64 = data.get('data', '')
+    if not audio_b64:
+        return
+
+    try:
+        pcm_bytes = base64.b64decode(audio_b64)
+        live_session.enqueue_audio(pcm_bytes)
+    except Exception as e:
+        logger.error(f"[LiveAPI] 音声デコードエラー: {e}")
+
+
+@socketio.on('live_stop')
+def handle_live_stop():
+    """LiveAPIセッション終了"""
+    client_sid = request.sid
+    if client_sid in active_live_sessions:
+        live_session = active_live_sessions[client_sid]
+        live_session.stop()
+        del active_live_sessions[client_sid]
+    emit('live_stopped', {'status': 'disconnected'})
+
+
+# ========================================
 # WebSocket Streaming STT
 # ========================================
 
@@ -749,6 +839,13 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     logger.info(f"[WebSocket STT] クライアント切断: {request.sid}")
+    # LiveAPIセッションのクリーンアップ
+    if request.sid in active_live_sessions:
+        live_session = active_live_sessions[request.sid]
+        live_session.stop()
+        del active_live_sessions[request.sid]
+        logger.info(f"[LiveAPI] クライアント切断によりセッション停止: {request.sid}")
+    # STTストリームのクリーンアップ
     if request.sid in active_streams:
         stream_data = active_streams[request.sid]
         if 'stop_event' in stream_data:

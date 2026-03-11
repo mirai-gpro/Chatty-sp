@@ -2,7 +2,6 @@
 
 // src/scripts/chat/concierge-controller.ts
 import { CoreController } from './core-controller';
-import { AudioManager } from './audio-manager';
 
 declare const io: any;
 
@@ -39,7 +38,8 @@ export class ConciergeController extends CoreController {
   }
 
   // ========================================
-  // 🎯 セッション初期化をオーバーライド(挨拶文を変更)
+  // 🎯 セッション初期化をオーバーライド（LiveAPI統一）
+  // （仕様書02 セクション4.4.3）
   // ========================================
   protected async initializeSession() {
     try {
@@ -53,7 +53,7 @@ export class ConciergeController extends CoreController {
         } catch (e) {}
       }
 
-      // ★ user_id を取得（親クラスのメソッドを使用）
+      // 1. REST APIでsession_id取得（user_id付き）
       const userId = this.getUserId();
 
       const res = await fetch(`${this.apiBase}/api/session/start`, {
@@ -68,43 +68,18 @@ export class ConciergeController extends CoreController {
       const data = await res.json();
       this.sessionId = data.session_id;
 
-      // ✅ バックエンドからの初回メッセージを使用（長期記憶対応）
-      const greetingText = data.initial_message || this.t('initialGreetingConcierge');
-      this.addMessage('assistant', greetingText, null, true);
-      
-      const ackTexts = [
-        this.t('ackConfirm'), this.t('ackSearch'), this.t('ackUnderstood'), 
-        this.t('ackYes'), this.t('ttsIntro')
-      ];
-      const langConfig = this.LANGUAGE_CODE_MAP[this.currentLanguage];
-      
-      const ackPromises = ackTexts.map(async (text) => {
-        try {
-          const ackResponse = await fetch(`${this.apiBase}/api/tts/synthesize`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              text: text, language_code: langConfig.tts, voice_name: langConfig.voice 
-            })
-          });
-          const ackData = await ackResponse.json();
-          if (ackData.success && ackData.audio) {
-            this.preGeneratedAcks.set(text, ackData.audio);
-          }
-        } catch (_e) { }
-      });
-
-      await Promise.all([
-        this.speakTextGCP(greetingText), 
-        ...ackPromises
-      ]);
-      
+      // 2. UIを有効化
       this.els.userInput.disabled = false;
       this.els.sendBtn.disabled = false;
       this.els.micBtn.disabled = false;
       this.els.speakerBtn.disabled = false;
       this.els.speakerBtn.classList.remove('disabled');
       this.els.reservationBtn.classList.remove('visible');
+
+      // 3. ★ LiveAPIで初期挨拶を開始
+      //    REST APIの greetingText + speakTextGCP() は全て削除
+      //    preGeneratedAcks のTTS事前生成も削除
+      await this.startLiveMode();
 
     } catch (e) {
       console.error('[Session] Initialization error:', e);
@@ -113,28 +88,23 @@ export class ConciergeController extends CoreController {
 
   // ========================================
   // 🔧 Socket.IOの初期化をオーバーライド
+  // ★ 親クラスを呼んでLiveAPIリスナーも登録（仕様書02 セクション4.4.3）
   // ========================================
   protected initSocket() {
-    // @ts-ignore
-    this.socket = io(this.apiBase || window.location.origin);
-    
-    this.socket.on('connect', () => { });
-    
-    // ✅ コンシェルジュ版のhandleStreamingSTTCompleteを呼ぶように再登録
+    // ★ 親クラスのinitSocket()を呼んでLiveAPIリスナーも登録
+    super.initSocket();
+
+    // コンシェルジュ版のtranscriptハンドラを上書き
+    this.socket.off('transcript');
     this.socket.on('transcript', (data: any) => {
       const { text, is_final } = data;
       if (this.isAISpeaking) return;
       if (is_final) {
-        this.handleStreamingSTTComplete(text); // ← オーバーライド版が呼ばれる
+        this.handleStreamingSTTComplete(text);
         this.currentAISpeech = "";
       } else {
         this.els.userInput.value = text;
       }
-    });
-
-    this.socket.on('error', (data: any) => {
-      this.addMessage('system', `${this.t('sttError')} ${data.message}`);
-      if (this.isRecording) this.stopStreamingSTT();
     });
   }
 
