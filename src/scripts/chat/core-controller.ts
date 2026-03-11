@@ -539,90 +539,17 @@ export class CoreController {
 
   protected async handleShopSearchFromLiveAPI(data: any): Promise<void> {
     const userRequest = data.user_request || '';
-    const sessionId = data.session_id || this.sessionId;
     console.log('[LiveAPI→REST] ショップ検索開始:', userRequest);
 
-    // ★ LiveAPIを停止してからREST検索（二重応答を防止）
+    // LiveAPIを停止してからREST検索（二重応答を防止）
     this.terminateLiveSession();
 
-    try {
-      this.isProcessing = true;
-
-      // ユーザーリクエストが空の場合のフォールバック
-      const message = userRequest || 'おすすめのお店を探してください';
-
-      const response = await fetch(`${this.apiBase}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: sessionId,
-          message: message,
-          stage: this.currentStage,
-          language: this.currentLanguage,
-          mode: this.currentMode
-        })
-      });
-
-      if (!response.ok) {
-        console.error('[LiveAPI→REST] HTTPエラー:', response.status, response.statusText);
-        return;
-      }
-
-      const result = await response.json();
-
-      if (result.shops && result.shops.length > 0) {
-        this.currentShops = result.shops;
-        this.els.reservationBtn.classList.add('visible');
-        document.dispatchEvent(new CustomEvent('displayShops', {
-          detail: { shops: result.shops, language: this.currentLanguage }
-        }));
-        const section = document.getElementById('shopListSection');
-        if (section) section.classList.add('has-shops');
-
-        // ショップ紹介テキストをチャット欄に表示
-        if (result.response) {
-          this.addMessage('assistant', result.response);
-        }
-
-        // ★ TTS読み上げ（LiveAPI→REST切替後のショップ紹介）
-        if (result.response && this.isTTSEnabled && this.isUserInteracted) {
-          try {
-            this.isAISpeaking = true;
-            // まず短い導入を読む
-            await this.speakTextGCP(this.t('ttsIntro'), true, false, false);
-            // ショップ紹介テキストを読み上げ
-            await this.speakTextGCP(result.response, false, false, false);
-            this.isAISpeaking = false;
-          } catch (_e) {
-            this.isAISpeaking = false;
-          }
-        }
-
-        // モバイルではショップセクションにスクロール
-        if (window.innerWidth < 1024) {
-          setTimeout(() => {
-            const shopSection = document.getElementById('shopListSection');
-            if (shopSection) shopSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 300);
-        }
-      } else if (result.response) {
-        this.addMessage('assistant', result.response);
-        // ★ ショップなし応答も読み上げ
-        if (this.isTTSEnabled && this.isUserInteracted) {
-          await this.speakTextGCP(result.response, true, false, false);
-        }
-      } else {
-        console.warn('[LiveAPI→REST] レスポンスにshopsもresponseもなし:', result);
-      }
-
-      console.log('[LiveAPI→REST] ショップ検索完了:', result.shops?.length || 0, '件');
-    } catch (error) {
-      console.error('[LiveAPI→REST] ショップ検索エラー:', error);
-    } finally {
-      this.isProcessing = false;
-      // ★ 入力状態をリセットしてテキスト入力可能に
-      this.resetInputState();
-    }
+    // 既存のsendMessage()フローに合流させる
+    // ユーザーリクエストをinputに設定してsendMessage()を呼ぶ
+    const message = userRequest || 'おすすめのお店を探してください';
+    this.els.userInput.value = message;
+    this.isFromVoiceInput = true;
+    this.sendMessage();
   }
 
   protected terminateLiveSession(): void {
