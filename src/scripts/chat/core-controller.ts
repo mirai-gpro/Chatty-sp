@@ -406,12 +406,21 @@ export class CoreController {
   protected async toggleRecording() {
     this.enableAudioPlayback();
     this.els.userInput.value = '';
-    
-    if (this.isRecording) { 
+
+    // LiveAPIモード中の場合は停止
+    if (this.isLiveMode) {
+      this.switchToRestApiMode();
+      this.isRecording = false;
+      this.els.micBtn.classList.remove('recording');
+      this.resetInputState();
+      return;
+    }
+
+    if (this.isRecording) {
       this.stopStreamingSTT();
       return;
     }
-    
+
     if (this.isProcessing || this.isAISpeaking || !this.ttsPlayer.paused) {
       if (this.isProcessing) {
         fetch(`${this.apiBase}/api/cancel`, {
@@ -420,32 +429,26 @@ export class CoreController {
           body: JSON.stringify({ session_id: this.sessionId })
         }).catch(err => console.error('中止リクエスト失敗:', err));
       }
-      
+
       this.stopCurrentAudio();
       this.hideWaitOverlay();
       this.isProcessing = false;
       this.isAISpeaking = false;
       this.resetInputState();
     }
-    
+
+    // LiveAPIモードで起動
     if (this.socket && this.socket.connected) {
       this.isRecording = true;
       this.els.micBtn.classList.add('recording');
-      this.els.voiceStatus.innerHTML = this.t('voiceStatusListening');
-      this.els.voiceStatus.className = 'voice-status listening';
 
       try {
-        const langCode = this.LANGUAGE_CODE_MAP[this.currentLanguage].stt;
-        await this.audioManager.startStreaming(
-          this.socket, langCode, 
-          () => { this.stopStreamingSTT(); },
-          () => { this.els.voiceStatus.innerHTML = this.t('voiceStatusRecording'); }
-        );
+        await this.startLiveMode();
       } catch (error: any) {
-        this.stopStreamingSTT();
-        if (!error.message?.includes('マイク')) {
-          this.showError(this.t('micAccessError'));
-        }
+        console.error('[LiveAPI] 起動失敗:', error);
+        this.isRecording = false;
+        this.els.micBtn.classList.remove('recording');
+        this.showError(this.t('micAccessError'));
       }
     } else {
       await this.startLegacyRecording();
