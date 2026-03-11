@@ -544,12 +544,69 @@ export class CoreController {
     // LiveAPIを停止してからREST検索（二重応答を防止）
     this.terminateLiveSession();
 
-    // 既存のsendMessage()フローに合流させる
-    // ユーザーリクエストをinputに設定してsendMessage()を呼ぶ
     const message = userRequest || 'おすすめのお店を探してください';
-    this.els.userInput.value = message;
-    this.isFromVoiceInput = true;
-    this.sendMessage();
+
+    try {
+      this.isProcessing = true;
+
+      const response = await fetch(`${this.apiBase}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: this.sessionId,
+          message: message,
+          stage: this.currentStage,
+          language: this.currentLanguage,
+          mode: this.currentMode
+        })
+      });
+      const result = await response.json();
+
+      if (result.shops && result.shops.length > 0) {
+        this.currentShops = result.shops;
+        this.els.reservationBtn.classList.add('visible');
+        document.dispatchEvent(new CustomEvent('displayShops', {
+          detail: { shops: result.shops, language: this.currentLanguage }
+        }));
+        const section = document.getElementById('shopListSection');
+        if (section) section.classList.add('has-shops');
+
+        if (result.response) {
+          this.addMessage('assistant', result.response);
+        }
+
+        // TTS で読み上げ（既存の speakTextGCP() を流用）— 仕様書02 セクション5.4
+        if (result.response && this.isTTSEnabled && this.isUserInteracted) {
+          try {
+            this.isAISpeaking = true;
+            await this.speakTextGCP(this.t('ttsIntro'), true, false, false);
+            await this.speakTextGCP(result.response, false, false, false);
+            this.isAISpeaking = false;
+          } catch (_e) {
+            this.isAISpeaking = false;
+          }
+        }
+
+        if (window.innerWidth < 1024) {
+          setTimeout(() => {
+            const shopSection = document.getElementById('shopListSection');
+            if (shopSection) shopSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 300);
+        }
+      } else if (result.response) {
+        this.addMessage('assistant', result.response);
+        if (this.isTTSEnabled && this.isUserInteracted) {
+          await this.speakTextGCP(result.response, true, false, false);
+        }
+      }
+
+      console.log('[LiveAPI→REST] ショップ検索完了:', result.shops?.length || 0, '件');
+    } catch (error) {
+      console.error('[LiveAPI→REST] ショップ検索エラー:', error);
+    } finally {
+      this.isProcessing = false;
+      this.resetInputState();
+    }
   }
 
   protected terminateLiveSession(): void {
@@ -773,7 +830,6 @@ export class CoreController {
         
         (async () => {
           try {
-            console.log('[TTS IIFE] 開始', { isTextInput, isTTSEnabled: this.isTTSEnabled, isUserInteracted: this.isUserInteracted, isRecording: this.isRecording });
             this.isAISpeaking = true;
             if (this.isRecording) { this.stopStreamingSTT(); }
 
@@ -889,7 +945,7 @@ export class CoreController {
               }
             }
             this.isAISpeaking = false;
-          } catch (_e) { console.error('[TTS IIFE] エラー:', _e); this.isAISpeaking = false; }
+          } catch (_e) { this.isAISpeaking = false; }
         })();
       } else {
         if (data.response) {
@@ -919,8 +975,8 @@ export class CoreController {
   }
 
   protected async speakTextGCP(text: string, stopPrevious: boolean = true, autoRestartMic: boolean = false, skipAudio: boolean = false) {
-    if (skipAudio) { console.log('[TTS] skipAudio=true, スキップ'); return Promise.resolve(); }
-    if (!this.isTTSEnabled || !text) { console.log('[TTS] 無効またはテキスト空', { isTTSEnabled: this.isTTSEnabled, textEmpty: !text }); return Promise.resolve(); }
+    if (skipAudio) return Promise.resolve();
+    if (!this.isTTSEnabled || !text) return Promise.resolve();
     
     if (stopPrevious && this.isTTSEnabled) {
       this.ttsPlayer.pause();
@@ -945,7 +1001,6 @@ export class CoreController {
         })
       });
       const data = await response.json();
-      console.log('[TTS] API応答:', { success: data.success, hasAudio: !!data.audio, textPreview: cleanText.substring(0, 30) });
       if (data.success && data.audio) {
         this.ttsPlayer.src = `data:audio/mp3;base64,${data.audio}`;
         const playPromise = new Promise<void>((resolve) => {
@@ -967,11 +1022,9 @@ export class CoreController {
         });
         
         if (this.isUserInteracted) {
-          console.log('[TTS] 再生開始:', cleanText.substring(0, 30));
           this.lastAISpeech = this.normalizeText(cleanText);
           await this.ttsPlayer.play();
           await playPromise;
-          console.log('[TTS] 再生完了');
         } else {
           this.showClickPrompt();
           this.els.voiceStatus.innerHTML = this.t('voiceStatusStopped');
