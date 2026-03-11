@@ -359,6 +359,12 @@ export class CoreController {
       console.log('[LiveAPI] live_stopped');
       this.isLiveMode = false;
     });
+
+    // ★ ショップ検索トリガー（LiveAPIからのハイブリッド切替）
+    this.socket.on('shop_search_trigger', (data: any) => {
+      console.log('[LiveAPI] shop_search_trigger:', data);
+      this.handleShopSearchFromLiveAPI(data);
+    });
   }
 
   protected async initializeSession() {
@@ -479,7 +485,28 @@ export class CoreController {
   // ========================================
 
   protected async startLiveMode(): Promise<void> {
-    if (!this.socket || !this.socket.connected) {
+    if (!this.socket) {
+      console.warn('[LiveAPI] Socket未初期化、startLiveMode中止');
+      return;
+    }
+
+    // Socket接続を待つ（最大5秒）
+    if (!this.socket.connected) {
+      console.log('[LiveAPI] Socket接続待機中...');
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => {
+          console.warn('[LiveAPI] Socket接続タイムアウト');
+          resolve();
+        }, 5000);
+        this.socket.once('connect', () => {
+          clearTimeout(timeout);
+          console.log('[LiveAPI] Socket接続完了');
+          resolve();
+        });
+      });
+    }
+
+    if (!this.socket.connected) {
       console.warn('[LiveAPI] Socket未接続、startLiveMode中止');
       return;
     }
@@ -508,6 +535,60 @@ export class CoreController {
   protected switchToRestApiMode(): void {
     console.log('[LiveAPI] REST APIモードに切り替え');
     this.terminateLiveSession();
+  }
+
+  protected async handleShopSearchFromLiveAPI(data: any): Promise<void> {
+    const userRequest = data.user_request || '';
+    const sessionId = data.session_id || this.sessionId;
+    console.log('[LiveAPI→REST] ショップ検索開始:', userRequest);
+
+    try {
+      this.isProcessing = true;
+
+      const response = await fetch(`${this.apiBase}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          message: userRequest,
+          stage: this.currentStage,
+          language: this.currentLanguage,
+          mode: this.currentMode
+        })
+      });
+      const result = await response.json();
+
+      if (result.shops && result.shops.length > 0) {
+        this.currentShops = result.shops;
+        this.els.reservationBtn.classList.add('visible');
+        document.dispatchEvent(new CustomEvent('displayShops', {
+          detail: { shops: result.shops, language: this.currentLanguage }
+        }));
+        const section = document.getElementById('shopListSection');
+        if (section) section.classList.add('has-shops');
+
+        // ショップ紹介テキストをチャット欄に表示
+        if (result.response) {
+          this.addMessage('assistant', result.response);
+        }
+
+        // モバイルではショップセクションにスクロール
+        if (window.innerWidth < 1024) {
+          setTimeout(() => {
+            const shopSection = document.getElementById('shopListSection');
+            if (shopSection) shopSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 300);
+        }
+      } else if (result.response) {
+        this.addMessage('assistant', result.response);
+      }
+
+      console.log('[LiveAPI→REST] ショップ検索完了:', result.shops?.length || 0, '件');
+    } catch (error) {
+      console.error('[LiveAPI→REST] ショップ検索エラー:', error);
+    } finally {
+      this.isProcessing = false;
+    }
   }
 
   protected terminateLiveSession(): void {

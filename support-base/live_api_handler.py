@@ -527,6 +527,7 @@ class LiveAPISession:
         ターン完了時の処理
         stt_stream.py:600-644 から移植
         """
+        user_text = ""
         if self.user_transcript_buffer.strip():
             user_text = self.user_transcript_buffer.strip()
             logger.info(f"[LiveAPI] ユーザー: {user_text}")
@@ -537,6 +538,18 @@ class LiveAPISession:
             ai_text = self.ai_transcript_buffer.strip()
             logger.info(f"[LiveAPI] AI: {ai_text}")
             self._add_to_history("ai", ai_text)
+
+            # ショップ検索トリガー検知（仕様書02 セクション5.2-5.4）
+            if should_trigger_shop_search(ai_text):
+                # ユーザーの要望を会話履歴から構築
+                user_request = user_text or self._get_last_user_text()
+                logger.info(f"[LiveAPI] ショップ検索トリガー検知: '{ai_text}' → ユーザー要望: '{user_request}'")
+                self.socketio.emit('shop_search_trigger', {
+                    'user_request': user_request,
+                    'session_id': self.session_id,
+                    'language': self.language,
+                    'mode': self.mode
+                }, room=self.client_sid)
 
             # 発言が途中で切れているかチェック
             is_incomplete = self._is_speech_incomplete(ai_text)
@@ -559,6 +572,13 @@ class LiveAPISession:
             elif self.ai_char_count >= MAX_AI_CHARS_BEFORE_RECONNECT:
                 logger.info("[LiveAPI] 累積制限到達のため再接続")
                 self.needs_reconnect = True
+
+    def _get_last_user_text(self) -> str:
+        """会話履歴から最後のユーザー発言を取得"""
+        for h in reversed(self.conversation_history):
+            if h['role'] == 'user':
+                return h['text']
+        return ""
 
     def _is_speech_incomplete(self, text: str) -> bool:
         """
