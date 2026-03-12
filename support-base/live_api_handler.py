@@ -206,20 +206,20 @@ def _get_returning_user_context(preferred_name: str, name_honorific: str) -> str
 # Function Calling 定義（v5 §5.2）
 # ============================================================
 
-SEARCH_SHOPS_DECLARATION = {
-    "name": "search_shops",
-    "description": "ユーザーの条件に基づいてレストランを検索する。条件が十分に揃ったと判断した時に呼び出す。",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "user_request": {
-                "type": "string",
-                "description": "ユーザーの要望の要約（例: '六本木 接待 イタリアン 1万円 4名'）"
-            }
+SEARCH_SHOPS_DECLARATION = types.FunctionDeclaration(
+    name="search_shops",
+    description="ユーザーの条件に基づいてレストランを検索する。条件が十分に揃ったと判断した時に呼び出す。",
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "user_request": types.Schema(
+                type="STRING",
+                description="ユーザーの要望の要約（例: '六本木 接待 イタリアン 1万円 4名'）"
+            )
         },
-        "required": ["user_request"]
-    }
-}
+        required=["user_request"]
+    )
+)
 
 
 # ============================================================
@@ -317,7 +317,7 @@ class LiveAPISession:
         config = {
             "response_modalities": ["AUDIO"],
             "system_instruction": instruction,
-            "tools": [{"function_declarations": [SEARCH_SHOPS_DECLARATION]}],
+            "tools": [types.Tool(function_declarations=[SEARCH_SHOPS_DECLARATION])],
             "input_audio_transcription": {},
             "output_audio_transcription": {},
             "speech_config": {
