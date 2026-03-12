@@ -599,14 +599,15 @@ class LiveAPISession:
                 # ショップ検索を実行
                 await self._handle_shop_search(user_request)
 
-                # function responseを返す（LiveAPI仕様に従う）
-                # ※ 正確な構文はテストで検証
-                await session.send_tool_response(
-                    function_responses=[{
-                        "id": fc.id,
-                        "response": {"result": "検索結果をユーザーに表示しました"}
-                    }]
+                # function responseを返す（LiveAPI confirmed syntax）
+                tool_response = types.LiveClientToolResponse(
+                    function_responses=[types.FunctionResponse(
+                        name=fc.name,
+                        id=fc.id,
+                        response={"result": "検索結果をユーザーに表示しました"}
+                    )]
                 )
+                await session.send_tool_response(tool_response)
             else:
                 logger.warning(f"[LiveAPI] 未知のfunction call: {fc.name}")
 
