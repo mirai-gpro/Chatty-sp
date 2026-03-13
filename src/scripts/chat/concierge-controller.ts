@@ -84,7 +84,6 @@ export class ConciergeController extends CoreController {
       // ★ FIX: マイクON状態をUIに反映
       this.isRecording = true;
       this.els.micBtn.classList.add('recording');
-      console.log('[DIAG] concierge initializeSession完了: isLiveMode=%s, isRecording=%s', this.isLiveMode, this.isRecording);
 
     } catch (e) {
       console.error('[Session] Initialization error:', e);

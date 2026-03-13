@@ -417,7 +417,6 @@ export class CoreController {
       // ★ FIX: マイクON状態をUIに反映
       this.isRecording = true;
       this.els.micBtn.classList.add('recording');
-      console.log('[DIAG] initializeSession完了: isLiveMode=%s, isRecording=%s', this.isLiveMode, this.isRecording);
 
     } catch (e) {
       console.error('[Session] Initialization error:', e);
@@ -428,17 +427,13 @@ export class CoreController {
     this.enableAudioPlayback();
     this.els.userInput.value = '';
 
-    console.log('[DIAG] toggleRecording: isLiveMode=%s, isRecording=%s', this.isLiveMode, this.isRecording);
-
     // ★ FIX: LiveAPIモード中 → マイクON/OFFトグル（セッション維持）
     if (this.isLiveMode) {
       if (this.isRecording) {
-        console.log('[DIAG] → マイクOFF（ストリーミング停止）');
         this.liveAudioManager.stopStreaming();
         this.isRecording = false;
         this.els.micBtn.classList.remove('recording');
       } else {
-        console.log('[DIAG] → マイクON（ストリーミング再開）');
         this.liveAudioManager.startStreaming();
         this.isRecording = true;
         this.els.micBtn.classList.add('recording');
