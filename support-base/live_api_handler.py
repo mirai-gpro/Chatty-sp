@@ -607,6 +607,10 @@ class LiveAPISession:
                 user_request = fc.args.get("user_request", "")
                 logger.info(f"[LiveAPI] search_shops呼び出し: '{user_request}'")
 
+                # ★ 検索開始通知（ウェイティングアニメーション発火用）
+                self.socketio.emit('shop_search_started', {},
+                                   room=self.client_sid)
+
                 # ショップ検索を実行
                 await self._handle_shop_search(user_request)
 
@@ -633,6 +637,8 @@ class LiveAPISession:
         """
         if not self._shop_search_callback:
             logger.error("[ShopSearch] shop_search_callback が未設定")
+            self.socketio.emit('shop_search_failed', {},
+                               room=self.client_sid)
             return
 
         try:
@@ -658,6 +664,8 @@ class LiveAPISession:
 
         except Exception as e:
             logger.error(f"[ShopSearch] エラー: {e}", exc_info=True)
+            self.socketio.emit('shop_search_failed', {},
+                               room=self.client_sid)
 
     def _process_turn_complete(self):
         """
