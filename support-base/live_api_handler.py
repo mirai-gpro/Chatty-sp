@@ -714,7 +714,7 @@ class LiveAPISession:
             return
 
         try:
-            shop_data = self._shop_search_callback(user_request, self.language, self.mode, self.conversation_history)
+            shop_data = self._shop_search_callback(user_request, self.language, self.mode)
 
             if not shop_data or not shop_data.get('shops'):
                 logger.info("[ShopSearch] ショップ見つからず")
