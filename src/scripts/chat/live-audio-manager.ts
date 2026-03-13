@@ -164,6 +164,10 @@ export class LiveAudioManager {
     // ========================================
     stopStreaming(): void {
         this.isStreaming = false;
+        // サーバーへストリーム停止を通知 → LiveAPIにaudioStreamEnd送信
+        if (this.socket) {
+            this.socket.emit('live_pause');
+        }
         console.log('[LiveAudioManager] ストリーミング停止');
     }
 

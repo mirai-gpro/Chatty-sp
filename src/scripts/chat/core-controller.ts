@@ -271,7 +271,14 @@ export class CoreController {
     // ★ LiveAPIリスナー（仕様書02 セクション4.4.2）
     this.socket.on('live_ready', () => {
       console.log('[LiveAPI] live_ready受信');
+      // 挨拶ターン完了まで startStreaming しない（send_client_content と realtime_input の混在防止）
+    });
+
+    this.socket.on('greeting_done', () => {
+      console.log('[LiveAPI] greeting_done受信 → マイク送信開始');
       this.liveAudioManager.startStreaming();
+      this.isRecording = true;
+      this.els.micBtn.classList.add('recording');
     });
 
     this.socket.on('live_audio', (data: any) => {
@@ -411,12 +418,8 @@ export class CoreController {
       this.els.speakerBtn.classList.remove('disabled');
       this.els.reservationBtn.classList.remove('visible');
 
-      // 3. ★ LiveAPIで初期挨拶を開始（仕様書02 セクション4.4.2）
-      //    REST API挨拶 + GCP TTS の処理は全て削除
-      await this.startLiveMode();
-      // ★ FIX: マイクON状態をUIに反映
-      this.isRecording = true;
-      this.els.micBtn.classList.add('recording');
+      // 3. ★ LiveAPI起動は初回マイクボタンクリック時に行う（iOS getUserMedia制約対策）
+      //    greeting_done受信後にstartStreamingが呼ばれる
 
     } catch (e) {
       console.error('[Session] Initialization error:', e);
