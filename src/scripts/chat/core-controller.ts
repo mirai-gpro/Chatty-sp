@@ -414,6 +414,10 @@ export class CoreController {
       // 3. ★ LiveAPIで初期挨拶を開始（仕様書02 セクション4.4.2）
       //    REST API挨拶 + GCP TTS の処理は全て削除
       await this.startLiveMode();
+      // ★ FIX: マイクON状態をUIに反映
+      this.isRecording = true;
+      this.els.micBtn.classList.add('recording');
+      console.log('[DIAG] initializeSession完了: isLiveMode=%s, isRecording=%s', this.isLiveMode, this.isRecording);
 
     } catch (e) {
       console.error('[Session] Initialization error:', e);
@@ -424,12 +428,21 @@ export class CoreController {
     this.enableAudioPlayback();
     this.els.userInput.value = '';
 
-    // ★ LiveAPIモード中 → 停止（v5仕様書: RESTフォールバックなし）
+    console.log('[DIAG] toggleRecording: isLiveMode=%s, isRecording=%s', this.isLiveMode, this.isRecording);
+
+    // ★ FIX: LiveAPIモード中 → マイクON/OFFトグル（セッション維持）
     if (this.isLiveMode) {
-      this.terminateLiveSession();
-      this.isRecording = false;
-      this.els.micBtn.classList.remove('recording');
-      this.resetInputState();
+      if (this.isRecording) {
+        console.log('[DIAG] → マイクOFF（ストリーミング停止）');
+        this.liveAudioManager.stopStreaming();
+        this.isRecording = false;
+        this.els.micBtn.classList.remove('recording');
+      } else {
+        console.log('[DIAG] → マイクON（ストリーミング再開）');
+        this.liveAudioManager.startStreaming();
+        this.isRecording = true;
+        this.els.micBtn.classList.add('recording');
+      }
       return;
     }
 

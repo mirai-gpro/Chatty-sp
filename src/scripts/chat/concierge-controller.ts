@@ -81,6 +81,10 @@ export class ConciergeController extends CoreController {
       //    REST APIの greetingText + speakTextGCP() は全て削除
       //    preGeneratedAcks のTTS事前生成も削除
       await this.startLiveMode();
+      // ★ FIX: マイクON状態をUIに反映
+      this.isRecording = true;
+      this.els.micBtn.classList.add('recording');
+      console.log('[DIAG] concierge initializeSession完了: isLiveMode=%s, isRecording=%s', this.isLiveMode, this.isRecording);
 
     } catch (e) {
       console.error('[Session] Initialization error:', e);
