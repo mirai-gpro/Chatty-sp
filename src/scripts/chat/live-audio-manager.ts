@@ -57,36 +57,19 @@ export class LiveAudioManager {
     private nextPlayTime: number = 0;
 
     // ========================================
-    // 再生専用の初期化（ページロード時に呼ぶ、getUserMedia不要）
+    // セッション開始時に1度だけ呼ぶ
     // ========================================
-    initPlayback(socket: any): void {
+    async initialize(socket: any): Promise<void> {
+        if (this.audioContext) return; // 既に初期化済み
+
         this.socket = socket;
 
-        if (!this.audioContext) {
-            // @ts-ignore
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            this.audioContext = new AudioContextClass({ sampleRate: 48000 });
-        }
+        // 1. AudioContext (1つだけ) - 48kHzでマイク入力
+        // @ts-ignore
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        this.audioContext = new AudioContextClass({ sampleRate: 48000 });
 
-        // ソフトリロード時の古い再生キューをクリア
-        this.clearPlaybackQueue();
-
-        console.log('[LiveAudioManager] 再生初期化完了');
-    }
-
-    // ========================================
-    // マイク初期化（ユーザージェスチャー内で呼ぶ、iOS対策）
-    // ========================================
-    async initMicrophone(): Promise<void> {
-        if (this.mediaStream) return; // 既にマイク初期化済み
-        if (!this.audioContext) return;
-
-        // AudioContextがsuspendedなら再開（ユーザージェスチャー内で実行）
-        if (this.audioContext.state === 'suspended') {
-            await this.audioContext.resume();
-        }
-
-        // 1. getUserMedia (1回だけ)
+        // 2. getUserMedia (1回だけ)
         this.mediaStream = await navigator.mediaDevices.getUserMedia({
             audio: {
                 echoCancellation: true,
@@ -96,7 +79,7 @@ export class LiveAudioManager {
             }
         });
 
-        // 2. AudioWorklet登録 (1回だけ)
+        // 3. AudioWorklet登録 (1回だけ)
         // 48kHz → 16kHz ダウンサンプリング + Int16変換
         const downsampleRatio = 48000 / 16000; // = 3
         const audioProcessorCode = `
@@ -146,12 +129,12 @@ export class LiveAudioManager {
         await this.audioContext.audioWorklet.addModule(processorUrl);
         URL.revokeObjectURL(processorUrl);
 
-        // 3. Node作成・接続
+        // 4. Node作成・接続
         this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
         this.audioWorkletNode = new AudioWorkletNode(this.audioContext, 'live-audio-processor');
         this.sourceNode.connect(this.audioWorkletNode);
 
-        // 4. フラグによる送信制御
+        // 5. フラグによる送信制御
         this.audioWorkletNode.port.onmessage = (e) => {
             if (!this.isStreaming) return;
             if (this.isAiSpeaking) return; // 半二重: AI応答中は送信しない
@@ -161,13 +144,6 @@ export class LiveAudioManager {
             this.socket.emit('live_audio_in', { data: base64 });
         };
 
-        console.log('[LiveAudioManager] マイク初期化完了');
-    }
-
-    // 後方互換: 旧initialize()は両方を呼ぶ
-    async initialize(socket: any): Promise<void> {
-        this.initPlayback(socket);
-        await this.initMicrophone();
         console.log('[LiveAudioManager] 初期化完了');
     }
 
@@ -188,10 +164,6 @@ export class LiveAudioManager {
     // ========================================
     stopStreaming(): void {
         this.isStreaming = false;
-        // サーバーへストリーム停止を通知 → LiveAPIにaudioStreamEnd送信
-        if (this.socket) {
-            this.socket.emit('live_pause');
-        }
         console.log('[LiveAudioManager] ストリーミング停止');
     }
 
@@ -218,20 +190,8 @@ export class LiveAudioManager {
         this._processPlaybackQueue();
     }
 
-    // AudioContext再開後にキューを再生（ユーザージェスチャー後に呼ぶ）
-    resumePlayback(): void {
-        if (this.audioContext && this.audioContext.state === 'suspended') {
-            this.audioContext.resume().then(() => {
-                this._processPlaybackQueue();
-            });
-        }
-    }
-
     private _processPlaybackQueue(): void {
         if (this.isPlaying || this.playbackQueue.length === 0 || !this.audioContext) return;
-
-        // AudioContextがsuspendedなら再生をスキップ（resumePlayback待ち）
-        if (this.audioContext.state === 'suspended') return;
 
         this.isPlaying = true;
         const buffer = this.playbackQueue.shift()!;

@@ -288,8 +288,6 @@ class LiveAPISession:
         self.ai_char_count = 0
         self.needs_reconnect = False
         self.session_count = 0
-        self._need_audio_stream_end = False
-        self._audio_stream_end_sent = False
 
         # 再接続時のトリガーメッセージ（§7.1）
         self._resume_message = None
@@ -366,11 +364,6 @@ class LiveAPISession:
                 self.audio_queue_to_gemini.put_nowait(pcm_bytes)
             except asyncio.QueueFull:
                 pass  # キューが満杯の場合はドロップ
-
-    def request_audio_stream_end(self):
-        """ストリーミング停止時にaudioStreamEndを送信予約"""
-        self._need_audio_stream_end = True
-        self._audio_stream_end_sent = False
 
     def stop(self):
         """セッションを停止"""
@@ -474,22 +467,13 @@ class LiveAPISession:
         async def send_audio():
             """ブラウザからの音声をLiveAPIに転送"""
             while not self.needs_reconnect and self.is_running:
-                # ストリーム停止要求があればaudioStreamEndを送信
-                if self._need_audio_stream_end and not self._audio_stream_end_sent:
-                    try:
-                        await session.send_realtime_input(audio_stream_end=True)
-                        self._audio_stream_end_sent = True
-                        self._need_audio_stream_end = False
-                    except Exception as e:
-                        logger.error(f"[LiveAPI] audioStreamEnd送信エラー: {e}")
-
                 try:
                     audio_data = await asyncio.wait_for(
                         self.audio_queue_to_gemini.get(),
                         timeout=0.1
                     )
                     await session.send_realtime_input(
-                        audio={"data": audio_data, "mime_type": "audio/pcm;rate=16000"}
+                        audio={"data": audio_data, "mime_type": "audio/pcm"}
                     )
                 except asyncio.TimeoutError:
                     continue
@@ -563,11 +547,9 @@ class LiveAPISession:
                         self.socketio.emit('turn_complete', {},
                                            room=self.client_sid)
 
-                        # 初期あいさつフェーズ終了 → greeting_done通知
+                        # 初期あいさつフェーズ終了（仕様書02 セクション4.5.5）
                         if self._is_initial_greeting_phase:
                             self._is_initial_greeting_phase = False
-                            self.socketio.emit('greeting_done', {},
-                                               room=self.client_sid)
 
                     # 3. 割り込み検知
                     if hasattr(sc, 'interrupted') and sc.interrupted:

@@ -742,7 +742,6 @@ def health_check():
 # ========================================
 
 active_live_sessions = {}  # {client_sid: LiveAPISession}
-greeted_client_sids = set()  # client_sid単位の挨拶済みガード
 
 @socketio.on('live_start')
 def handle_live_start(data):
@@ -800,8 +799,7 @@ def handle_live_start(data):
             logger.error(f"[ShopSearch] コールバックエラー: {e}", exc_info=True)
             return None
 
-    # LiveAPIセッション作成（client_sid単位で挨拶は1回のみ）
-    enable_greeting = client_sid not in greeted_client_sids
+    # LiveAPIセッション作成
     live_session = LiveAPISession(
         session_id=session_id,
         mode=mode,
@@ -811,10 +809,6 @@ def handle_live_start(data):
         client_sid=client_sid,
         shop_search_callback=shop_search_callback
     )
-    if enable_greeting:
-        greeted_client_sids.add(client_sid)
-    else:
-        live_session.session_count = 1  # 挨拶スキップ（session_count>0で再接続扱い）
     active_live_sessions[client_sid] = live_session
 
     # 別スレッドでasyncioイベントループを実行（セクション10.3参照）
@@ -856,15 +850,6 @@ def handle_live_audio_in(data):
         live_session.enqueue_audio(pcm_bytes)
     except Exception as e:
         logger.error(f"[LiveAPI] 音声デコードエラー: {e}")
-
-
-@socketio.on('live_pause')
-def handle_live_pause():
-    """ストリーミング一時停止 → LiveAPIにaudioStreamEnd送信"""
-    client_sid = request.sid
-    live_session = active_live_sessions.get(client_sid)
-    if live_session:
-        live_session.request_audio_stream_end()
 
 
 @socketio.on('live_stop')

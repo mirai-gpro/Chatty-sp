@@ -151,7 +151,8 @@ export class CoreController {
     this.isProcessing = false;
     this.isAISpeaking = false;
     this.isFromVoiceInput = false;
-    // ★ LiveAPIセッションリセットは stopAllActivities() 内で実行済み
+    // ★ LiveAPIセッションをリセット
+    this.terminateLiveSession();
 
     await new Promise(resolve => setTimeout(resolve, 300));
     await this.initializeSession();
@@ -270,12 +271,7 @@ export class CoreController {
     // ★ LiveAPIリスナー（仕様書02 セクション4.4.2）
     this.socket.on('live_ready', () => {
       console.log('[LiveAPI] live_ready受信');
-      // 挨拶ターン完了まで startStreaming しない（send_client_content と realtime_input の混在防止）
-    });
-
-    this.socket.on('greeting_done', () => {
-      console.log('[LiveAPI] greeting_done受信');
-      // 挨拶完了。マイク送信はユーザーのマイクボタンクリックで開始
+      this.liveAudioManager.startStreaming();
     });
 
     this.socket.on('live_audio', (data: any) => {
@@ -415,7 +411,8 @@ export class CoreController {
       this.els.speakerBtn.classList.remove('disabled');
       this.els.reservationBtn.classList.remove('visible');
 
-      // 3. ★ LiveAPIで初期挨拶を開始（再生のみ、マイクはユーザージェスチャー時に初期化）
+      // 3. ★ LiveAPIで初期挨拶を開始（仕様書02 セクション4.4.2）
+      //    REST API挨拶 + GCP TTS の処理は全て削除
       await this.startLiveMode();
 
     } catch (e) {
@@ -427,19 +424,12 @@ export class CoreController {
     this.enableAudioPlayback();
     this.els.userInput.value = '';
 
-    // ★ LiveAPIモード中 → マイクON/OFFトグル（セッション維持）
+    // ★ LiveAPIモード中 → 停止（v5仕様書: RESTフォールバックなし）
     if (this.isLiveMode) {
-      if (this.isRecording) {
-        this.liveAudioManager.stopStreaming();
-        this.isRecording = false;
-        this.els.micBtn.classList.remove('recording');
-      } else {
-        // マイク未初期化ならユーザージェスチャー内で初期化（iOS対策）
-        await this.liveAudioManager.initMicrophone();
-        this.liveAudioManager.startStreaming();
-        this.isRecording = true;
-        this.els.micBtn.classList.add('recording');
-      }
+      this.terminateLiveSession();
+      this.isRecording = false;
+      this.els.micBtn.classList.remove('recording');
+      this.resetInputState();
       return;
     }
 
@@ -537,8 +527,8 @@ export class CoreController {
     }
 
     try {
-      // LiveAudioManager再生初期化（マイクはユーザージェスチャー時に遅延初期化）
-      this.liveAudioManager.initPlayback(this.socket);
+      // LiveAudioManager初期化（マイク取得 + AudioWorklet設定）
+      await this.liveAudioManager.initialize(this.socket);
 
       // サーバーにLiveAPIセッション開始を通知
       this.socket.emit('live_start', {
@@ -1011,8 +1001,6 @@ export class CoreController {
       const clickPrompt = this.container.querySelector('.click-prompt');
       if (clickPrompt) clickPrompt.remove();
       this.unlockAudioParams();
-      // LiveAPI再生キューのAudioContextを再開（ハードリロード後のsuspended対策）
-      this.liveAudioManager.resumePlayback();
     }
   }
 
