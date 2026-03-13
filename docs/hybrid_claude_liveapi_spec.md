@@ -251,7 +251,115 @@ parsed_message, parsed_shops, parsed_action = self._parse_json_response(assistan
 
 ---
 
-## 8. 変更しないもの一覧
+## 8. LiveAPIモードのウェイティングアニメーション追加
+
+### 8.1 問題
+現行のウェイティングアニメーション（`wait-overlay` + `wait.mp4`）は、テキスト入力時の `/api/chat` REST呼び出し前（4秒タイマー）でのみ発火する。
+LiveAPIモードでは `shop_search_result` ハンドラに `showWaitOverlay` / `hideWaitOverlay` が**呼ばれておらず**、検索中にウェイティングが表示されない。
+
+Claude REST に切り替えるとレイテンシが追加されるため、LiveAPIモードでもウェイティング表示が必要。
+
+### 8.2 バックエンド変更: `live_api_handler.py`
+
+`_handle_tool_call()` で `search_shops` 発火時に即座にイベントを送信する。
+
+```python
+async def _handle_tool_call(self, tool_call, session):
+    for fc in tool_call.function_calls:
+        if fc.name == "search_shops":
+            user_request = fc.args.get("user_request", "")
+            logger.info(f"[LiveAPI] search_shops呼び出し: '{user_request}'")
+
+            # ★ 追加: 検索開始通知（ウェイティングアニメーション発火用）
+            self.socketio.emit('shop_search_started', {},
+                               room=self.client_sid)
+
+            # ショップ検索を実行
+            await self._handle_shop_search(user_request)
+
+            # function responseを返す
+            # ... (以下変更なし)
+```
+
+### 8.3 フロントエンド変更: `core-controller.ts`
+
+`setupSocketListeners()` 内に `shop_search_started` リスナーを追加し、
+既存の `shop_search_result` ハンドラに `hideWaitOverlay()` を追加する。
+
+```typescript
+// ★ 追加: ショップ検索開始 → ウェイティングアニメーション表示
+this.socket.on('shop_search_started', () => {
+  console.log('[LiveAPI] shop_search_started: ウェイティング表示');
+  this.showWaitOverlay();
+});
+
+// ★ 既存の shop_search_result ハンドラに hideWaitOverlay() を追加
+this.socket.on('shop_search_result', (data: any) => {
+  console.log('[LiveAPI] shop_search_result:', data?.shops?.length || 0, '件');
+  this.hideWaitOverlay();  // ★ 追加
+  // ... (以下既存コードそのまま)
+});
+```
+
+### 8.4 フロントエンド変更: `concierge-controller.ts`
+
+`concierge-controller.ts` にも同様の変更を適用する。
+（`ConciergeController` は `CoreController` を継承しているため、
+  `setupSocketListeners()` をオーバーライドしている場合のみ追加が必要）
+
+### 8.5 タイムライン
+
+```
+[LiveAPI] search_shops function calling 発火
+  ↓
+[Backend] shop_search_started イベント送信  ← 即座
+  ↓
+[Frontend] showWaitOverlay()               ← ウェイティング表示
+  ↓
+[Backend] Claude REST API 呼び出し（1-3秒）
+  ↓
+[Backend] enrich_shops_with_photos()（1-2秒）
+  ↓
+[Backend] shop_search_result イベント送信
+  ↓
+[Frontend] hideWaitOverlay()               ← ウェイティング非表示
+           displayShops()                  ← カード表示
+  ↓
+[LiveAPI] _describe_shops_via_live()       ← 読み上げ開始
+```
+
+### 8.6 エラー時のフォールバック
+
+検索がエラーで失敗した場合にウェイティングが表示され続けることを防ぐため、
+`_handle_shop_search()` のexceptブロックでもイベントを送信する。
+
+```python
+async def _handle_shop_search(self, user_request: str):
+    if not self._shop_search_callback:
+        logger.error("[ShopSearch] shop_search_callback が未設定")
+        self.socketio.emit('shop_search_failed', {},
+                           room=self.client_sid)  # ★ 追加
+        return
+
+    try:
+        # ... 既存処理 ...
+    except Exception as e:
+        logger.error(f"[ShopSearch] エラー: {e}", exc_info=True)
+        self.socketio.emit('shop_search_failed', {},
+                           room=self.client_sid)  # ★ 追加
+```
+
+フロントエンド側:
+```typescript
+this.socket.on('shop_search_failed', () => {
+  console.log('[LiveAPI] shop_search_failed: ウェイティング非表示');
+  this.hideWaitOverlay();
+});
+```
+
+---
+
+## 10. 変更しないもの一覧
 
 | コンポーネント | 理由 |
 |-------------|------|
@@ -267,11 +375,12 @@ parsed_message, parsed_shops, parsed_action = self._parse_json_response(assistan
 
 ---
 
-## 9. 実装優先順
+## 11. 実装優先順
 
 1. **`support_core.py`**: `process_user_message()` の LLM 呼び出しを Claude REST に差し替え
 2. **環境変数**: `ANTHROPIC_API_KEY` の追加（Cloud Run + GitHub Secrets）
 3. **`requirements.txt`**: `anthropic` パッケージ追加
 4. **フロントエンド**: `ai_transcript` の表示制御（ショップ検索時は非表示）
-5. **検証**: ショップカードのJSON出力品質テスト
-6. **デプロイ**: Cloud Run へ反映
+5. **ウェイティングアニメーション**: LiveAPIモード用の `shop_search_started` / `shop_search_failed` 対応（セクション8）
+6. **検証**: ショップカードのJSON出力品質テスト
+7. **デプロイ**: Cloud Run へ反映
