@@ -93,10 +93,6 @@ export class CoreController {
     await this.initializeSession();
     this.updateUILanguage();
 
-    // ★ スプラッシュtap → AudioContext初期化 + LiveAPIセッション開始
-    //   iOSではユーザージェスチャー内でAudioContext.resume()が必要
-    this.bindSplashTapHandler();
-
     setTimeout(() => {
       if (this.els.splashOverlay) {
         this.els.splashOverlay.classList.add('fade-out');
@@ -105,37 +101,6 @@ export class CoreController {
     }, 2000);
 
     console.log('[Core] Initialization completed');
-  }
-
-  /**
-   * スプラッシュ画面のtap/clickでAudioContext初期化 + LiveAPIセッション開始
-   * デスクトップ: 自動フェードアウト時にも起動（タイマーで代替）
-   * iOS: ユーザーtap必須（AudioContext.resume制約）
-   */
-  private bindSplashTapHandler(): void {
-    if (this.liveAudioManager.isPlaybackReady()) return; // ソフトリロード時は不要
-
-    let started = false;
-    const startLiveOnGesture = async () => {
-      if (started || this.isLiveMode) return;
-      started = true;
-      try {
-        await this.startLiveSession();
-      } catch (e) {
-        console.error('[Splash] LiveAPIセッション開始エラー:', e);
-        started = false;
-      }
-    };
-
-    // スプラッシュ画面をタップした場合（iOS対応）
-    if (this.els.splashOverlay) {
-      this.els.splashOverlay.addEventListener('click', startLiveOnGesture, { once: true });
-      this.els.splashOverlay.addEventListener('touchend', startLiveOnGesture, { once: true });
-    }
-
-    // デスクトップ: スプラッシュが自動フェードアウトする際に起動
-    // iOSではsuspended状態のままだが、マイクclick時にresumeContextで解決
-    setTimeout(() => startLiveOnGesture(), 2500);
   }
 
   protected getUserId(): string {
@@ -306,8 +271,7 @@ export class CoreController {
     // ★ LiveAPIリスナー（仕様書02 セクション4.4.2）
     this.socket.on('live_ready', () => {
       console.log('[LiveAPI] live_ready受信');
-      // マイク初期化済みの場合のみストリーミング開始
-      // 未初期化時（挨拶再生のみ）はマイクclick時にactivateMicrophone()で開始
+      // 再接続時: マイクが既にアクティブなら即ストリーミング再開
       if (this.isRecording) {
         this.liveAudioManager.startStreaming();
       }
@@ -450,12 +414,8 @@ export class CoreController {
       this.els.speakerBtn.classList.remove('disabled');
       this.els.reservationBtn.classList.remove('visible');
 
-      // 3. ★ LiveAPIセッション開始（マイクなし）
-      //    ソフトリロード時: AudioContext生存 → 即接続 + 挨拶再生
-      //    初回ロード時: スプラッシュtapで起動するため、ここではスキップ
-      if (this.liveAudioManager.isPlaybackReady()) {
-        await this.startLiveSession();
-      }
+      // 3. ★ LiveAPIセッション開始（挨拶 + マイク試行）
+      await this.startLiveSession();
 
     } catch (e) {
       console.error('[Session] Initialization error:', e);
@@ -466,20 +426,20 @@ export class CoreController {
     this.enableAudioPlayback();
     this.els.userInput.value = '';
 
-    // ★ LiveAPIモード中 + 録音中 → 停止（セッション終了）
-    if (this.isLiveMode && this.isRecording) {
-      this.terminateLiveSession();
-      this.resetInputState();
-      return;
-    }
-
-    // ★ LiveAPIモード中 + 未録音 → マイクだけ追加（セッション維持）
-    //   初回ロード後やソフトリロード後、挨拶再生中/再生後にマイクを有効化
-    if (this.isLiveMode && !this.isRecording) {
-      try {
-        await this.activateMicrophone();
-      } catch (error) {
-        this.showError(this.t('micAccessError'));
+    // ★ LiveAPIモード中: マイクのON/OFFトグル（セッションは維持）
+    if (this.isLiveMode) {
+      if (this.isRecording) {
+        // 録音中 → マイクOFF（ストリーミング停止、セッションは維持）
+        this.liveAudioManager.stopStreaming();
+        this.isRecording = false;
+        this.els.micBtn.classList.remove('recording');
+      } else {
+        // 未録音 → マイクON（getUserMediaはユーザージェスチャー内 → iOS対応）
+        try {
+          await this.activateMicrophone();
+        } catch (error) {
+          this.showError(this.t('micAccessError'));
+        }
       }
       return;
     }
@@ -507,14 +467,10 @@ export class CoreController {
       this.resetInputState();
     }
 
-    // ★ LiveAPIセッション未起動 → フル起動（セッション開始 + マイク）
-    //   スプラッシュtapをスキップした場合のフォールバック
+    // ★ LiveAPIセッション未起動 → フル起動（フォールバック）
     if (this.socket && this.socket.connected) {
       try {
-        if (!this.isLiveMode) {
-          await this.startLiveSession();
-        }
-        await this.activateMicrophone();
+        await this.startLiveSession();
       } catch (error) {
         this.isRecording = false;
         this.els.micBtn.classList.remove('recording');
@@ -575,9 +531,10 @@ export class CoreController {
   }
 
   /**
-   * Phase 1: LiveAPIセッション開始（マイクなし・再生のみ）
-   * スプラッシュtap時 or ソフトリロード時に呼ぶ。
-   * AudioContext初期化 + サーバーにlive_start送信 → 挨拶音声を受信・再生。
+   * LiveAPIセッション開始（挨拶 + マイク試行）
+   * - AudioContext初期化 + サーバーにlive_start送信 → 挨拶音声再生
+   * - マイク初期化を試行（デスクトップ: 成功、iOS: 失敗→スキップ）
+   * - iOSでマイク失敗時は、マイクボタンclick時にactivateMicrophone()で後付け
    */
   protected async startLiveSession(): Promise<void> {
     if (!this.socket) {
@@ -591,7 +548,7 @@ export class CoreController {
     }
 
     try {
-      // 再生用AudioContextのみ初期化（getUserMediaは呼ばない）
+      // AudioContext初期化 + resume
       await this.liveAudioManager.initPlayback(this.socket);
       await this.liveAudioManager.resumeContext();
 
@@ -605,7 +562,19 @@ export class CoreController {
       this.isLiveMode = true;
       this.userTranscriptBuffer = '';
       this.aiTranscriptBuffer = '';
-      console.log('[LiveAPI] startLiveSession完了（再生のみ）');
+
+      // マイク初期化を試行（デスクトップ: 成功、iOS: getUserMedia失敗→スキップ）
+      try {
+        await this.liveAudioManager.initMicrophone();
+        this.liveAudioManager.startStreaming();
+        this.isRecording = true;
+        this.els.micBtn.classList.add('recording');
+        console.log('[LiveAPI] startLiveSession完了（マイク込み）');
+      } catch (micError: any) {
+        // iOS等でgetUserMediaが失敗 → マイクはユーザーclick時に後付け
+        console.log('[LiveAPI] マイク自動初期化スキップ:', micError.message);
+        console.log('[LiveAPI] startLiveSession完了（再生のみ）');
+      }
     } catch (error) {
       console.error('[LiveAPI] startLiveSessionエラー:', error);
       throw error;
@@ -613,7 +582,7 @@ export class CoreController {
   }
 
   /**
-   * Phase 2: マイク追加（既存LiveAPIセッションにマイクを接続）
+   * マイク有効化（既存LiveAPIセッションにマイクを後付け）
    * マイクボタンclick時に呼ぶ。getUserMediaはユーザージェスチャー内で実行。
    */
   protected async activateMicrophone(): Promise<void> {
