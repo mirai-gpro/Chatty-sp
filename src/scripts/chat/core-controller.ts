@@ -361,9 +361,16 @@ export class CoreController {
       this.isLiveMode = false;
     });
 
+    // ★ ショップ検索開始（§3.6: 待機アニメーション表示）
+    this.socket.on('shop_search_start', () => {
+      console.log('[LiveAPI] shop_search_start: 待機アニメーション表示');
+      this.showWaitOverlay();
+    });
+
     // ★ ショップ検索結果（v5 §5: function callingによるサーバー内部処理の結果）
     this.socket.on('shop_search_result', (data: any) => {
       console.log('[LiveAPI] shop_search_result:', data?.shops?.length || 0, '件');
+      this.hideWaitOverlay();
       const shops = data?.shops || [];
       if (shops.length > 0) {
         this.currentShops = shops;
