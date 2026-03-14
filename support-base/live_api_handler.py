@@ -12,7 +12,6 @@ stt_stream.py の GeminiLiveApp をWebアプリ向けに改変
 import asyncio
 import base64
 import io
-import struct
 import os
 import logging
 import aiohttp
@@ -1059,31 +1058,24 @@ class LiveAPISession:
         asyncio.create_task(self._send_to_a2e(buffer_copy, chunk_index))
 
     @staticmethod
-    def _pcm_to_wav(pcm_bytes: bytes, sample_rate: int = 24000, channels: int = 1, sample_width: int = 2) -> bytes:
-        """PCM 24kHz 16bit mono → WAV 変換（A2Eサービスがpydubでデコードできる形式）"""
+    def _pcm_to_mp3(pcm_bytes: bytes, sample_rate: int = 24000, channels: int = 1, sample_width: int = 2) -> bytes:
+        """PCM 24kHz 16bit mono → MP3 変換（A2Eサービスが受け付けるフォーマット）"""
+        from pydub import AudioSegment
+        audio = AudioSegment(
+            data=pcm_bytes,
+            sample_width=sample_width,
+            frame_rate=sample_rate,
+            channels=channels
+        )
         buf = io.BytesIO()
-        data_size = len(pcm_bytes)
-        buf.write(b'RIFF')
-        buf.write(struct.pack('<I', 36 + data_size))
-        buf.write(b'WAVE')
-        buf.write(b'fmt ')
-        buf.write(struct.pack('<I', 16))
-        buf.write(struct.pack('<H', 1))  # PCM
-        buf.write(struct.pack('<H', channels))
-        buf.write(struct.pack('<I', sample_rate))
-        buf.write(struct.pack('<I', sample_rate * channels * sample_width))
-        buf.write(struct.pack('<H', channels * sample_width))
-        buf.write(struct.pack('<H', sample_width * 8))
-        buf.write(b'data')
-        buf.write(struct.pack('<I', data_size))
-        buf.write(pcm_bytes)
+        audio.export(buf, format='mp3')
         return buf.getvalue()
 
     async def _send_to_a2e(self, pcm_bytes: bytes, chunk_index: int):
-        """A2EサービスにPCMをWAV変換して送信（app_customer_support.pyのMP3送信と同じ方式）"""
+        """A2EサービスにPCMをMP3変換して送信（app_customer_support.pyと同じMP3フォーマット）"""
         try:
-            wav_bytes = self._pcm_to_wav(pcm_bytes)
-            audio_b64 = base64.b64encode(wav_bytes).decode('utf-8')
+            mp3_bytes = self._pcm_to_mp3(pcm_bytes)
+            audio_b64 = base64.b64encode(mp3_bytes).decode('utf-8')
 
             if not self._a2e_http_session:
                 self._a2e_http_session = aiohttp.ClientSession()
@@ -1093,7 +1085,7 @@ class LiveAPISession:
                 json={
                     "audio_base64": audio_b64,
                     "session_id": self.session_id,
-                    "audio_format": "wav",
+                    "audio_format": "mp3",
                     "is_start": chunk_index == 0,
                     "is_final": False,
                 },

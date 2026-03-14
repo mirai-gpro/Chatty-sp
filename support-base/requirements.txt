@@ -28,5 +28,8 @@ ftfy>=6.1.0
 # Long-term Memory (Supabase)
 supabase>=2.0.0
 
+# Audio conversion (PCM→MP3 for A2E)
+pydub>=0.25.1
+
 # （将来用：残していても問題なし）
 anthropic>=0.25.0
