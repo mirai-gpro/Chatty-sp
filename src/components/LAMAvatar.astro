@@ -5,12 +5,12 @@
 ---
 
 <div class="lam-avatar-container" id="lamAvatarContainer">
-  <canvas id="lamAvatarCanvas"></canvas>
+  <canvas id="lamAvatarCanvas" class="hidden"></canvas>
   <img
     id="lamAvatarFallback"
     src="/images/avatar-anime.png"
     alt="AI Avatar"
-    class="lam-avatar-fallback hidden"
+    class="lam-avatar-fallback"
   />
 </div>
 
@@ -74,26 +74,23 @@
 
     if (!canvas) return;
 
+    // デフォルト: フォールバック画像を表示（canvas非表示）
+    // 3Dレンダラー初期化成功時のみcanvasに切り替え
+
     // WebGL対応チェック
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
     if (!gl) {
       console.warn('[LAMAvatar] WebGL非対応 → フォールバック画像を表示');
-      canvas.classList.add('hidden');
-      fallback.classList.remove('hidden');
       return;
     }
 
     try {
       // Gaussian Splat Renderer の動的インポート
-      // パッケージがインストールされていない場合はフォールバック
-      // ★ Viteの静的解析を回避するために変数経由でimport
       const moduleName = 'gaussian-splat-renderer-for-lam';
       const GaussianSplatModule = await import(/* @vite-ignore */ moduleName).catch(() => null);
 
       if (!GaussianSplatModule) {
-        console.warn('[LAMAvatar] gaussian-splat-renderer-for-lam が未インストール → フォールバック');
-        canvas.classList.add('hidden');
-        fallback.classList.remove('hidden');
+        console.log('[LAMAvatar] gaussian-splat-renderer-for-lam が未インストール → フォールバック画像を表示');
         return;
       }
 
@@ -106,6 +103,10 @@
       renderer = new GaussianSplatModule.GaussianSplatRenderer(canvas);
       await renderer.loadModel('/avatar/concierge.zip');
 
+      // ★ 3D初期化成功 → canvasを表示、フォールバックを非表示
+      canvas.classList.remove('hidden');
+      fallback.classList.add('hidden');
+
       isInitialized = true;
       console.log('[LAMAvatar] Gaussian Splatモデル読み込み完了');
 
@@ -114,8 +115,7 @@
 
     } catch (e) {
       console.error('[LAMAvatar] 初期化エラー:', e);
-      canvas.classList.add('hidden');
-      fallback.classList.remove('hidden');
+      // フォールバック画像はデフォルト表示のため追加処理不要
     }
   }
 
@@ -210,11 +210,17 @@
     observer.observe(container);
   }
 
-  // 初期化実行
-  document.addEventListener('DOMContentLoaded', () => {
+  // 初期化実行（DOMContentLoaded が既に発火済みの場合にも対応）
+  function onReady() {
     initLamAvatar();
     setupResizeObserver();
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onReady);
+  } else {
+    onReady();
+  }
 
   // クリーンアップ
   window.addEventListener('beforeunload', () => {
