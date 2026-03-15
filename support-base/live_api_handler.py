@@ -969,7 +969,9 @@ class LiveAPISession:
     async def _send_to_a2e(self, pcm_data: bytes, chunk_index: int):
         """リサンプリング（24→16kHz）後、A2Eサービスに送信（仕様書08 セクション3.4）
 
-        PCMをWAV形式に変換して送信（audio2exp-serviceはwav/mp3等の標準フォーマットを期待）
+        a2e_engine.py _decode_audio の "pcm" フォーマット:
+          samples = np.frombuffer(audio_bytes, dtype=np.int16)
+        → raw int16 PCMバイトをbase64で送信
         """
         try:
             # PCM 24kHz 16bit mono → numpy int16
@@ -980,33 +982,16 @@ class LiveAPISession:
 
             # int16に戻す
             int16_resampled = np.clip(resampled, -32768, 32767).astype(np.int16)
-            pcm_16k = int16_resampled.tobytes()
 
-            # WAVヘッダーを付与（16kHz, 16bit, mono）
-            sample_rate = 16000
-            num_channels = 1
-            bits_per_sample = 16
-            data_size = len(pcm_16k)
-            byte_rate = sample_rate * num_channels * bits_per_sample // 8
-            block_align = num_channels * bits_per_sample // 8
-            wav_header = struct.pack(
-                '<4sI4s4sIHHIIHH4sI',
-                b'RIFF', 36 + data_size, b'WAVE',
-                b'fmt ', 16, 1, num_channels,
-                sample_rate, byte_rate, block_align, bits_per_sample,
-                b'data', data_size
-            )
-            wav_bytes = wav_header + pcm_16k
-
-            # base64エンコードしてJSON送信
-            audio_b64 = base64.b64encode(wav_bytes).decode('utf-8')
+            # raw int16 PCMをbase64エンコードしてJSON送信
+            audio_b64 = base64.b64encode(int16_resampled.tobytes()).decode('utf-8')
 
             response = await self._a2e_http_client.post(
                 f"{A2E_SERVICE_URL}/api/audio2expression",
                 json={
                     "audio_base64": audio_b64,
                     "session_id": self.session_id,
-                    "audio_format": "wav",
+                    "audio_format": "pcm",
                     "is_start": chunk_index == 0,
                     "is_final": False,
                 },
