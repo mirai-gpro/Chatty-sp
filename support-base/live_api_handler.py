@@ -638,8 +638,9 @@ class LiveAPISession:
 
                     # 2. ターン完了
                     if hasattr(sc, 'turn_complete') and sc.turn_complete:
-                        # ★ A2E: 残存バッファを強制フラッシュ（仕様書08 セクション3.4）
-                        await self._flush_a2e_buffer(force=True)
+                        # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
+                        await self._flush_a2e_buffer(force=True, is_final=True)
+                        self._a2e_chunk_index = 0  # 次ターン用にリセット
                         self._process_turn_complete()
                         self.socketio.emit('turn_complete', {},
                                            room=self.client_sid)
@@ -653,6 +654,9 @@ class LiveAPISession:
 
                     # 3. 割り込み検知
                     if hasattr(sc, 'interrupted') and sc.interrupted:
+                        # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
+                        await self._flush_a2e_buffer(force=True, is_final=True)
+                        self._a2e_chunk_index = 0  # 次ターン用にリセット
                         self.ai_transcript_buffer = ""
                         self.socketio.emit('interrupted', {},
                                            room=self.client_sid)
@@ -889,8 +893,9 @@ class LiveAPISession:
 
                 # ターン完了
                 if hasattr(sc, 'turn_complete') and sc.turn_complete:
-                    # ★ A2E: 残存バッファを強制フラッシュ
-                    await self._flush_a2e_buffer(force=True)
+                    # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
+                    await self._flush_a2e_buffer(force=True, is_final=True)
+                    self._a2e_chunk_index = 0  # 次ターン用にリセット
                     if self.ai_transcript_buffer.strip():
                         ai_text = self.ai_transcript_buffer.strip()
                         logger.info(f"[ShopDesc] ショップ{shop_number}: {ai_text}")
@@ -951,7 +956,7 @@ class LiveAPISession:
             asyncio.ensure_future(self._flush_a2e_buffer(force=False))
             self._a2e_transcript_buffer = ""
 
-    async def _flush_a2e_buffer(self, force: bool = False):
+    async def _flush_a2e_buffer(self, force: bool = False, is_final: bool = False):
         """最低バイト数チェック後、非同期でA2E送信（仕様書08 セクション3.3）"""
         if len(self._a2e_audio_buffer) == 0:
             return
@@ -968,11 +973,11 @@ class LiveAPISession:
 
         # 非同期でA2Eに送信
         try:
-            await self._send_to_a2e(pcm_data, chunk_index)
+            await self._send_to_a2e(pcm_data, chunk_index, is_final=is_final)
         except Exception as e:
             logger.error(f"[A2E] フラッシュエラー: {e}")
 
-    async def _send_to_a2e(self, pcm_data: bytes, chunk_index: int):
+    async def _send_to_a2e(self, pcm_data: bytes, chunk_index: int, is_final: bool = False):
         """リサンプリング（24→16kHz）後、A2Eサービスに送信（仕様書08 セクション3.4）
 
         a2e_engine.py _decode_audio の "pcm" フォーマット:
@@ -999,7 +1004,7 @@ class LiveAPISession:
                     "session_id": self.session_id,
                     "audio_format": "pcm",
                     "is_start": chunk_index == 0,
-                    "is_final": False,
+                    "is_final": is_final,
                 },
                 timeout=10.0
             )
