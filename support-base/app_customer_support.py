@@ -789,17 +789,18 @@ def handle_live_start(data):
                 logger.error(f"[ShopSearch] セッション {session_id} が見つかりません")
                 return None
             session.update_language(lang)
-            # ★ 検索実行時はchatモードのプロンプトを使用する
-            # conciergeプロンプトは会話キャッチボール重視のため、
-            # LiveAPIコールバック経由（履歴なし）だとJSON形式で
-            # ショップリストを返さず、テキスト会話を返してしまう。
-            # chatモードのプロンプトは1ターンでJSON形式のショップリストを返す設計。
-            session.update_mode('chat')
-            session.add_message('user', user_request, 'chat')
-            assistant = SupportAssistant(session, SYSTEM_PROMPTS)
-            result = assistant.process_user_message(user_request, 'conversation')
-            # モードを元に戻す
             session.update_mode(search_mode)
+            # ★ LiveAPIのfunction calling経由の検索リクエスト
+            # 会話キャッチボールはLiveAPI側で完了済み。
+            # ここではJSON形式のショップリストを返すことだけが役割。
+            search_message = (
+                f"以下の条件でお店を検索して、必ずJSON形式（shopsに5軒）で回答してください。"
+                f"会話や質問は不要です。検索結果のみ返してください。\n"
+                f"条件: {user_request}"
+            )
+            session.add_message('user', search_message, 'chat')
+            assistant = SupportAssistant(session, SYSTEM_PROMPTS)
+            result = assistant.process_user_message(search_message, 'conversation')
             if result.get('shops'):
                 session.add_message('model', result['response'], 'chat')
                 # REST版と同様にPlaces APIで写真・評価・URL等を補完
