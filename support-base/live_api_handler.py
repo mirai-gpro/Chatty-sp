@@ -63,6 +63,7 @@ def build_system_instruction(mode: str, user_profile: dict = None) -> str:
 
     プロンプト本体は prompts/ ディレクトリのテキストファイルから読み込む。
     コンシェルジュモードの {user_context} のみ動的に差し替える。
+    LiveAPI用にsearch_shopsツール使用指示を追記する。
 
     Args:
         mode: 'chat' or 'concierge'
@@ -76,9 +77,44 @@ def build_system_instruction(mode: str, user_profile: dict = None) -> str:
     if mode == 'concierge':
         template = _load_prompt_file("concierge_ja.txt")
         user_context = _build_concierge_user_context(user_profile)
-        return template.replace("{user_context}", user_context)
+        base_prompt = template.replace("{user_context}", user_context)
     else:
-        return _load_prompt_file("support_system_ja.txt")
+        base_prompt = _load_prompt_file("support_system_ja.txt")
+
+    return base_prompt
+
+
+# LiveAPI専用のsearch_shopsツール使用指示
+# （テキストチャットのプロンプトには含めない）
+# Gemini LiveAPIでは音声応答モードだとモデルが「喋って満足」して
+# function callを発火せずにturn_completeしてしまう問題がある。
+# 対策: 「喋るより先にツールを呼べ」と明示的に指示する。
+SEARCH_SHOPS_INSTRUCTION = """
+
+---
+
+## 【最重要】ショップ検索ツール（search_shops）の使い方
+
+お店を検索する際は、必ず search_shops ツールをfunction callingで呼び出すこと。
+
+### 行動の優先順位（厳守）
+1. search_shops の実行が最優先。返事は二の次。
+2. 店探しを依頼されたら、挨拶は最小限（「わかりました」程度）にし、直ちに search_shops を実行すること。
+3. 検索結果が出る前に「今調べています」などと長々と喋ってターンを終了してはいけない。
+4. 何も喋らずに search_shops を呼び出しても良い（無言実行OK）。
+5. 音声で返答を生成しきる前に、必ず search_shops を呼び出すこと。
+
+### 絶対に守るルール
+- 「お調べしますね」等と喋るだけでターンを終了することは禁止
+- search_shops を呼ばずにターンを終了することは禁止
+- テキストや音声だけで応答して検索を省略することは絶対に禁止
+
+### 呼び出し方法
+- search_shops(user_request="恵比寿 イタリアン") のように、要望をキーワードで要約して渡す
+- ユーザーの音声が曖昧な場合は正しく補完する（例: 「エピス」→「恵比寿」）
+- ユーザーが条件を1つでも言ったら、即座に search_shops を呼び出す
+- 情報が不足していても呼び出してよい。エリアだけ、ジャンルだけでもOK。
+"""
 
 
 def _build_concierge_user_context(user_profile: dict = None) -> str:
@@ -181,6 +217,9 @@ class LiveAPISession:
         # 初期あいさつフェーズ（ダミーメッセージのinput_transcriptionを非表示）
         # （仕様書02 セクション4.5.5）
         self._is_initial_greeting_phase = True
+
+        # ターン内でtool_callを受信したかの追跡フラグ
+        self._tool_call_received_in_turn = False
 
         # Gemini APIクライアント
         api_key = os.getenv("GEMINI_API_KEY")
@@ -445,7 +484,11 @@ class LiveAPISession:
                     return
 
                 # 1. tool_call: search_shops（v5 §5.4）
-                if hasattr(response, 'tool_call') and response.tool_call:
+                # Native Audioモデルでは音声データの間にtool_callが
+                # 遅延して届くことがある。確実にキャッチする。
+                if response.tool_call:
+                    logger.info("[LiveAPI] !!! Function Call 発火 !!!")
+                    self._tool_call_received_in_turn = True
                     await self._handle_tool_call(response.tool_call, session)
                     continue
 
@@ -467,6 +510,11 @@ class LiveAPISession:
                             self.socketio.emit('greeting_done', {},
                                                room=self.client_sid)
                             logger.info("[LiveAPI] greeting_done送信")
+                        else:
+                            # ターン完了したがtool_callが来なかった場合をログ記録
+                            # （Native Audioモデルではtool_callが遅延する場合がある）
+                            logger.info(f"[LiveAPI] ターン完了（tool_call無し）: AI='{self.ai_transcript_buffer[:50]}'")
+                            self._tool_call_received_in_turn = False
 
                     # 3. 割り込み検知
                     if hasattr(sc, 'interrupted') and sc.interrupted:
