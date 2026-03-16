@@ -63,6 +63,7 @@ def build_system_instruction(mode: str, user_profile: dict = None) -> str:
 
     プロンプト本体は prompts/ ディレクトリのテキストファイルから読み込む。
     コンシェルジュモードの {user_context} のみ動的に差し替える。
+    LiveAPI用にsearch_shopsツール使用指示を追記する。
 
     Args:
         mode: 'chat' or 'concierge'
@@ -76,9 +77,32 @@ def build_system_instruction(mode: str, user_profile: dict = None) -> str:
     if mode == 'concierge':
         template = _load_prompt_file("concierge_ja.txt")
         user_context = _build_concierge_user_context(user_profile)
-        return template.replace("{user_context}", user_context)
+        base_prompt = template.replace("{user_context}", user_context)
     else:
-        return _load_prompt_file("support_system_ja.txt")
+        base_prompt = _load_prompt_file("support_system_ja.txt")
+
+    # LiveAPI専用: search_shopsツールのfunction calling指示を追記
+    base_prompt += SEARCH_SHOPS_INSTRUCTION
+    return base_prompt
+
+
+# LiveAPI専用のsearch_shopsツール使用指示
+# （テキストチャットのプロンプトには含めない）
+SEARCH_SHOPS_INSTRUCTION = """
+
+---
+
+## ショップ検索ツール（search_shops）
+
+お店を検索する際は、必ず search_shops ツールを呼び出すこと。
+テキストで検索結果を生成してはいけない。必ずfunction callingを使う。
+
+### 呼び出しルール
+- ユーザーが条件を1つでも言ったら、即座に search_shops を呼び出す
+- search_shops(user_request="六本木 接待 イタリアン 1万円 4名") のように、要望を自然言語で要約して渡す
+- 「お調べしますね」と言った後、必ず search_shops を呼び出す
+- テキストだけで応答して検索を省略することは禁止
+"""
 
 
 def _build_concierge_user_context(user_profile: dict = None) -> str:
