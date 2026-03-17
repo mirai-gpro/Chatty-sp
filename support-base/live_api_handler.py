@@ -304,12 +304,7 @@ def _get_returning_user_context(preferred_name: str, name_honorific: str) -> str
 
 SEARCH_SHOPS_DECLARATION = types.FunctionDeclaration(
     name="search_shops",
-    description=(
-        "ユーザーの条件に基づいてレストランを検索する。"
-        "エリアとジャンル（またはシーン）の2つが分かった時点で必ず呼び出すこと。"
-        "全項目が揃うまで待つ必要はない。予算や人数が不明でも呼び出すこと。"
-        "音声で「お探しします」と言うのではなく、このツールを実際に呼び出すこと。"
-    ),
+    description="ユーザーの条件に基づいてレストランを検索する。条件が十分に揃ったと判断した時に呼び出す。",
     parameters=types.Schema(
         type="OBJECT",
         properties={
