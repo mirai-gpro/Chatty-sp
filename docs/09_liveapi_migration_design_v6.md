@@ -315,18 +315,34 @@ await session.send_tool_response(tool_response)
 
 **注意**: キーワード引数 `function_responses=[...]` で渡す（SDK仕様）
 
-### 3.5 プロンプト管理（二系統）
+### 3.5 プロンプト管理（GCS一元管理）
 
-| 経路 | 対象 | ファイル/場所 |
-|------|------|-------------|
-| **GCS → REST API** | テキストチャット (`/api/chat`) | `prompts/concierge_ja.txt`, `prompts/support_system_ja.txt` 等 |
-| **Pythonハードコード → LiveAPI** | 音声対話 | `live_api_handler.py` 内の `LIVEAPI_*` 定数 |
+**正式なプロンプトはGCS上のファイルに一元管理**する。
 
-**重要**:
-- 2系統は**別々に管理**されている。片方だけ修正して矛盾を残さないこと
-- GCSプロンプトの変更にはIAMロール・セキュリティの制約がある
+| 対象 | GCSファイル |
+|------|-------------|
+| テキストチャット・conciergeモード | `prompts/concierge_ja.txt` |
+| テキストチャット・chatモード | `prompts/support_system_ja.txt` |
+| LiveAPI・chatモード | `prompts/concierge_ja.txt` or `support_system_ja.txt`（将来統合予定） |
+| LiveAPI・conciergeモード | 同上 |
 
-#### LiveAPIプロンプト構成
+#### 暫定パッチ（Pythonベタ書き）
+
+実証テスト中に仮説検証のためプロンプトを素早く変更する必要がある場合、**暫定措置として**Pythonコード内にベタ書きパッチを入れることを認める。
+
+**現在の暫定パッチ**:
+
+| 場所 | 内容 | ステータス |
+|------|------|-----------|
+| `live_api_handler.py` の `LIVEAPI_*` 定数 | LiveAPI用システムプロンプト（共通ルール、ショップ検索ルール、モード別プロンプト） | **暫定** — 安定確認後GCSへ統合 |
+| `support_core.py` の `json_enforcement` | REST API JSON形式強制ルール | **暫定** — 安定確認後GCSプロンプトへ統合 |
+
+**ルール**:
+- 暫定パッチはあくまで一時的なもの。ある程度安定を確認したらGCS版に統合すること
+- GCSプロンプトが正式版。暫定パッチはGCSプロンプトを**補完**するものであり、**矛盾**してはならない
+- 暫定パッチを入れる際は、コメントで「暫定パッチ」であることを明記すること
+
+#### LiveAPI暫定プロンプト構成（現在の状態）
 
 | 定数名 | 内容 |
 |--------|------|
@@ -335,12 +351,12 @@ await session.send_tool_response(tool_response)
 | `LIVEAPI_CHAT_SYSTEM` | chatモード用。1ターン検索最優先 |
 | `LIVEAPI_CONCIERGE_SYSTEM` | conciergeモード用。短期記憶ルール、ヒアリング制御、検索実行ルール |
 
-#### REST API JSON強制ルール（support_core.py内ハードコード）
+#### REST API JSON強制ルール（暫定パッチ — support_core.py内）
 
 `SupportAssistant.__init__()` で全てのシステムプロンプトに追記:
-- 通常の会話 → 平文（プレーンテキスト）
-- ショップ提案時 → JSON形式（`message` + `shops`配列）
-- アクション時 → JSON形式（`action`フィールド追加）
+- 全応答をJSON形式で返す（`message` + `shops`配列）
+- ショップ提案時は`shops`配列に全店舗をまとめる
+- アクション時は`action`フィールドを追加
 
 ### 3.6 ショップカードJSON構造
 

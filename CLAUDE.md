@@ -139,14 +139,14 @@ gourmet-sp3/
 
 ## アーキテクチャの要点
 
-### プロンプトの配信経路（混同するな）
+### プロンプト管理（GCS一元管理）
 
-| 経路 | 対象 | ファイル |
-|------|------|---------|
-| GCS | テキストチャット (REST API) | `prompts/concierge_ja.txt` 等 → GCSから読み込み |
-| Pythonハードコード | LiveAPI | `live_api_handler.py` 内の `LIVEAPI_CONCIERGE_SYSTEM` 等 |
-
-- **GCSのプロンプトとPythonハードコードは別系統**。片方だけ修正して矛盾を残すな
+- **正式なプロンプトはGCS上のファイルに一元管理**（`prompts/concierge_ja.txt` 等）
+- 実証テスト中の仮説検証用パッチのみ、Pythonベタ書きを暫定的に認める
+  - `live_api_handler.py` の `LIVEAPI_*` 定数（LiveAPI用）
+  - `support_core.py` の `json_enforcement`（REST API JSON強制）
+- **暫定パッチはGCSプロンプトと矛盾してはならない**
+- 安定確認後はGCS版へ統合すること
 - GCSファイルの修正にはIAMロール・セキュリティの制約がある。勝手にデプロイワークフローを変えるな
 
 ### ショップ検索の発火方式
@@ -159,7 +159,7 @@ gourmet-sp3/
 
 - **フレームは送らない**。52個のblendshape係数だけを送る — これがA2Eの核心
 - バッファ閾値（初回0.1秒、後続5秒）は実証テスト済みの値。変更するな
-- 詳細は `docs/08_lipsync_avatar_spec (1).md` を参照
+- 詳細は `docs/09_liveapi_migration_design_v6.md` §4 を参照
 
 ### LiveAPIセッション管理
 
