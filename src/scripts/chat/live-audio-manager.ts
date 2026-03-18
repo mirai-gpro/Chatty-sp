@@ -186,8 +186,11 @@ export class LiveAudioManager {
         if (!this.audioContext) return;
 
         // ★ 最初のチャンク時にfirstChunkStartTimeを記録（仕様書08 セクション4.2）
+        // 実際の再生スケジュール時刻に合わせる（到着時刻ではなく）
+        // → expressionフレームのインデックスが音声再生と正確に同期する
         if (this.firstChunkStartTime === 0) {
-            this.firstChunkStartTime = this.audioContext.currentTime;
+            const now = this.audioContext.currentTime;
+            this.firstChunkStartTime = Math.max(now + 0.005, this.nextPlayTime);
         }
 
         const pcmBytes = base64ToArrayBuffer(pcmBase64);
@@ -248,6 +251,10 @@ export class LiveAudioManager {
         // ★ 音声と同じ時間ベース（firstChunkStartTime）を使用
         // expressionフレームは音声の特定時点に対応するため、音声基準で正確に同期
         const offsetMs = this.getCurrentPlaybackOffset();
+
+        // 再生開始前（offsetMs < 0）はフレームを返さない → 口閉じ状態を維持
+        if (offsetMs < 0) return null;
+
         const frameIndex = Math.floor((offsetMs / 1000) * this.expressionFrameRate);
         const clampedIndex = Math.min(frameIndex, this.expressionFrameBuffer.length - 1);
 
