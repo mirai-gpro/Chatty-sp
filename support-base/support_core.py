@@ -404,56 +404,10 @@ class SupportAssistant:
                 self.system_prompt = f"{self.system_prompt}\n\n{user_context}"
                 logger.info(f"[Assistant] ユーザーコンテキストを注入（リピーター）")
 
-        # ★★★ JSON形式の強制ルール（ハードコード） ★★★
-        # GCSプロンプト（concierge_ja.txt）の「必ずJSON形式のみで応答」と一致させる
-        # 常にJSON形式で応答させることで、パース安定性を確保する
-        json_enforcement = """
+        # JSON形式の強制ルールはGCSプロンプト（concierge_ja.txt / support_system_ja.txt）に一元化済み
+        # Python側の重複ベタ書きは削除（V6仕様書 §3.5 準拠）
 
-【絶対遵守: レスポンス形式ルール】
-あなたは**必ずJSON形式のみで応答**してください。平文（プレーンテキスト）での応答は禁止です。
-
-■ 基本形式（全ての応答で必須）:
-  応答は必ず { で始まり } で終わること。
-  {
-    "message": "お客様への返答メッセージ（フレンドリーな平文）",
-    "shops": []
-  }
-
-■ 通常の会話（挨拶、質問、雑談、確認など）:
-  → JSON形式で返す。shopsは空配列 [] とする。
-  → 例: {"message": "六本木ですね！どんなジャンルのお店をお探しですか？", "shops": []}
-
-■ ショップ・レストラン情報を提案する場合:
-  → JSON形式で返す。shops配列に全店舗をまとめる。
-  {
-    "message": "おすすめのお店をご紹介します。",
-    "shops": [
-      {
-        "name": "店名",
-        "area": "エリア",
-        "genre": "ジャンル",
-        "budget": "予算帯",
-        "description": "お店の説明",
-        "specialty": "おすすめポイント",
-        "atmosphere": "雰囲気",
-        "features": "特徴"
-      }
-    ]
-  }
-
-■ アクション（名前登録など）がある場合:
-  → JSON形式で返し、"action" フィールドを追加すること。
-  {
-    "message": "返答メッセージ",
-    "shops": [],
-    "action": {"type": "update_user_profile", "updates": {"preferred_name": "名前", "name_honorific": "様"}}
-  }
-
-この形式ルールはシステムプロンプトより優先される。絶対に守ること。
-"""
-        self.system_prompt = f"{self.system_prompt}\n{json_enforcement}"
-
-        logger.info(f"[Assistant] 初期化: mode={self.mode}, language={self.language}, JSON強制ルール注入済み")
+        logger.info(f"[Assistant] 初期化: mode={self.mode}, language={self.language}")
 
     def get_initial_message(self):
         """初回メッセージ - モード別 + 初回訪問判定（コンシェルジュモードのみ）"""

@@ -335,7 +335,7 @@ await session.send_tool_response(tool_response)
 | 場所 | 内容 | ステータス |
 |------|------|-----------|
 | `live_api_handler.py` の `LIVEAPI_*` 定数 | LiveAPI用システムプロンプト（共通ルール、ショップ検索ルール、モード別プロンプト） | **暫定** — 安定確認後GCSへ統合 |
-| `support_core.py` の `json_enforcement` | REST API JSON形式強制ルール | **暫定** — 安定確認後GCSプロンプトへ統合 |
+| ~~`support_core.py` の `json_enforcement`~~ | ~~REST API JSON形式強制ルール~~ | **削除済み** — GCSプロンプトに統合完了 |
 
 **ルール**:
 - 暫定パッチはあくまで一時的なもの。ある程度安定を確認したらGCS版に統合すること
@@ -351,12 +351,13 @@ await session.send_tool_response(tool_response)
 | `LIVEAPI_CHAT_SYSTEM` | chatモード用。1ターン検索最優先 |
 | `LIVEAPI_CONCIERGE_SYSTEM` | conciergeモード用。短期記憶ルール、ヒアリング制御、検索実行ルール |
 
-#### REST API JSON強制ルール（暫定パッチ — support_core.py内）
+#### REST API JSON出力ルール（GCSプロンプトに統合済み）
 
-`SupportAssistant.__init__()` で全てのシステムプロンプトに追記:
-- 全応答をJSON形式で返す（`message` + `shops`配列）
-- ショップ提案時は`shops`配列に全店舗をまとめる
-- アクション時は`action`フィールドを追加
+~~`support_core.py` の `json_enforcement` は削除済み。~~
+JSON出力ルールは `concierge_ja.txt` / `support_system_ja.txt` のGCSプロンプトに一元化:
+- ショップ提案時 → JSON形式（`message` + `shops`配列、1JSONオブジェクト厳守）
+- 通常の会話・深掘り → 自然な文章でOK
+- アクション時 → JSON形式（`action`フィールド追加）
 
 ### 3.6 ショップカードJSON構造
 
