@@ -151,9 +151,11 @@ gourmet-sp3/
 
 ### ショップ検索の発火方式
 
-- **LLMの判断に委ねる**（v3.3で確定）
 - コード側でAI発話テキストからキーワード検知する処理は**完全に廃止済み**
 - `should_trigger_shop_search()`, `SHOP_TRIGGER_KEYWORDS` は削除済み
+- **conciergeモード**: 検索判断は**LLMに一任**。条件が揃ったとLLMが判断→FC発火
+- **chatモード**: 1ターン目は条件1つで**即検索**。2ターン目以降はLLMが判断（深掘り or 再検索）
+- JSON出力はショップカード表示時のみ。通常の会話・深掘りは自然な文章
 
 ### A2E (Audio2Expression) リップシンク
 
