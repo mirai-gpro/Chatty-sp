@@ -268,12 +268,9 @@ Claude: 1つ目だけ実装、2つ目はパラメータを取り違えて実装
 
 ## 参照すべき仕様書（優先順位）
 
-1. `docs/02_liveapi_migration_design_v3.md` — v3.3 LiveAPI移植設計書（メイン）
-2. `docs/03_prompt_modification_spec.md` — プロンプト修正仕様
-3. `docs/07_shop_card_json_spec.md` — ショップカードJSON仕様
-4. `docs/08_lipsync_avatar_spec (1).md` — A2Eリップシンク仕様
-5. `docs/04_shop_description_improvements_v4.md` — ショップ説明改善
-6. `DESIGN_SPEC_PHASE1.md` — Phase1全体設計書
+1. `docs/09_liveapi_migration_design_v6.md` — **V6統合仕様書（メイン・最新）**
+2. `DESIGN_SPEC_PHASE1.md` — Phase1全体設計書
+3. `docs/旧版仕様書/` — V1〜V5の旧版仕様書（参考用。V6に統合済み）
 
 ---
 
