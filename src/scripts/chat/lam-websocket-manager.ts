@@ -42,6 +42,7 @@ export class LAMWebSocketManager {
     private renderer: GaussianSplats3D.GaussianSplatRenderer | null = null;
     private isModelLoaded: boolean = false;
     private _exprDebugCounter: number = 0;  // デバッグログ間引き用
+    private _prevMouthValues: Record<string, number> = {};  // スムージング用前フレーム値
 
     // 現在適用中の expression フレーム
     private currentExpression: ExpressionFrame | null = null;
@@ -136,6 +137,32 @@ export class LAMWebSocketManager {
         if (avgStretch > 0.2) {
             const suppressionFactor = 1.0 - avgStretch * 0.5;
             result['jawOpen'] *= Math.max(0.3, suppressionFactor);
+        }
+
+        // === STEP2: 小さすぎる口の動き対策 ===
+        // バイアス: jawOpenが0.001〜0.03の区間を0.03に底上げ（0は静止なのでそのまま）
+        const jawOpen = result['jawOpen'] ?? 0;
+        if (jawOpen >= 0.001 && jawOpen < 0.03) {
+            result['jawOpen'] = 0.03;
+        }
+
+        // スムージング: 口周り全体にフレーム間補間（α=0.3）
+        const MOUTH_SHAPES = [
+            'jawOpen', 'jawForward', 'jawLeft', 'jawRight',
+            'mouthClose', 'mouthFunnel', 'mouthPucker', 'mouthLeft', 'mouthRight',
+            'mouthSmileLeft', 'mouthSmileRight', 'mouthFrownLeft', 'mouthFrownRight',
+            'mouthDimpleLeft', 'mouthDimpleRight', 'mouthStretchLeft', 'mouthStretchRight',
+            'mouthRollLower', 'mouthRollUpper', 'mouthShrugLower', 'mouthShrugUpper',
+            'mouthPressLeft', 'mouthPressRight', 'mouthLowerDownLeft', 'mouthLowerDownRight',
+            'mouthUpperUpLeft', 'mouthUpperUpRight',
+        ];
+        const SMOOTH_ALPHA = 0.3;
+        for (const name of MOUTH_SHAPES) {
+            if (result[name] !== undefined) {
+                const prev = this._prevMouthValues[name] ?? 0;
+                result[name] = prev * (1 - SMOOTH_ALPHA) + result[name] * SMOOTH_ALPHA;
+                this._prevMouthValues[name] = result[name];
+            }
         }
 
         // デバッグ: 120フレームごと（約2秒）にログ出力
