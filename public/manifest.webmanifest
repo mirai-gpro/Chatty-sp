@@ -1,7 +1,7 @@
 {
-  "name": "グルメサポートAI",
-  "short_name": "グルメAI",
-  "description": "AIがあなたのお店探しをサポート",
+  "name": "Travel AI",
+  "short_name": "Travel AI",
+  "description": "AIがあなたの旅行をサポート",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#667eea",
