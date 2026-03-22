@@ -2,7 +2,7 @@ name: Deploy Backend to Cloud Run
 
 on:
   push:
-    branches: [main, 'claude/**']
+    branches: [main]
     paths:
       - 'support-base/**'
       - '.github/workflows/deploy-cloud-run.yml'
@@ -10,7 +10,7 @@ on:
 
 env:
   PROJECT_ID: ai-meet-486502
-  SERVICE_NAME: support-base
+  SERVICE_NAME: travel-sp-base
   REGION: us-central1
   GAR_LOCATION: us-central1-docker.pkg.dev
 

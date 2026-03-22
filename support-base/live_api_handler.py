@@ -663,12 +663,21 @@ class LiveAPISession:
             tts_shops = copy.deepcopy(raw_shops)
             total = len(tts_shops)
             all_tts_tasks = []
-            for i in range(total):
-                task = asyncio.create_task(
-                    self._collect_shop_audio(tts_shops[i], i + 1, total, delay=0 if i == 0 else 3)
-                )
-                all_tts_tasks.append(task)
-            logger.info(f"[ShopSearch] ★ TTS {total}軒の並行生成を開始（1軒目即時、2軒目以降3秒遅延）")
+            # ショップ1を先行開始（LiveAPI同時接続の競合回避）
+            task1 = asyncio.create_task(
+                self._collect_shop_audio(tts_shops[0], 1, total)
+            )
+            all_tts_tasks.append(task1)
+            logger.info(f"[ShopSearch] ★ ショップ1のTTS生成を先行開始")
+            # 2秒後にショップ2-5を開始
+            if total > 1:
+                await asyncio.sleep(2)
+                for i in range(1, total):
+                    task = asyncio.create_task(
+                        self._collect_shop_audio(tts_shops[i], i + 1, total)
+                    )
+                    all_tts_tasks.append(task)
+                logger.info(f"[ShopSearch] ★ ショップ2-{total}のTTS生成を開始（2秒遅延）")
 
             # 3. ★ enrichをTTS生成と並行実行
             from api_integrations import enrich_shops_with_photos
@@ -694,6 +703,7 @@ class LiveAPISession:
                 'response': response_text,
             }, room=self.client_sid)
             logger.info(f"[ShopSearch] {len(shops)}件のショップをブラウザに送信")
+            await asyncio.sleep(0.3)
 
             # 5. TTS再生（生成済みタスクを渡す）
             await self._describe_shops_via_live(shops, pre_generated_tasks=all_tts_tasks)
@@ -811,6 +821,7 @@ class LiveAPISession:
         remaining_sleep = max(total_bridge_duration - elapsed + 0.3, 0.5)
         logger.info(f"[ShopDesc] 場繋ぎ残り待ち: {remaining_sleep:.1f}秒 (経過{elapsed:.1f}秒, 場繋ぎ合計{total_bridge_duration:.1f}秒)")
         await asyncio.sleep(remaining_sleep)
+        await asyncio.sleep(0.5)
 
         # ── 全ショップ: collect済み音声を順次再生（1軒目も同じパス）──
         for i, task in enumerate(all_tasks):
