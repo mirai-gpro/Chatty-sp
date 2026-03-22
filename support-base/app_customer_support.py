@@ -790,14 +790,12 @@ def handle_live_start(data):
                 logger.error(f"[ShopSearch] セッション {session_id} が見つかりません")
                 return None
             session.update_language(lang)
-            session.update_mode(search_mode)
+            session.update_mode('chat')
 
-            # 検索発火以降はグルメモードと完全同一のプロンプト・ロジックを使用
-            # concierge_ja.txtはLiveAPI対話用（ヒアリングフロー指示あり）
-            # REST API検索にはsupport_system_ja.txt（即JSON返却指示）を使う
-            search_prompts = {'concierge': SYSTEM_PROMPTS.get('chat', {})}
+            # 検索発火以降はグルメモードと完全同一
+            # mode='chat' + SYSTEM_PROMPTS そのまま = グルメモードと同じフロー
             session.add_message('user', user_request, 'chat')
-            assistant = SupportAssistant(session, search_prompts)
+            assistant = SupportAssistant(session, SYSTEM_PROMPTS)
             result = assistant.process_user_message(user_request, 'conversation')
             session.add_message('model', result['response'], 'chat')
 
