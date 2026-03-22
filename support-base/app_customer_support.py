@@ -791,20 +791,14 @@ def handle_live_start(data):
                 return None
             session.update_language(lang)
             session.update_mode(search_mode)
-            # ★ LiveAPIのfunction calling経由の検索リクエスト
-            # 会話キャッチボールはLiveAPI側で完了済み。
-            # ここではJSON形式のショップリストを返すことだけが役割。
-            search_message = (
-                f"以下の条件でお店を検索して、必ずJSON形式（shopsに5軒）で回答してください。"
-                f"会話や質問は不要です。検索結果のみ返してください。\n"
-                f"条件: {user_request}"
-            )
-            session.add_message('user', search_message, 'chat')
+
+            # グルメモードと完全に同じロジック
+            session.add_message('user', user_request, 'chat')
             assistant = SupportAssistant(session, SYSTEM_PROMPTS)
-            result = assistant.process_user_message(search_message, 'conversation')
+            result = assistant.process_user_message(user_request, 'conversation')
+            session.add_message('model', result['response'], 'chat')
+
             if result.get('shops'):
-                session.add_message('model', result['response'], 'chat')
-                # ★ 案A: enrichはlive_api_handler側でTTS生成と並行実行するため、ここではareaのみ返す
                 area = extract_area_from_text(user_request, lang)
                 result['area'] = area
             return result
