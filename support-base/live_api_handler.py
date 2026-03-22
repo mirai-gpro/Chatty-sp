@@ -131,9 +131,9 @@ def build_system_instruction(mode: str, user_profile: dict = None,
         logger.warning("[LiveAPI] system_prompts が未設定。プロンプトが空になります。")
 
     if mode == 'concierge':
-        # ユーザープロファイルに応じた初期あいさつ指示を構築
+        # ユーザープロファイルに応じた初期あいさつ指示を構築（末尾追記）
         user_context = _build_concierge_user_context(user_profile)
-        return base_prompt.replace('{user_context}', user_context)
+        return base_prompt + "\n" + user_context
     else:
         return base_prompt
 
