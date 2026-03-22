@@ -693,6 +693,7 @@ class LiveAPISession:
                 'response': response_text,
             }, room=self.client_sid)
             logger.info(f"[ShopSearch] {len(shops)}件のショップをブラウザに送信")
+            await asyncio.sleep(0.3)
 
             # 5. TTS再生（生成済みタスクを渡す）
             await self._describe_shops_via_live(shops, pre_generated_tasks=all_tts_tasks)
@@ -810,6 +811,7 @@ class LiveAPISession:
         remaining_sleep = max(total_bridge_duration - elapsed + 0.3, 0.5)
         logger.info(f"[ShopDesc] 場繋ぎ残り待ち: {remaining_sleep:.1f}秒 (経過{elapsed:.1f}秒, 場繋ぎ合計{total_bridge_duration:.1f}秒)")
         await asyncio.sleep(remaining_sleep)
+        await asyncio.sleep(0.5)
 
         # ── 全ショップ: collect済み音声を順次再生（1軒目も同じパス）──
         for i, task in enumerate(all_tasks):
