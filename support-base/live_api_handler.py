@@ -678,6 +678,16 @@ class LiveAPISession:
             shops = enriched if enriched else raw_shops
             logger.info(f"[ShopSearch] enrich完了: {len(shops)}件")
 
+            # 3.5. enrichで除外された店のTTSタスクをフィルタリング
+            if len(all_tts_tasks) != len(shops):
+                survived_names = {s.get('name') for s in shops}
+                filtered_tasks = []
+                for i, ts in enumerate(tts_shops):
+                    if ts.get('name') in survived_names:
+                        filtered_tasks.append(all_tts_tasks[i])
+                all_tts_tasks = filtered_tasks
+                logger.info(f"[ShopSearch] TTSタスクをフィルタリング: {len(all_tts_tasks)}件に絞り込み")
+
             # 4. ショップカードデータをブラウザに送信
             self.socketio.emit('shop_search_result', {
                 'shops': shops,
