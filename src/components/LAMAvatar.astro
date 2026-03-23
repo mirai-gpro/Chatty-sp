@@ -12,7 +12,7 @@ export interface Props {
 }
 
 const {
-  modelUrl = '/avatar/concierge.zip',
+  modelUrl = '/avatar/meruru.zip',
 } = Astro.props;
 ---
 
@@ -165,7 +165,7 @@ const {
       try {
         await this.lamManager.initialize({
           containerElement: this.containerEl,
-          modelUrl: config.modelUrl || '/avatar/concierge.zip',
+          modelUrl: config.modelUrl || '/avatar/meruru.zip',
         });
 
         if (this.lamManager.isLoaded()) {
