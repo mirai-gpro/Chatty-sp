@@ -538,10 +538,10 @@ class SupportAssistant:
 
             if is_first_visit:
                 first_lesson_greetings = {
-                    'ja': f'こんにちは！私は{teacher_name}です。英会話のレッスンを担当します。\nお名前を教えてください。',
+                    'ja': f'Hello! I\'m {teacher_name}, your English conversation coach.\nこんにちは！{teacher_name}です。英会話レッスンを担当します。\nお名前を教えてください。',
                     'en': f'Hello! I\'m {teacher_name}, your English conversation coach.\nMay I ask your name?',
-                    'zh': f'你好！我是{teacher_name}，你的英语会话教练。\n请问你叫什么名字？',
-                    'ko': f'안녕하세요! 저는 {teacher_name}입니다. 영어 회화 코치를 맡고 있습니다.\n이름을 알려주시겠어요?'
+                    'zh': f'Hello! I\'m {teacher_name}, your English conversation coach.\n你好！我是{teacher_name}，你的英语会话教练。\n请问你叫什么名字？',
+                    'ko': f'Hello! I\'m {teacher_name}, your English conversation coach.\n안녕하세요! {teacher_name}입니다. 영어 회화 코치를 맡고 있습니다.\n이름을 알려주시겠어요?'
                 }
                 return first_lesson_greetings.get(self.language, first_lesson_greetings['ja'])
 
@@ -550,10 +550,10 @@ class SupportAssistant:
 
             if preferred_name:
                 returning_lesson_greetings = {
-                    'ja': f'{preferred_name}{name_honorific}、こんにちは！{teacher_name}です。\n今日はどんな練習をしましょうか？',
+                    'ja': f'Hi {preferred_name}! It\'s {teacher_name}.\n{preferred_name}{name_honorific}、こんにちは！{teacher_name}です。\n今日はどんな練習をしましょうか？',
                     'en': f'Hi {preferred_name}! It\'s {teacher_name}.\nWhat would you like to practice today?',
-                    'zh': f'{preferred_name}，你好！我是{teacher_name}。\n今天想练习什么？',
-                    'ko': f'{preferred_name}{name_honorific}, 안녕하세요! {teacher_name}입니다.\n오늘은 어떤 연습을 할까요?'
+                    'zh': f'Hi {preferred_name}! It\'s {teacher_name}.\n{preferred_name}，你好！我是{teacher_name}。\n今天想练习什么？',
+                    'ko': f'Hi {preferred_name}! It\'s {teacher_name}.\n{preferred_name}{name_honorific}, 안녕하세요! {teacher_name}입니다.\n오늘은 어떤 연습을 할까요?'
                 }
                 return returning_lesson_greetings.get(self.language, returning_lesson_greetings['ja'])
 
