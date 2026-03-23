@@ -142,7 +142,7 @@ export class CoreController {
     this.els.sendBtn.disabled = true;
     this.els.micBtn.disabled = true;
     this.els.speakerBtn.disabled = true;
-    this.els.reservationBtn.classList.remove('visible');
+    this.els.reservationBtn?.classList.remove('visible');
 
     this.currentShops = [];
     this.sessionId = null;
@@ -396,7 +396,7 @@ export class CoreController {
       const shops = data?.shops || [];
       if (shops.length > 0) {
         this.currentShops = shops;
-        this.els.reservationBtn.classList.add('visible');
+        this.els.reservationBtn?.classList.add('visible');
         document.dispatchEvent(new CustomEvent('displayShops', {
           detail: { shops: shops, language: this.currentLanguage }
         }));
@@ -444,7 +444,7 @@ export class CoreController {
       this.els.micBtn.disabled = false;
       this.els.speakerBtn.disabled = false;
       this.els.speakerBtn.classList.remove('disabled');
-      this.els.reservationBtn.classList.remove('visible');
+      this.els.reservationBtn?.classList.remove('visible');
 
       // 3. ★ LiveAPIで初期挨拶を開始（仕様書02 セクション4.4.2）
       //    REST API挨拶 + GCP TTS の処理は全て削除
@@ -793,7 +793,7 @@ export class CoreController {
       
       if (data.shops && data.shops.length > 0) {
         this.currentShops = data.shops;
-        this.els.reservationBtn.classList.add('visible');
+        this.els.reservationBtn?.classList.add('visible');
         this.els.userInput.value = '';
         document.dispatchEvent(new CustomEvent('displayShops', { 
           detail: { shops: data.shops, language: this.currentLanguage } 
@@ -932,7 +932,7 @@ export class CoreController {
           const extractedShops = this.extractShopsFromResponse(data.response);
           if (extractedShops.length > 0) {
             this.currentShops = extractedShops;
-            this.els.reservationBtn.classList.add('visible');
+            this.els.reservationBtn?.classList.add('visible');
             document.dispatchEvent(new CustomEvent('displayShops', { 
               detail: { shops: extractedShops, language: this.currentLanguage } 
             }));
@@ -1229,7 +1229,7 @@ export class CoreController {
     this.els.micBtn.title = this.t('btnVoiceInput');
     this.els.speakerBtn.title = this.isTTSEnabled ? this.t('btnTTSOn') : this.t('btnTTSOff');
     this.els.sendBtn.textContent = this.t('btnSend');
-    this.els.reservationBtn.innerHTML = this.t('btnReservation');
+    if (this.els.reservationBtn) this.els.reservationBtn.innerHTML = this.t('btnReservation');
     
     const pageTitle = document.getElementById('pageTitle');
     if (pageTitle) pageTitle.innerHTML = `<img src="/pwa-152x152.png" alt="Logo" class="app-logo" /> ${this.t('pageTitle')}`;
