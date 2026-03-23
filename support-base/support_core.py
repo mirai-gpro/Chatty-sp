@@ -47,6 +47,7 @@ def load_prompts_from_gcs():
     GCSから2種類のプロンプトを読み込み
     - support_system_{lang}.txt: チャットモード用
     - concierge_{lang}.txt: コンシェルジュモード用
+    - lesson_{lang}.txt: 会話レッスンモード用
     """
     try:
         bucket_name = os.getenv('PROMPTS_BUCKET_NAME')
@@ -58,7 +59,8 @@ def load_prompts_from_gcs():
         bucket = client.bucket(bucket_name)
         prompts = {
             'chat': {},      # チャットモード用
-            'concierge': {}  # コンシェルジュモード用
+            'concierge': {},  # コンシェルジュモード用
+            'lesson': {}     # 会話レッスンモード用
         }
 
         for lang in ['ja', 'en', 'zh', 'ko']:
@@ -83,7 +85,15 @@ def load_prompts_from_gcs():
             else:
                 logger.warning(f"[Prompt] GCSに見つかりません: concierge_{lang}.txt")
 
-        return prompts if (prompts['chat'] or prompts['concierge']) else None
+            # 会話レッスンモード用プロンプト
+            lesson_blob = bucket.blob(f'prompts/lesson_{lang}.txt')
+            if lesson_blob.exists():
+                prompts['lesson'][lang] = lesson_blob.download_as_text(encoding='utf-8')
+                logger.info(f"[Prompt] GCSから読み込み成功: lesson_{lang}.txt")
+            else:
+                logger.warning(f"[Prompt] GCSに見つかりません: lesson_{lang}.txt")
+
+        return prompts if (prompts['chat'] or prompts['concierge'] or prompts['lesson']) else None
 
     except Exception as e:
         logger.error(f"[Prompt] GCS読み込み失敗: {e}")
@@ -95,7 +105,8 @@ def load_prompts_from_local():
     """
     prompts = {
         'chat': {},
-        'concierge': {}
+        'concierge': {},
+        'lesson': {}
     }
 
     for lang in ['ja', 'en', 'zh', 'ko']:
@@ -126,7 +137,18 @@ def load_prompts_from_local():
         except Exception as e:
             logger.error(f"[Prompt] ローカル読み込みエラー (concierge/{lang}): {e}")
 
-    return prompts if (prompts['chat'] or prompts['concierge']) else None
+        # 会話レッスンモード用
+        lesson_file = f'prompts/lesson_{lang}.txt'
+        try:
+            with open(lesson_file, 'r', encoding='utf-8') as f:
+                prompts['lesson'][lang] = f.read()
+                logger.info(f"[Prompt] ローカルから読み込み成功: lesson_{lang}.txt")
+        except FileNotFoundError:
+            logger.warning(f"[Prompt] ローカルファイルが見つかりません: {lesson_file}")
+        except Exception as e:
+            logger.error(f"[Prompt] ローカル読み込みエラー (lesson/{lang}): {e}")
+
+    return prompts if (prompts['chat'] or prompts['concierge'] or prompts['lesson']) else None
 
 def load_system_prompts():
     logger.info("[Prompt] プロンプト読み込み開始...")
@@ -135,16 +157,18 @@ def load_system_prompts():
         logger.info("[Prompt] GCSから読み込めませんでした。ローカルファイルを使用します。")
         prompts = load_prompts_from_local()
 
-    if not prompts or (not prompts.get('chat') and not prompts.get('concierge')):
+    if not prompts or (not prompts.get('chat') and not prompts.get('concierge') and not prompts.get('lesson')):
         logger.error("[Prompt] プロンプトの読み込みに失敗しました!")
         return {
             'chat': {'ja': 'エラー: チャットモードプロンプトが読み込めませんでした。'},
-            'concierge': {'ja': 'エラー: コンシェルジュモードプロンプトが読み込めませんでした。'}
+            'concierge': {'ja': 'エラー: コンシェルジュモードプロンプトが読み込めませんでした。'},
+            'lesson': {'ja': 'エラー: レッスンモードプロンプトが読み込めませんでした。'}
         }
 
     logger.info(f"[Prompt] プロンプト読み込み完了:")
     logger.info(f"  - チャットモード: {list(prompts.get('chat', {}).keys())}")
     logger.info(f"  - コンシェルジュモード: {list(prompts.get('concierge', {}).keys())}")
+    logger.info(f"  - レッスンモード: {list(prompts.get('lesson', {}).keys())}")
     return prompts
 
 # プロンプト読み込み実行(モジュールロード時)
@@ -161,6 +185,12 @@ INITIAL_GREETINGS = {
         'en': 'Welcome! I\'m your gourmet concierge. What kind of dining experience are you looking for today? Business dinner, date, gathering with friends?',
         'zh': '$6B22迎光$4E34!我是$60A8的美食礼$5BBE$5458。今天$60A8想$5BFB找什$4E48$6837的用餐$573A景?商$52A1宴$8BF7、$7EA6会、朋友聚会?',
         'ko': '$C5B4$C11C$C624$C138$C694! $C800$B294 $ADC0$D558$C758 $BBF8$C2DD $CEE8$C2DC$C5B4$C9C0$C785$B2C8$B2E4. $C624$B298$C740 $C5B4$B5A4 $C2DD$C0AC $C7A5$BA74$C744 $CC3E$C73C$C2DC$B098$C694? $C811$B300, $B370$C774$D2B8, $BAA8$C784 $B4F1?'
+    },
+    'lesson': {
+        'ja': 'こんにちは！英会話のレッスンを担当します。旅行先で使える英語フレーズを練習しましょう！どんな場面で使う英語を練習したいですか？',
+        'en': 'Hello! I\'m your English conversation coach. Let\'s practice useful travel phrases! What kind of situation would you like to practice?',
+        'zh': '你好！我是你的英语会话教练。让我们练习旅行中实用的英语短语吧！你想练习什么场景的英语？',
+        'ko': '안녕하세요! 영어 회화 코치입니다. 여행에서 쓸 수 있는 영어 표현을 연습해 봅시다! 어떤 상황의 영어를 연습하고 싶으세요?'
     }
 }
 
@@ -204,9 +234,10 @@ class SupportSession:
         user_context = ""
 
         # チャットモードはDB読み込みをスキップ（高速化）
+        # concierge/lesson モードは長期記憶を使用（名前の呼びかけ等）
         if mode == 'chat':
             logger.info(f"[Session] チャットモード: DB読み込みスキップ")
-        elif LONG_TERM_MEMORY_ENABLED and user_id and mode == 'concierge':
+        elif LONG_TERM_MEMORY_ENABLED and user_id and mode in ('concierge', 'lesson'):
             try:
                 ltm = LongTermMemory()
 
@@ -364,7 +395,7 @@ class SupportAssistant:
         mode_prompts = system_prompts.get(self.mode, SYSTEM_PROMPTS.get('chat', {}))
         self.system_prompt = mode_prompts.get(self.language, mode_prompts.get('ja', ''))
 
-        # ★★★ 長期記憶のコンテキストをシステムプロンプトに追加（コンシェルジュモードのみ） ★★★
+        # ★★★ 長期記憶のコンテキストをシステムプロンプトに追加（concierge/lessonモード） ★★★
         session_data = session.get_data()
         if self.mode == 'concierge' and session_data:
             is_first_visit = session_data.get('is_first_visit', True)
@@ -403,6 +434,41 @@ class SupportAssistant:
 """
                 self.system_prompt = f"{self.system_prompt}\n\n{user_context}"
                 logger.info(f"[Assistant] ユーザーコンテキストを注入（リピーター）")
+
+        # ★★★ レッスンモード: ユーザー情報をプロンプトに注入 ★★★
+        if self.mode == 'lesson' and session_data:
+            is_first_visit = session_data.get('is_first_visit', True)
+            profile = session_data.get('long_term_profile', {})
+
+            if is_first_visit:
+                lesson_context = """
+【重要: 初回レッスンユーザー】
+このユーザーは初めてのレッスンです。
+- まず自己紹介をして、名前を聞いてください
+- ユーザーが名前を教えてくれたら、必ず action フィールドで保存してください
+- action形式: {"type": "update_user_profile", "updates": {"preferred_name": "名前", "name_honorific": "さん"}}
+"""
+                self.system_prompt = f"{self.system_prompt}\n\n{lesson_context}"
+                logger.info(f"[Assistant] レッスンモード: 初回ユーザーコンテキスト注入")
+            elif profile:
+                preferred_name = profile.get('preferred_name', '')
+                name_honorific = profile.get('name_honorific', 'さん')
+                teacher_name = profile.get('lesson_teacher_name', 'Emma')
+
+                if preferred_name:
+                    lesson_context = f"""
+【ユーザー情報】
+- 呼び方: {preferred_name}{name_honorific}
+- AI講師名: {teacher_name}
+"""
+                else:
+                    lesson_context = f"""
+【ユーザー情報】
+- 名前: 未登録（まず名前を聞いてください）
+- AI講師名: {teacher_name}
+"""
+                self.system_prompt = f"{self.system_prompt}\n\n{lesson_context}"
+                logger.info(f"[Assistant] レッスンモード: ユーザーコンテキスト注入（リピーター）")
 
         # ★★★ JSON形式の強制ルール（ハードコード） ★★★
         # GCSプロンプトに依存せず、PY側でショップ情報返却時のJSON形式を強制する
@@ -456,13 +522,42 @@ class SupportAssistant:
         base_greeting = greetings.get(self.language, greetings.get('ja', ''))
 
         # チャットモードは常にシンプルな挨拶のみ
-        if self.mode != 'concierge':
+        if self.mode not in ('concierge', 'lesson'):
             logger.info(f"[Assistant] チャットモード: シンプルな挨拶")
             return base_greeting
 
         # ========================================
-        # 以下はコンシェルジュモードのみ
+        # 以下はコンシェルジュ/レッスンモード（パーソナライズ対応）
         # ========================================
+
+        # レッスンモードの初期メッセージ
+        if self.mode == 'lesson':
+            is_first_visit = session_data.get('is_first_visit', True) if session_data else True
+            profile = session_data.get('long_term_profile', {}) if session_data else {}
+            teacher_name = profile.get('lesson_teacher_name', 'Emma') if profile else 'Emma'
+
+            if is_first_visit:
+                first_lesson_greetings = {
+                    'ja': f'こんにちは！私は{teacher_name}です。英会話のレッスンを担当します。\nお名前を教えてください。',
+                    'en': f'Hello! I\'m {teacher_name}, your English conversation coach.\nMay I ask your name?',
+                    'zh': f'你好！我是{teacher_name}，你的英语会话教练。\n请问你叫什么名字？',
+                    'ko': f'안녕하세요! 저는 {teacher_name}입니다. 영어 회화 코치를 맡고 있습니다.\n이름을 알려주시겠어요?'
+                }
+                return first_lesson_greetings.get(self.language, first_lesson_greetings['ja'])
+
+            preferred_name = profile.get('preferred_name', '') if profile else ''
+            name_honorific = profile.get('name_honorific', 'さん') if profile else 'さん'
+
+            if preferred_name:
+                returning_lesson_greetings = {
+                    'ja': f'{preferred_name}{name_honorific}、こんにちは！{teacher_name}です。\n今日はどんな練習をしましょうか？',
+                    'en': f'Hi {preferred_name}! It\'s {teacher_name}.\nWhat would you like to practice today?',
+                    'zh': f'{preferred_name}，你好！我是{teacher_name}。\n今天想练习什么？',
+                    'ko': f'{preferred_name}{name_honorific}, 안녕하세요! {teacher_name}입니다.\n오늘은 어떤 연습을 할까요?'
+                }
+                return returning_lesson_greetings.get(self.language, returning_lesson_greetings['ja'])
+
+            return base_greeting
 
         is_first_visit = session_data.get('is_first_visit', True) if session_data else True
 

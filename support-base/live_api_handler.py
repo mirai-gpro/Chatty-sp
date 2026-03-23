@@ -109,17 +109,19 @@ def build_system_instruction(mode: str, user_profile: dict = None,
     GCSプロンプト（system_prompts）をベースに、動的パラメータを埋め込む。
 
     Args:
-        mode: 'chat' or 'concierge'
-        user_profile: コンシェルジュモード用。
+        mode: 'chat', 'concierge', or 'lesson'
+        user_profile: コンシェルジュ/レッスンモード用。
             {
                 'is_first_visit': bool,
                 'preferred_name': str or None,
                 'name_honorific': str or None,
+                'lesson_teacher_name': str or None,  # lessonモード用
             }
         system_prompts: GCS/ローカルから読み込んだプロンプト辞書
             {
                 'chat': {'ja': '...', ...},
-                'concierge': {'ja': '...', ...}
+                'concierge': {'ja': '...', ...},
+                'lesson': {'ja': '...', ...}
             }
     """
     # GCSプロンプトからベーステキストを取得
@@ -134,6 +136,15 @@ def build_system_instruction(mode: str, user_profile: dict = None,
         # ユーザープロファイルに応じた初期あいさつ指示を構築
         user_context = _build_concierge_user_context(user_profile)
         return base_prompt.replace('{user_context}', user_context)
+    elif mode == 'lesson':
+        # レッスンモード: 講師名・ユーザー名・user_contextを埋め込む
+        teacher_name = (user_profile or {}).get('lesson_teacher_name', 'Emma')
+        user_context = _build_lesson_user_context(user_profile)
+        prompt = base_prompt.replace('{teacher_name}', teacher_name)
+        prompt = prompt.replace('{user_context}', user_context)
+        # {user_name} はプロンプト内の例示用テンプレートなのでそのまま残す
+        # （LLMが実際の名前を user_context から取得して使う）
+        return prompt
     else:
         return base_prompt
 
@@ -168,6 +179,44 @@ def _get_returning_user_context(preferred_name: str, name_honorific: str) -> str
     return f"""## 初期あいさつ（リピーター）
 このユーザーの名前は「{full_name}」です。
 最初の発話で「お帰りなさいませ、{full_name}。今日はどのようなお食事をお考えですか？」と名前を呼んで挨拶してください。
+以降の会話でも「{full_name}」と呼びかけてください。"""
+
+
+# ============================================================
+# レッスンモード用コンテキスト構築
+# ============================================================
+
+def _build_lesson_user_context(user_profile: dict = None) -> str:
+    """レッスンモードのユーザーコンテキストを構築"""
+    if not user_profile:
+        return _get_lesson_first_visit_context()
+
+    is_first_visit = user_profile.get('is_first_visit', True)
+    preferred_name = user_profile.get('preferred_name', '')
+    name_honorific = user_profile.get('name_honorific', 'さん')
+    teacher_name = user_profile.get('lesson_teacher_name', 'Emma')
+
+    if is_first_visit or not preferred_name:
+        return _get_lesson_first_visit_context(teacher_name)
+    else:
+        return _get_lesson_returning_context(preferred_name, name_honorific, teacher_name)
+
+
+def _get_lesson_first_visit_context(teacher_name: str = 'Emma') -> str:
+    """レッスンモード: 新規ユーザー用コンテキスト"""
+    return f"""## 初期あいさつ（新規ユーザー）
+このユーザーは初めてのレッスンです。
+最初の発話で「こんにちは！私は{teacher_name}です。英会話のレッスンを担当します。お名前を教えてください。」と自己紹介してください。
+ユーザーが名前を教えてくれたら、その名前で呼びかけてレッスンを始めてください。"""
+
+
+def _get_lesson_returning_context(preferred_name: str, name_honorific: str,
+                                   teacher_name: str = 'Emma') -> str:
+    """レッスンモード: リピーター用コンテキスト"""
+    full_name = f"{preferred_name}{name_honorific}"
+    return f"""## 初期あいさつ（リピーター）
+このユーザーの名前は「{full_name}」です。
+最初の発話で「{full_name}、こんにちは！{teacher_name}です。今日はどんな練習をしましょうか？」と名前を呼んで挨拶してください。
 以降の会話でも「{full_name}」と呼びかけてください。"""
 
 
@@ -221,6 +270,12 @@ class LiveAPISession:
             'en': 'Hello.',
             'zh': '你好。',
             'ko': '안녕하세요.',
+        },
+        'lesson': {
+            'ja': 'こんにちは。英会話のレッスンをお願いします。',
+            'en': 'Hello. I would like an English conversation lesson.',
+            'zh': '你好。我想上英语会话课。',
+            'ko': '안녕하세요. 영어 회화 레슨을 부탁합니다.',
         },
     }
 
@@ -292,7 +347,6 @@ class LiveAPISession:
         config = {
             "response_modalities": ["AUDIO"],
             "system_instruction": instruction,
-            "tools": [types.Tool(function_declarations=[SEARCH_SHOPS_DECLARATION])],
             "input_audio_transcription": {},
             "output_audio_transcription": {},
             "speech_config": {
@@ -313,6 +367,11 @@ class LiveAPISession:
                 }
             },
         }
+
+        # lesson モードではショップ検索ツールを除外
+        if self.mode != 'lesson':
+            config["tools"] = [types.Tool(function_declarations=[SEARCH_SHOPS_DECLARATION])]
+
         return config
 
     def _get_speech_language_code(self):
