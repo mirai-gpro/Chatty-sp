@@ -77,8 +77,9 @@
 
 ### 2.2 非機能要件
 
+- **コンシェルジュモードをベースに移植**（アバター + A2Eリップシンク搭載）
 - 既存のLiveAPI音声対話基盤をそのまま活用
-- コンシェルジュモードのアバター・A2Eリップシンクは変更なし
+- LAMAvatar（Gaussian Splatting 3D アバター）+ A2Eリップシンクを会話レッスン・モードでも使用
 - 多言語UIの仕組み（i18n）はそのまま引き継ぎ
 - ショップ検索（search_shops）機能は会話レッスン・モードでは不要
 
@@ -88,11 +89,27 @@
 
 ### 3.1 フロントエンド変更
 
+#### 3.1.0 設計方針: コンシェルジュモードからの移植
+
+会話レッスン・モードは**コンシェルジュモード（`concierge-controller.ts` + `Concierge.astro`）をベースに移植**する。
+理由: アバター + A2Eリップシンクを搭載するため、同じ基盤が必要。
+
+```
+移植元:                          移植先:
+concierge.astro            →    index.astro（lesson用ページ）
+Concierge.astro            →    LessonChat.astro（lesson用コンポーネント）
+concierge-controller.ts    →    lesson-controller.ts（lesson用コントローラ）
+LAMAvatar.astro            →    そのまま共用
+lam-websocket-manager.ts   →    そのまま共用
+audio-sync-player.ts       →    そのまま共用
+live-audio-manager.ts      →    そのまま共用
+```
+
 #### 3.1.1 ページ構成
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/pages/index.astro` | グルメモード → 会話レッスン・モードに変更 |
+| `src/pages/index.astro` | コンシェルジュモードのUI構成をベースに、会話レッスン・モードとして再構成（アバター搭載） |
 | `src/pages/concierge.astro` | 変更なし |
 | `src/pages/chat.astro` | 廃止 or リダイレクト |
 
@@ -100,32 +117,51 @@
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/components/GourmetChat.astro` | `LessonChat.astro` にリネーム。UI をレッスン用に変更 |
+| `src/components/Concierge.astro` | 変更なし（コンシェルジュモード用として維持） |
+| `src/components/LessonChat.astro` | **新規作成**: `Concierge.astro` をベースに複製・改修 |
+| `src/components/LAMAvatar.astro` | 変更なし（会話レッスン・モードでも共用） |
+| `src/components/GourmetChat.astro` | 廃止（旧グルメモード用。参照がなくなれば削除） |
 | `src/components/ShopCardList.astro` | 会話レッスン・モードでは非表示（コンシェルジュモードでは継続使用） |
-| `src/components/ReservationModal.astro` | 会話レッスン・モードでは非表示 |
+| `src/components/ReservationModal.astro` | 会話レッスン・モードでは非表示（コンシェルジュモードでは継続使用） |
+
+**`LessonChat.astro` での主な差分（vs `Concierge.astro`）：**
+- ShopCardList、ReservationModal を除外
+- 相手先言語プルダウンを追加（英語固定）
+- カラーテーマ変更
+- タイトル: 「会話レッスンAI」
 
 #### 3.1.3 コントローラ
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `src/scripts/chat/chat-controller.ts` | `lesson-controller.ts` にリネーム。`currentMode = 'lesson'` |
-| `src/scripts/chat/core-controller.ts` | モード型定義に `'lesson'` 追加。shop系UIの条件分岐追加 |
+| `src/scripts/chat/lesson-controller.ts` | **新規作成**: `concierge-controller.ts` をベースに複製・改修 |
+| `src/scripts/chat/core-controller.ts` | モード型定義に `'lesson'` 追加 |
 | `src/scripts/chat/concierge-controller.ts` | 変更なし |
+| `src/scripts/chat/chat-controller.ts` | 廃止（旧グルメモード用。参照がなくなれば削除） |
+
+**`lesson-controller.ts` での主な差分（vs `concierge-controller.ts`）：**
+- `this.currentMode = 'lesson'`
+- アバター関連のロジック（`linkLamAvatar()`, `speakTextGCP()`, A2E連携）はそのまま継承
+- ショップ検索・予約関連ロジックを除外
+- `toggleMode()` でコンシェルジュモード（`/concierge`）への切替
+- `updateUILanguage()` でタイトルを「会話レッスンAI」に設定
 
 #### 3.1.4 i18n（`src/constants/i18n.ts`）
 
 **各言語に追加するキー：**
 ```typescript
-pageTitle: '会話レッスンAI',          // ja
 pageTitleLesson: '会話レッスンAI',    // ja
 // en: 'Conversation Practice AI'
 // zh: '会话练习AI'
 // ko: '회화 연습 AI'
 
-initialGreetingLesson: 'こんにちは！会話レッスンAIです。...'
+initialGreetingLesson: 'こんにちは！会話レッスンAIです。英語の会話練習をお手伝いします。...'
 
 // 相手先言語選択ラベル
-targetLanguageLabel: '相手先言語',
+targetLanguageLabel: '相手先言語',     // ja
+// en: 'Target language'
+// zh: '目标语言'
+// ko: '대상 언어'
 ```
 
 #### 3.1.5 言語選択UI
@@ -138,7 +174,8 @@ targetLanguageLabel: '相手先言語',
 #### 3.1.6 UI変更（会話レッスン・モード）
 
 - ヘッダー: 「会話レッスンAI」タイトル表示
-- カラーテーマ: 新規（グルメの紫系とは別の色。例: グリーン系 `#10b981` ～ `#059669`）
+- **アバターステージ**: コンシェルジュモードと同様にLAMAvatarを表示
+- カラーテーマ: 新規（コンシェルジュのシアン系とは別の色。例: グリーン系 `#10b981` ～ `#059669`）
 - ShopCardList: 非表示
 - 予約ボタン: 非表示
 - モード切替トグル: 「Concierge」ラベルはそのまま
@@ -227,17 +264,21 @@ targetLanguageLabel: '相手先言語',
 3. `core-controller.ts` のモード型定義に `'lesson'` 追加
 4. i18n に会話レッスン・モード用のキーを追加
 
-### Phase 2: フロントエンド - 会話レッスン・モードUI
+### Phase 2: フロントエンド - 会話レッスン・モードUI（コンシェルジュから移植）
 **優先度: 高 ｜ 想定作業: 中**
 
-1. `GourmetChat.astro` → `LessonChat.astro` にリネーム・改修
-   - ShopCardList、ReservationModal を非表示
-   - カラーテーマ変更
+1. `Concierge.astro` をベースに `LessonChat.astro` を新規作成
+   - アバターステージ（LAMAvatar）をそのまま搭載
+   - ShopCardList、ReservationModal を除外
+   - カラーテーマ変更（グリーン系）
    - 相手先言語プルダウン追加（英語固定）
-2. `chat-controller.ts` → `lesson-controller.ts` にリネーム
-   - `currentMode = 'lesson'` に変更
-3. `index.astro` を会話レッスン・モードに切り替え
+2. `concierge-controller.ts` をベースに `lesson-controller.ts` を新規作成
+   - `currentMode = 'lesson'`
+   - アバター/A2E連携ロジックはそのまま継承
+   - ショップ検索・予約ロジックを除外
+3. `index.astro` を会話レッスン・モード（LessonChat + LAMAvatar）に切り替え
 4. `chat.astro` を廃止 or リダイレクト
+5. 旧 `GourmetChat.astro`、`chat-controller.ts` は参照がなくなれば削除
 
 ### Phase 3: バックエンド - プロンプト・ロジック
 **優先度: 高 ｜ 想定作業: 中**
@@ -285,12 +326,20 @@ targetLanguageLabel: '相手先言語',
 
 ### 5.5 A2Eアバターの適用
 
-- 会話レッスン・モードでもアバターを使うか
-- → 初期テストフェーズではアバターなし（コンシェルジュモードのみ）
+- 会話レッスン・モードでもアバター + A2Eリップシンクを搭載する（確定）
+- コンシェルジュモードと同じ LAMAvatar + AudioSyncPlayer + LAMWebSocketManager を使用
 
 ---
 
 ## 6. 影響範囲
+
+### 新規作成するファイル
+
+| ファイル | 内容 |
+|----------|------|
+| `src/components/LessonChat.astro` | `Concierge.astro` をベースに複製・改修（アバター搭載） |
+| `src/scripts/chat/lesson-controller.ts` | `concierge-controller.ts` をベースに複製・改修 |
+| `support-base/prompts/lesson_ja.txt` | 会話レッスン・モード用プロンプト |
 
 ### 変更するファイル
 
@@ -298,26 +347,32 @@ targetLanguageLabel: '相手先言語',
 |----------|----------|
 | `package.json` | 名称変更 |
 | `astro.config.mjs` | PWA名変更 |
-| `src/pages/index.astro` | コンポーネント差し替え |
-| `src/pages/chat.astro` | 廃止 or リダイレクト |
-| `src/components/GourmetChat.astro` | リネーム → `LessonChat.astro` + UI変更 |
-| `src/scripts/chat/chat-controller.ts` | リネーム → `lesson-controller.ts` + ロジック変更 |
-| `src/scripts/chat/core-controller.ts` | モード型定義追加 |
+| `src/pages/index.astro` | LessonChat + LAMAvatar に差し替え |
+| `src/scripts/chat/core-controller.ts` | モード型定義に `'lesson'` 追加 |
 | `src/constants/i18n.ts` | レッスン・モード用キー追加 |
 | `support-base/support_core.py` | lessonモード対応追加 |
 | `support-base/live_api_handler.py` | lessonモード対応追加 |
-| `support-base/prompts/lesson_ja.txt` | 新規作成 |
+
+### 廃止するファイル
+
+| ファイル | 理由 |
+|----------|------|
+| `src/pages/chat.astro` | 旧グルメモードのテストページ |
+| `src/components/GourmetChat.astro` | 旧グルメモード用（LessonChat.astro に置き換え） |
+| `src/scripts/chat/chat-controller.ts` | 旧グルメモード用（lesson-controller.ts に置き換え） |
 
 ### 変更しないファイル
 
 | ファイル | 理由 |
 |----------|------|
 | `src/pages/concierge.astro` | コンシェルジュモードは変更なし |
-| `src/components/Concierge.astro` | 同上 |
-| `src/scripts/chat/concierge-controller.ts` | 同上 |
-| `src/scripts/chat/live-audio-manager.ts` | 音声基盤は共通利用 |
-| `src/scripts/chat/audio-manager.ts` | 同上 |
-| `src/components/LAMAvatar.astro` | アバターは変更なし |
+| `src/components/Concierge.astro` | 同上（会話レッスンの移植元として残す） |
+| `src/scripts/chat/concierge-controller.ts` | 同上（移植元として残す） |
+| `src/components/LAMAvatar.astro` | アバターコンポーネントは共用（変更不要） |
+| `src/scripts/chat/live-audio-manager.ts` | 音声・A2E基盤は共通利用 |
+| `src/scripts/chat/audio-sync-player.ts` | アバター同期は共通利用 |
+| `src/scripts/chat/lam-websocket-manager.ts` | GaussianSplatレンダラーは共通利用 |
+| `src/scripts/chat/audio-manager.ts` | レガシー音声は共通利用 |
 | `support-base/api_integrations.py` | 外部API連携は変更なし |
 | `support-base/long_term_memory.py` | 長期記憶は変更なし |
 | `CLAUDE.md` | 変更禁止 |
