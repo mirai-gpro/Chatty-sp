@@ -104,8 +104,17 @@ def audio2expression():
         logger.info(f"[Audio2Exp] Processing: session={session_id}, "
                     f"format={audio_format}, size={len(audio_base64)} bytes")
 
+        is_start = data.get('is_start', False)
+        is_final = data.get('is_final', False)
+
         t0 = time.time()
-        result = engine.process(audio_base64, audio_format=audio_format)
+        result = engine.process(
+            audio_base64,
+            audio_format=audio_format,
+            session_id=session_id,
+            is_start=is_start,
+            is_final=is_final,
+        )
         elapsed = time.time() - t0
 
         frame_count = len(result.get('frames', []))

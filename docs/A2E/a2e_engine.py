@@ -85,7 +85,7 @@ class Audio2ExpressionEngine:
         self._ready = False
         self._use_infer = False  # INFER パイプライン使用フラグ
         self._infer = None       # INFER パイプラインインスタンス
-        self._infer_context = None  # ストリーミング推論のコンテキスト
+        self._session_contexts = {}  # {session_id: context} ストリーミング推論のコンテキスト保持
 
         # デバイス決定
         import torch
@@ -378,13 +378,18 @@ class Audio2ExpressionEngine:
         """現在の推論モードを返す"""
         return "infer" if self._use_infer else "fallback"
 
-    def process(self, audio_base64: str, audio_format: str = "mp3") -> dict:
+    def process(self, audio_base64: str, audio_format: str = "mp3",
+                session_id: str = "unknown", is_start: bool = False,
+                is_final: bool = False) -> dict:
         """
         音声を処理してブレンドシェイプ係数を生成
 
         Args:
             audio_base64: base64エンコードされた音声
             audio_format: 音声フォーマット (mp3, wav, pcm)
+            session_id: セッションID（context持ち回しのキー）
+            is_start: ストリーム開始フラグ（Trueでcontext初期化）
+            is_final: ストリーム終了フラグ（Trueでcontext破棄）
 
         Returns:
             {names: [52 strings], frames: [[52 floats], ...], frame_rate: int}
@@ -396,11 +401,15 @@ class Audio2ExpressionEngine:
 
         # 2. 推論実行
         if self._use_infer:
-            return self._process_with_infer(audio_pcm, duration)
+            return self._process_with_infer(audio_pcm, duration,
+                                            session_id, is_start, is_final)
         else:
             return self._process_with_fallback(audio_pcm, duration)
 
-    def _process_with_infer(self, audio_pcm: np.ndarray, duration: float) -> dict:
+    def _process_with_infer(self, audio_pcm: np.ndarray, duration: float,
+                            session_id: str = "unknown",
+                            is_start: bool = False,
+                            is_final: bool = False) -> dict:
         """
         INFER パイプラインで推論。
 
@@ -409,10 +418,22 @@ class Audio2ExpressionEngine:
         - チャンクごとに推論 (コンテキスト引き継ぎ)
         - ポストプロセッシング込み (smooth_mouth, frame_blending,
           savitzky_golay, symmetrize, eye_blinks)
+
+        セッション辞書方式でPOST間のcontext持ち回しを実現:
+        - is_start=True → context=None（新ターン開始）
+        - is_start=False → 前回contextを復元
+        - is_final=True → 推論後にcontextを破棄
         """
         chunk_samples = INFER_INPUT_SAMPLE_RATE  # 1秒チャンク
         all_expressions = []
-        context = None
+
+        # context取得: is_start=True or 未知セッション → None（新規開始）
+        if is_start or session_id not in self._session_contexts:
+            context = None
+            logger.info(f"[A2E Engine] Context: new (is_start={is_start}, session={session_id})")
+        else:
+            context = self._session_contexts[session_id]
+            logger.info(f"[A2E Engine] Context: restored (session={session_id})")
 
         try:
             for start in range(0, len(audio_pcm), chunk_samples):
@@ -429,6 +450,14 @@ class Audio2ExpressionEngine:
                 expr = result.get("expression")
                 if expr is not None:
                     all_expressions.append(expr.astype(np.float32))
+
+            # context保存 or 破棄
+            if is_final:
+                self._session_contexts.pop(session_id, None)
+                logger.info(f"[A2E Engine] Context: discarded (is_final=True, session={session_id})")
+            else:
+                self._session_contexts[session_id] = context
+                logger.info(f"[A2E Engine] Context: saved (session={session_id})")
 
             if not all_expressions:
                 logger.warning("[A2E Engine] INFER produced no expression data")
