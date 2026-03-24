@@ -637,8 +637,8 @@ class LiveAPISession:
                             self.socketio.emit('ai_transcript',
                                                {'text': text},
                                                room=self.client_sid)
-                            # ★ A2E: 句読点検出でバッファフラッシュ（仕様書08 セクション3.2）
-                            self._on_output_transcription(text)
+                            # ★ A2E: 句読点検出フラッシュは廃止（チャンク順序逆転防止）
+                            # self._on_output_transcription(text)
 
                     # 6. 音声データ
                     if sc.model_turn:
@@ -1307,6 +1307,10 @@ class LiveAPISession:
         """最低バイト数チェック後、非同期でA2E送信（仕様書08 セクション3.3）"""
         if len(self._a2e_audio_buffer) == 0:
             return
+
+        # ★ 最終チャンク2秒遅延: 前チャンクのA2Eレスポンス到着を待ち、順序逆転を防止
+        if is_final and self._a2e_chunk_index > 0:
+            await asyncio.sleep(2.0)
 
         # force=Falseの場合、最低バッファサイズをチェック
         if not force and len(self._a2e_audio_buffer) < A2E_MIN_BUFFER_BYTES:
