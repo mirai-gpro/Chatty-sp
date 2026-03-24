@@ -588,18 +588,17 @@ result = engine.process(
 
 ---
 
-## 14. A2E表情チャンク順序ずれ改善（通常会話フロー）
+## 14. 通常会話へのA2E Ahead方式適用（ショップ説明方式の逆輸入）
 
 **作成日**: 2026-03-24
-**根拠**: Gemini / ChatGPT 両LLMの分析結果を精査・統合。Claude独自の推論は含まない。
+**方針**: ショップ説明で成功しているA2E Ahead方式（§3.3, §3.4, docs/12）を通常会話にも適用する
+**根拠**: ショップ説明（A2E Ahead）は同期安定、通常会話（インターリーブ）は順序ずれ発生という実証結果
 
-### 14.1 問題の現象
+### 14.1 現状の問題
 
-通常会話フロー（`_receive_and_forward`）において、A2Eの表情フレームが音声の時間軸とずれる。
-
-### 14.2 原因
-
-`_buffer_for_a2e()` (L1237) で `asyncio.ensure_future(_flush_a2e_buffer)` により A2E HTTP POST が**並列実行**される。レスポンス到着順は保証されないが、フロントエンドの `onExpressionReceived()` は到着順に `push` しているため、**音声の時間軸と表情フレームの対応が壊れる**。
+通常会話（`_receive_and_forward`）はインターリーブ方式（§3.1）を使用している。
+`_buffer_for_a2e()` 内の `asyncio.ensure_future()` によりA2E HTTP POSTが**並列実行**され、
+レスポンス到着順が保証されないため、フロントエンドの表情フレーム順序が音声の時間軸とずれる。
 
 ```
 chunk_index=1 (句読点flush, 2秒分) → HTTP POST → レスポンス遅延
@@ -611,324 +610,113 @@ chunk_index=3 (句読点flush, 3秒分) → HTTP POST → レスポンス先着 
 → 完全にずれている
 ```
 
-### 14.3 ショップ説明フローとの違い
+### 14.2 ショップ説明との比較（実証結果）
 
-| | 通常会話 | ショップ説明（A2E先行方式） |
+| | 通常会話（インターリーブ） | ショップ説明（A2E Ahead） |
 |---|---------|--------------------------|
 | 音声到着 | リアルタイム逐次 | 事前に全collect済み |
-| A2E送信 | 複数回・並列HTTP POST | **1回・一括** (`_precompute_a2e_expressions`) |
-| 順序保証 | **なし（本セクションの問題）** | あり（1回なので自明） |
+| A2E送信 | 複数回・並列HTTP POST | **1回・一括** |
+| 順序保証 | **なし（本問題）** | あり（1回なので自明） |
 | Expression到着 | 音声の後（後追い） | **音声の前（先行）** |
-| 本改善の必要性 | **必要** | 不要 |
+| 同期品質 | **不安定** | **安定** |
 
-### 14.4 A2Eフラッシュのトリガー（通常会話）
+### 14.3 方針: A2E Ahead方式の逆輸入
 
-| # | トリガー | 閾値 | 秒数換算 | コード位置 |
-|---|---------|------|---------|-----------|
-| 1 | 初回バイト数超過 | `A2E_FIRST_FLUSH_BYTES` = 4,800 | **0.1秒** | `_buffer_for_a2e()` L1235-1237 |
-| 2 | 2回目以降バイト数超過 | `A2E_AUTO_FLUSH_BYTES` = 240,000 | **5秒** | `_buffer_for_a2e()` L1235-1237 |
-| 3 | 句読点検出（。？！?!） | 可変（文の長さ次第） | 大体2〜4秒 | `_on_output_transcription()` L1239-1246 |
-| 4 | ターン完了 | 残存バッファ全量 | 可変 | `_receive_and_forward()` L597-599 |
+ショップ説明のA2E Ahead方式（docs/12_shop_audio_a2e_sync_fix_spec.md §2）の設計思想:
 
-2回目以降は**句読点トリガーが5秒閾値より先に発火**するケースが大半。短い文が連続すると（例: 「はい。お探しします。少々お待ちください。」）、複数のHTTP POSTがほぼ同時に飛び、順序ずれが起きやすい。
+> **音声をフロントに送信する前に、対応するExpressionデータをフロントに到着させる。**
 
-### 14.5 改善方針
+この方式を通常会話の `_receive_and_forward` にも適用する。
 
-Gemini・ChatGPT両者が一致した「**フロントエンドで `start_frame` ベースの絶対位置管理**」を本命とする。加えてバックエンド側で `start_frame` メタデータを付与する。
+### 14.4 現行 vs 変更後のデータフロー
 
-**v2 更新（2026-03-24）**: 初回実装後のデプロイテストで以下の2つの問題が判明し、Gemini・ChatGPTに再分析を依頼。両者の回答を統合して§14.6〜14.8を改訂。
-
-#### v2 で判明した問題
-
-**問題1: `estimated_frames` と A2E実レスポンスのフレーム数不一致**
-
+**現行（インターリーブ方式）**:
 ```
-Backend:  chunk 0: 30 frames送信 (start_frame=0)
-Backend:  chunk 1: 89 frames送信 (start_frame=32)  ← estimated_frames=32だがA2E実返却=30
-→ Mapにフレーム30, 31が存在しない穴が生まれる
+LiveAPI音声チャンク到着
+  ├── socketio.emit('live_audio')        ← 即座に送信
+  └── _buffer_for_a2e(chunk)
+        └── 閾値超過 or 句読点 → asyncio.ensure_future(_flush_a2e_buffer)
+              └── A2E HTTP POST（並列・後追い）
+                    └── socketio.emit('live_expression')  ← 音声より遅れて到着、順序不定
 ```
 
-原因: `estimated_frames = int((len(pcm_data) / 2) / 24000 * FPS)` はリサンプリング前のPCM長基準。A2Eサービスはリサンプリング後（16kHz）+ パディング後の音声に対してフレームを生成するため、推定値と実値がずれる。
-
-**問題2: 再生ヘッドがexpression供給を常に先行し、全フレーム hit=false**
-
+**変更後（A2E Ahead方式）**:
 ```
-firstChunkStartTime=3.040
-[A2E Sync] offsetMs=1211, frameIdx=36/29, hit=false  ← chunk 0は30フレーム(1秒分)のみ
-[A2E Sync] offsetMs=5200, frameIdx=156/120, hit=false ← chunk 1到着後も超過
-...以降16秒間ずっと hit=false, jawOpen=0.018 で固定
-```
-
-原因1: A2E HTTP POSTに約3秒かかるため、音声再生開始時点でexpressionが未到着。
-原因2: 旧コード（Array）の `Math.min(frameIndex, length-1)` によるclampingが、Map化で失われた。frameIndex > maxIndex でも `lastValidFrame` が更新されず、初期値で固定。
-
-#### Gemini・ChatGPT の回答の要点
-
-**問題1について（両者一致）**:
-- `estimated_frames` を積算して次の `start_frame` を決める方式はNG
-- `start_frame` は**入力音声の時間軸（サンプル数）**から算出すべき
-- A2Eが何フレーム返すかに依存させない
-- await前に確定できるため並列安全
-
-**問題2について（両者一致 + ChatGPT追加提案）**:
-- `frameIndex > maxIndex` 時にmaxIndexのフレームを返すclamping追加（両者一致）
-- expression参照を音声より200〜400ms遅らせる `expressionDelayMs` の導入（ChatGPT提案、採用）
-
-### 14.6 修正1: バックエンド — `start_frame` メタデータ付与（v2改訂）
-
-**対象ファイル**: `live_api_handler.py`
-
-#### (1) 新規インスタンス変数
-
-`__init__` の A2Eバッファリング機構セクション（L332付近）に追加:
-
-```python
-self._a2e_total_samples_24k = 0  # Expression同期用: 累積PCMサンプル数（24kHz基準）
+LiveAPI音声チャンク到着
+  └── PCMバッファに蓄積（live_audioはまだ送信しない）
+        ↓ フラッシュトリガー（句読点 / 閾値超過 / turn_complete）
+  live_expression_reset                  ← バッファクリア
+        ↓
+  _send_a2e_ahead(蓄積PCM)              ← await: Expression全フレーム先着
+        ↓
+  sleep(50ms)                            ← 到着マージン
+        ↓
+  蓄積したlive_audio × N chunks送信     ← 再生開始（Expressionは既にバッファにある）
 ```
 
-> **v2変更点**: 旧 `_a2e_total_frames_sent`（推定フレーム数の積算）を廃止。入力音声のサンプル数を正確に積算する `_a2e_total_samples_24k` に置換。
+### 14.5 ショップ説明のA2E Ahead実装との対応
 
-#### (2) `_flush_a2e_buffer()` の変更
+| ショップ説明（docs/12, §3.3） | 通常会話（本方針） |
+|---|---|
+| `_emit_collected_shop()` | `_receive_and_forward()` 内のフラッシュ処理 |
+| `b''.join(audio_chunks)` — 全チャンク結合 | フラッシュトリガーまでの蓄積PCM |
+| `_send_a2e_ahead(all_pcm)` | 同じメソッドを使用 |
+| `await asyncio.sleep(0.05)` | 同じ |
+| `live_audio × N chunks` | 蓄積チャンクを順次送信 |
+| `resetForNewSegment()` | 同じメソッドを使用 |
 
-`start_frame` を入力音声のサンプル数から算出する。A2Eの実レスポンスフレーム数には依存しない。
+### 14.6 フラッシュトリガー（通常会話）
 
-```python
-async def _flush_a2e_buffer(self, force: bool = False, is_final: bool = False):
-    if len(self._a2e_audio_buffer) == 0:
-        return
-    if not force and len(self._a2e_audio_buffer) < A2E_MIN_BUFFER_BYTES:
-        return
+現行のバッファリング定数（§6）をそのまま使用:
 
-    # A-1: 最終チャンク最小長制限（既存）
-    if is_final and len(self._a2e_audio_buffer) < A2E_FINAL_MIN_BYTES:
-        pad_needed = A2E_FINAL_MIN_BYTES - len(self._a2e_audio_buffer)
-        self._a2e_audio_buffer.extend(b'\x00' * pad_needed)
+| # | トリガー | 閾値 | 秒数換算 |
+|---|---------|------|---------|
+| 1 | 初回バイト数超過 | `A2E_FIRST_FLUSH_BYTES` = 4,800 | **0.1秒** |
+| 2 | 2回目以降バイト数超過 | `A2E_AUTO_FLUSH_BYTES` = 240,000 | **5秒** |
+| 3 | 句読点検出（。？！?!） | 可変 | 大体2〜4秒 |
+| 4 | ターン完了 (`turn_complete`) | 残存バッファ全量 | 可変 |
 
-    pcm_data = bytes(self._a2e_audio_buffer)
-    self._a2e_audio_buffer = bytearray()
-    chunk_index = self._a2e_chunk_index
-    self._a2e_chunk_index += 1
+### 14.7 レイテンシへの影響
 
-    # ★ start_frame を入力音声サンプル数から算出（v2: estimated_frames廃止）
-    # サンプル数は正確に積算されるため、整数丸めの累積誤差が発生しない
-    start_frame = int(self._a2e_total_samples_24k / 24000 * A2E_EXPRESSION_FPS)
-    self._a2e_total_samples_24k += len(pcm_data) // 2  # 16bit PCM → サンプル数
+A2E Ahead方式では、音声送信がA2E処理完了まで遅延する。
 
-    try:
-        await self._send_to_a2e(pcm_data, chunk_index,
-                                start_frame=start_frame, is_final=is_final)
-    except Exception as e:
-        logger.error(f"[A2E] フラッシュエラー: {e}")
-```
+| フラッシュ種別 | 蓄積時間 | A2E処理時間（§1.2: 事実上ゼロ） | 追加レイテンシ |
+|---|---|---|---|
+| 初回（0.1秒） | 0.1秒 | ≈0 | sleep 50ms |
+| 句読点（2〜4秒） | 句読点到達まで | ≈0 | sleep 50ms |
+| turn_complete | 残存分 | ≈0 | sleep 50ms |
 
-**v2のポイント**:
-- `start_frame` は「この音声チャンクが会話全体の何秒目から始まるか」を表す**入力音声の時間軸上の位置**
-- A2Eがリサンプリング・パディング等で何フレーム返してきても、次のチャンクの `start_frame` は入力音声のサンプル数から一意に決まる
-- `await` 前に `_a2e_total_samples_24k` を更新するため、並列コルーチン間でも直列に処理される（v1と同じ並列安全性を維持）
+**A2E推論自体は事実上ゼロレイテンシ（§1.2）のため、追加レイテンシはsleep(50ms)のみ。**
+ただしHTTP POST往復のネットワーク遅延が加算される点は実証テストで確認が必要。
 
-> **注意**: `asyncio.ensure_future()` によりコルーチンはイベントループに登録されるが、`_flush_a2e_buffer` の `start_frame` 算出〜`_a2e_total_samples_24k` 更新は `await` 前に実行されるため、同一イベントループティック内で直列に処理される。
+### 14.8 修正対象
 
-> **v1との違い**: v1は `estimated_frames = int((len(pcm_data) / 2) / 24000 * FPS)` で推定フレーム数を積算していたが、A2E実レスポンスとの差異（例: 推定32フレーム vs 実30フレーム）によりMapに穴が生まれた。v2はサンプル数を正確に積算し、`start_frame` への変換は最終段の1回のみ行うことで、この問題を解消する。
+| # | ファイル | 変更内容 |
+|---|---------|---------|
+| 1 | `live_api_handler.py` | `_receive_and_forward()` 内: 即座の `live_audio` 送信を廃止し、PCMバッファ蓄積 → フラッシュトリガーで A2E Ahead → 音声送信 の順序に変更 |
+| 2 | `live_api_handler.py` | `_buffer_for_a2e()` 内: `asyncio.ensure_future()` による並列A2E POSTを廃止し、`_send_a2e_ahead()` の `await` 呼び出しに置換 |
 
-#### (3) `_send_to_a2e()` シグネチャ変更
+**変更しないファイル**:
+- `live-audio-manager.ts` — フロント側の同期メカニズム（`firstChunkStartTime` + バッファ + `getCurrentExpressionFrame`）はそのまま
+- `_emit_collected_shop()`, `_emit_cached_audio()` — 既にA2E Ahead方式で動作中
+- `_send_a2e_ahead()` — 既存メソッドをそのまま使用
+- `resetForNewSegment()` — 既存メソッドをそのまま使用
 
-```python
-async def _send_to_a2e(self, pcm_data: bytes, chunk_index: int,
-                        start_frame: int = 0, is_final: bool = False):
-```
-
-emitペイロードに `start_frame` を追加:
-
-```python
-self.socketio.emit('live_expression', {
-    'expressions': expressions,
-    'expression_names': names,
-    'frame_rate': frame_rate,
-    'chunk_index': chunk_index,
-    'start_frame': start_frame,   # ← 追加
-}, room=self.client_sid)
-```
-
-#### (4) リセット箇所
-
-`_a2e_total_samples_24k = 0` を以下のリセット箇所に追加:
-
-| タイミング | コード位置 |
-|-----------|-----------|
-| `turn_complete` | `self._a2e_chunk_index = 0` の直後 |
-| `interrupted` | `self._a2e_chunk_index = 0` の直後 |
-| `_describe_shops_via_live` リセット | `self._a2e_chunk_index = 0` の直後 |
-| `_send_a2e_ahead` | `self._a2e_chunk_index = 0` の直後 |
-
-#### (5) A2E先行方式（`_emit_collected_shop`, `_emit_cached_audio`）
-
-`_emit_collected_shop` の事前計算済みemit に `'start_frame': 0` を追加。
-`_send_a2e_ahead` 経由のemitは `_send_to_a2e` を通るため自動的に `start_frame` が付与される。
-
-### 14.7 修正2: フロントエンド — 絶対フレーム位置による格納・参照（v2改訂）
-
-**対象ファイル**: `live-audio-manager.ts`
-
-#### (1) データ構造の変更
-
-```typescript
-// 変更前
-private expressionFrameBuffer: ExpressionFrame[] = [];
-
-// 変更後
-private expressionFrameMap: Map<number, ExpressionFrame> = new Map();
-private expressionFrameMaxIndex: number = -1;     // Map内の最大フレームインデックス
-private lastValidFrame: ExpressionFrame | null = null;  // 未到着・範囲外フレーム用
-private expressionDelayMs: number = 300;           // ★ v2追加: expression参照遅延（ms）
-```
-
-#### (2) `onExpressionReceived()` の変更
-
-```typescript
-onExpressionReceived(data: {
-    expressions: number[][];
-    expression_names: string[];
-    frame_rate: number;
-    chunk_index: number;
-    start_frame?: number;  // ← 追加（後方互換のためoptional）
-}): void {
-    if (data.frame_rate) this.expressionFrameRate = data.frame_rate;
-    if (data.expression_names && data.expression_names.length > 0) {
-        this.expressionNames = data.expression_names;
-    }
-
-    // ★ start_frame ベースの絶対位置格納
-    const startFrame = data.start_frame ?? this.expressionFrameMaxIndex + 1;
-    for (let i = 0; i < data.expressions.length; i++) {
-        const frameIndex = startFrame + i;
-        this.expressionFrameMap.set(frameIndex, { values: data.expressions[i] });
-        if (frameIndex > this.expressionFrameMaxIndex) {
-            this.expressionFrameMaxIndex = frameIndex;
-        }
-    }
-
-    // デバッグログ
-    if (data.expressions.length > 0) {
-        const jawOpenIdx = this.expressionNames.indexOf('jawOpen');
-        const firstFrame = data.expressions[0];
-        const lastFrame = data.expressions[data.expressions.length - 1];
-        console.log(
-            `[A2E Buffer] chunk=${data.chunk_index}, start_frame=${startFrame}, ` +
-            `+${data.expressions.length}frames, total=${this.expressionFrameMap.size}, ` +
-            `jawOpenIdx=${jawOpenIdx}, jawOpen=[${jawOpenIdx >= 0 ? firstFrame[jawOpenIdx]?.toFixed(3) : 'N/A'}..${jawOpenIdx >= 0 ? lastFrame[jawOpenIdx]?.toFixed(3) : 'N/A'}], ` +
-            `firstChunkStartTime=${this.firstChunkStartTime.toFixed(3)}`
-        );
-    }
-}
-```
-
-#### (3) `getCurrentExpressionFrame()` の変更（v2: clamping + expressionDelayMs 追加）
-
-```typescript
-getCurrentExpressionFrame(): ExpressionFrame | null {
-    if (this.expressionFrameMap.size === 0) return null;
-
-    // ★ v2: expression参照を音声再生より expressionDelayMs 遅らせる
-    // A2E HTTP推論の遅延を吸収し、再生ヘッドの先走りを抑制する
-    const offsetMs = this.getCurrentPlaybackOffset() - this.expressionDelayMs;
-    if (offsetMs < 0) return this.lastValidFrame;
-
-    const frameIndex = Math.floor((offsetMs / 1000) * this.expressionFrameRate);
-
-    // ★ 三段構えのフレーム取得（v2: Gemini・ChatGPT共通提案）
-    let frame: ExpressionFrame | undefined;
-
-    // 1. Mapに直接存在する場合（理想的なケース）
-    frame = this.expressionFrameMap.get(frameIndex);
-    if (frame) {
-        this.lastValidFrame = frame;
-    }
-    // 2. 再生位置がMap最大インデックスを超えている場合（clamping）
-    else if (frameIndex > this.expressionFrameMaxIndex && this.expressionFrameMaxIndex >= 0) {
-        frame = this.expressionFrameMap.get(this.expressionFrameMaxIndex);
-        if (frame) {
-            this.lastValidFrame = frame;
-        }
-    }
-    // 3. Map範囲内だが穴がある場合 → lastValidFrame を返す
-
-    // デバッグ: 60フレームごと（約1秒）にログ出力
-    this._a2eDebugCounter++;
-    if (this._a2eDebugCounter % 60 === 0) {
-        const currentFrame = frame ?? this.lastValidFrame;
-        const jawOpenIdx = this.expressionNames.indexOf('jawOpen');
-        const jawVal = currentFrame && jawOpenIdx >= 0 && currentFrame.values[jawOpenIdx] !== undefined
-            ? currentFrame.values[jawOpenIdx].toFixed(3) : 'N/A';
-        console.log(
-            `[A2E Sync] offsetMs=${(offsetMs + this.expressionDelayMs).toFixed(0)}, ` +
-            `exprOffsetMs=${offsetMs.toFixed(0)}, ` +
-            `frameIdx=${frameIndex}/${this.expressionFrameMaxIndex}, ` +
-            `hit=${!!this.expressionFrameMap.get(frameIndex)}, clamped=${frameIndex > this.expressionFrameMaxIndex}, ` +
-            `jawOpen=${jawVal}`
-        );
-    }
-
-    return frame ?? this.lastValidFrame ?? null;
-}
-```
-
-**v2のポイント**:
-- **`expressionDelayMs`（300ms）**: expression参照を音声再生より300ms遅らせることで、A2E HTTP推論遅延による「先走り」を抑制。リアルタイムリップシンクでは口パクを少し遅らせる方が停止するよりずっと自然（ChatGPT提案）
-- **三段構えのフレーム取得**: (1) Map直接hit → (2) maxIndexへのclamping → (3) lastValidFrame。v1では(1)と(3)のみで、(2)のclampingが欠落していたため、frameIndex > maxIndex で常にlastValidFrameが初期値のまま固定された（Gemini・ChatGPT共通提案）
-- **clampingにより `lastValidFrame` が常に最新末尾で更新される**: chunk 1到着後は chunk 1末尾のフレームが使われるため、表情が更新され続ける
-
-> **`expressionDelayMs` の値について**: 初期値300ms。A2E HTTPレイテンシ（ログ上約3秒）はバッファリング（初回0.1秒、後続5秒）で大部分が吸収されるため、expressionDelayMsはバッファリングで吸収しきれない残余遅延の補正。実証テストで調整する。
-
-#### (4) クリア処理の変更
-
-`clearPlaybackQueue()` と `resetForNewSegment()` と `onAiResponseStarted()` 内の `expressionFrameBuffer = []` を以下に置換:
-
-```typescript
-this.expressionFrameMap = new Map();
-this.expressionFrameMaxIndex = -1;
-this.lastValidFrame = null;
-```
-
-### 14.8 未到着・遅延フレームのポリシー（v2改訂）
-
-| 状況 | 対応 | 根拠 |
-|------|------|------|
-| 該当フレームがMapに存在 | そのフレームを返す | 理想ケース |
-| `frameIndex > maxIndex` | maxIndexのフレームを返す（clamping） | Gemini・ChatGPT共通提案。旧Array版の `Math.min` 相当 |
-| Map範囲内だが穴（推定誤差由来） | `lastValidFrame` を返す（前フレーム保持） | Gemini・ChatGPT共通提案 |
-| 再生済み時刻のchunkが後から到着 | Mapに格納する（参照されるかは再生位置次第） | データ一貫性の維持 |
-| バッファクリア時 | `Map.clear()` + `expressionFrameMaxIndex = -1` + `lastValidFrame = null` | 新セグメントは白紙から |
-
-### 14.9 不採用とした提案
-
-| 提案 | 提案元 | 不採用理由 |
-|------|--------|-----------|
-| A2E HTTP並列数制限（セマフォ） | ChatGPT | バッファ設計（初回0.1秒、後続5秒）で実質2〜3並列に収まる。修正1+2で順序問題は解決されるため過剰 |
-| job_id紐付けによるデバッグ改善 | ChatGPT | `chunk_index` + `start_frame` で追跡可能。優先度低 |
-| Jitter Buffer（音声側に遅延挿入） | Gemini | 音声レイテンシ増加。表情側で吸収する方が適切 |
-| neutral decay（末尾保持→lerp→0） | Gemini v1 / ChatGPT v2 | 現行コードにneutral expressionの定義なし。clamping + expressionDelayMs で十分。必要に応じてセクション10.7 B-2として別途検討 |
-| `start_sample_24k` をフロントに送信しフロント側で `start_frame` 変換 | ChatGPT | backendで変換する方がフロントの変更が少ない。24kHzサンプルレートはbackendの関心事 |
-
-### 14.10 修正対象まとめ（v2改訂）
-
-| # | ファイル | 変更内容 | 規模 |
-|---|---------|---------|------|
-| 1 | `live_api_handler.py` | `_a2e_total_frames_sent` → `_a2e_total_samples_24k` に置換、`_flush_a2e_buffer` で `start_frame` をサンプル数から算出、`_send_to_a2e` シグネチャ変更・emitペイロード追加、リセット箇所4か所に `_a2e_total_samples_24k = 0` 追加 | 小 |
-| 2 | `live-audio-manager.ts` | `expressionFrameBuffer: ExpressionFrame[]` → `expressionFrameMap: Map` + `expressionFrameMaxIndex` + `lastValidFrame` + `expressionDelayMs` 追加、`getCurrentExpressionFrame` に三段構えロジック + expressionDelayMs適用、`onExpressionReceived` / クリア処理3か所の変更 | 中 |
-
-### 14.11 セクション10・11との関係
+### 14.9 セクション10・11との関係
 
 - **セクション10（A-1 + A-2）**: 最終チャンク品質改善 → **独立・併用可能**
 - **セクション11（context持ち回し）**: A2Eサービス側のチャンク間連続性 → **独立・併用可能**
-- **本セクション14**: フロントエンドでの表情フレーム順序保証 → **独立・併用可能**
+- **本セクション14**: 通常会話のA2E Ahead化 → **独立・併用可能**
 
-3つの改善は異なるレイヤーの問題を解決するため、**全て併用**することで最大の効果が得られる。
+### 14.10 参照仕様
 
-```
-セクション10: A2Eサービスへの入力品質（最終チャンク）
-セクション11: A2Eサービス内部のcontext連続性（チャンク間）
-セクション14: フロントエンドでの出力フレーム順序（チャンク順序ずれ + 再生ヘッド先走り抑制）
-```
+| 文書 | 参照箇所 |
+|------|---------|
+| docs/12_shop_audio_a2e_sync_fix_spec.md | §2 A2E先行の設計思想、§3 実装詳細 |
+| 本ドキュメント §3.3 | ショップ2軒目以降のA2E先行方式 |
+| 本ドキュメント §3.4 | キャッシュ音声のA2E先行方式 |
+| 本ドキュメント §4 | セグメント境界リセット（`resetForNewSegment`） |
+| 本ドキュメント §6 | バッファリング定数 |
 
 ---
 
