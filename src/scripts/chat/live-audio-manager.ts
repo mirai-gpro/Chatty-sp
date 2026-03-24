@@ -62,7 +62,7 @@ export class LiveAudioManager {
 
     // ★ Expression同期機能（仕様書08 セクション4.1）
     private firstChunkStartTime: number = 0;          // 最初のチャンク再生時刻
-    private expressionFrameBuffer: ExpressionFrame[] = [];  // フレームバッファ（到着順＝時間軸順）
+    private expressionFrameBuffer: ExpressionFrame[] = [];  // フレームデータ
     public expressionFrameRate: number = 30;           // fps（デフォルト30）
     public expressionNames: string[] = [];             // ARKit ブレンドシェイプ名
     private _a2eDebugCounter: number = 0;              // デバッグログ間引き用
@@ -240,37 +240,37 @@ export class LiveAudioManager {
     }
 
     /**
-     * 現在のフレームインデックスからexpressionフレームを取得（仕様書08 セクション4.1）
-     * A2E Ahead方式: Expressionは音声より先にバッファに到着済み。
-     * 時間軸ベースでframeIndexを算出し、Arrayから直接取得。
+     * 現在のフレームインデックスからexpressionフレームを取得
      */
     getCurrentExpressionFrame(): ExpressionFrame | null {
         if (this.expressionFrameBuffer.length === 0) return null;
 
+        // ★ 音声と同じ時間ベース（firstChunkStartTime）を使用
+        // expressionフレームは音声の特定時点に対応するため、音声基準で正確に同期
         const offsetMs = this.getCurrentPlaybackOffset();
         const frameIndex = Math.floor((offsetMs / 1000) * this.expressionFrameRate);
         const clampedIndex = Math.min(frameIndex, this.expressionFrameBuffer.length - 1);
 
+        if (clampedIndex < 0) return null;
+
+        const frame = this.expressionFrameBuffer[clampedIndex];
+
         // デバッグ: 60フレームごと（約1秒）にログ出力
         this._a2eDebugCounter++;
         if (this._a2eDebugCounter % 60 === 0) {
-            const frame = this.expressionFrameBuffer[clampedIndex];
             const jawOpenIdx = this.expressionNames.indexOf('jawOpen');
-            const jawVal = frame && jawOpenIdx >= 0 && frame.values[jawOpenIdx] !== undefined
+            const jawVal = jawOpenIdx >= 0 && frame.values[jawOpenIdx] !== undefined
                 ? frame.values[jawOpenIdx].toFixed(3) : 'N/A';
             console.log(
-                `[A2E Sync] offsetMs=${offsetMs.toFixed(0)}, ` +
-                `frameIdx=${frameIndex}/${this.expressionFrameBuffer.length - 1}, ` +
-                `jawOpen=${jawVal}`
+                `[A2E Sync] offsetMs=${offsetMs.toFixed(0)}, frameIdx=${clampedIndex}/${this.expressionFrameBuffer.length}, jawOpen=${jawVal}`
             );
         }
 
-        return this.expressionFrameBuffer[clampedIndex] ?? null;
+        return frame;
     }
 
     /**
-     * Socket.IO live_expression イベントデータをフレームバッファに追加（仕様書08 セクション4.1）
-     * A2E Ahead方式: Expressionは音声より先に到着するため、到着順にpushするだけで時間軸順になる。
+     * Socket.IO live_expression イベントデータをフレームバッファに追加
      */
     onExpressionReceived(data: {
         expressions: number[][];
@@ -284,9 +284,9 @@ export class LiveAudioManager {
             this.expressionNames = data.expression_names;
         }
 
-        // 到着順にpush（A2E Ahead方式では到着順＝時間軸順が保証される）
-        for (let i = 0; i < data.expressions.length; i++) {
-            this.expressionFrameBuffer.push({ values: data.expressions[i] });
+        // フレームデータをバッファに追加
+        for (const values of data.expressions) {
+            this.expressionFrameBuffer.push({ values });
         }
 
         // デバッグ: バッファ状態とjawOpen値を出力
@@ -295,9 +295,8 @@ export class LiveAudioManager {
             const firstFrame = data.expressions[0];
             const lastFrame = data.expressions[data.expressions.length - 1];
             console.log(
-                `[A2E Buffer] chunk=${data.chunk_index}, ` +
-                `+${data.expressions.length}frames, total=${this.expressionFrameBuffer.length}, ` +
-                `jawOpen=[${jawOpenIdx >= 0 ? firstFrame[jawOpenIdx]?.toFixed(3) : 'N/A'}..${jawOpenIdx >= 0 ? lastFrame[jawOpenIdx]?.toFixed(3) : 'N/A'}], ` +
+                `[A2E Buffer] chunk=${data.chunk_index}, +${data.expressions.length}frames, total=${this.expressionFrameBuffer.length}, ` +
+                `jawOpenIdx=${jawOpenIdx}, jawOpen=[${jawOpenIdx >= 0 ? firstFrame[jawOpenIdx]?.toFixed(3) : 'N/A'}..${jawOpenIdx >= 0 ? lastFrame[jawOpenIdx]?.toFixed(3) : 'N/A'}], ` +
                 `firstChunkStartTime=${this.firstChunkStartTime.toFixed(3)}`
             );
         }

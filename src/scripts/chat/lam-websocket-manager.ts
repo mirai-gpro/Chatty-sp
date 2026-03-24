@@ -76,7 +76,7 @@ export class LAMWebSocketManager {
             const isElf = config.modelUrl.includes('elf.zip');
             const camParams = isElf
                 ? { posY: 1.73, posZ: 0.4, targetY: 1.70 }  // elf
-                : { posY: 1.73, posZ: 0.35, targetY: 1.65 }; // meruru
+                : { posY: 1.73, posZ: 0.4, targetY: 1.62 }; // meruru: 従来値
 
             if (this.renderer.viewer && this.renderer.viewer.camera) {
                 const camera = this.renderer.viewer.camera;
@@ -148,12 +148,11 @@ export class LAMWebSocketManager {
         // === STEP2: 小さすぎる口の動き対策 ===
         // バイアス: jawOpenが0.001〜0.05の区間を0.05に底上げ（0は静止なのでそのまま）
         const jawOpen = result['jawOpen'] ?? 0;
-        const jawOpenBiasFloor = (jawOpen >= 0.001 && jawOpen < 0.05) ? 0.05 : 0;
-        if (jawOpenBiasFloor > 0) {
-            result['jawOpen'] = jawOpenBiasFloor;
+        if (jawOpen >= 0.001 && jawOpen < 0.05) {
+            result['jawOpen'] = 0.05;
         }
 
-        // スムージング: 口周り全体にフレーム間補間（α=0.45）
+        // スムージング: 口周り全体にフレーム間補間（α=0.3）
         const MOUTH_SHAPES = [
             'jawOpen', 'jawForward', 'jawLeft', 'jawRight',
             'mouthClose', 'mouthFunnel', 'mouthPucker', 'mouthLeft', 'mouthRight',
@@ -170,11 +169,6 @@ export class LAMWebSocketManager {
                 result[name] = prev * (1 - SMOOTH_ALPHA) + result[name] * SMOOTH_ALPHA;
                 this._prevMouthValues[name] = result[name];
             }
-        }
-
-        // バイアス下限保護: スムージングがバイアス値を下回らないようにする
-        if (jawOpenBiasFloor > 0 && (result['jawOpen'] ?? 0) < jawOpenBiasFloor) {
-            result['jawOpen'] = jawOpenBiasFloor;
         }
 
         // デバッグ: 120フレームごと（約2秒）にログ出力

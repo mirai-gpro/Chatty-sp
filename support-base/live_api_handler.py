@@ -33,8 +33,6 @@ A2E_MIN_BUFFER_BYTES = 4800      # 最低バッファサイズ（24kHz 16bit mon
 A2E_FIRST_FLUSH_BYTES = 4800     # 初回フラッシュ閾値（0.1秒分 = 4800bytes）遅延最小化
 A2E_AUTO_FLUSH_BYTES = 240000    # 2回目以降フラッシュ閾値（5秒分 = 240000bytes）品質優先
 A2E_EXPRESSION_FPS = 30
-A2E_FINAL_MIN_BYTES = 9600       # 最終チャンク最小長（0.2秒 @ 24kHz 16bit mono）— A-1
-A2E_SILENCE_PAD_BYTES = 9600     # 最終チャンク無音パディング（0.2秒 @ 24kHz 16bit mono）— A-2
 
 # stt_stream.py から転記（変更禁止）
 LIVE_API_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
@@ -330,11 +328,9 @@ class LiveAPISession:
         self._resume_message = None
 
         # ★ A2Eバッファリング機構（仕様書08 セクション3.1）
-        self._a2e_audio_buffer = bytearray()       # PCMチャンク蓄積用（A2E送信用）
-        self._a2e_pending_audio_chunks = []         # ★ 仕様書13 §14: フロント送信待ちPCMチャンク
+        self._a2e_audio_buffer = bytearray()       # PCMチャンク蓄積用
         self._a2e_transcript_buffer = ""            # 句読点検出用
         self._a2e_chunk_index = 0                   # expression同期用チャンク識別子
-        self._a2e_total_samples_24k = 0              # ★ 仕様書13 §14.6 v2: 累積PCMサンプル数（24kHz基準、start_frame算出用）
         self._a2e_http_client = httpx.AsyncClient(timeout=10.0)
 
         # 非同期キュー
@@ -596,10 +592,9 @@ class LiveAPISession:
 
                     # 2. ターン完了
                     if hasattr(sc, 'turn_complete') and sc.turn_complete:
-                        # ★ A2E Ahead: 残存バッファをA2E先行処理 → 蓄積音声送信（仕様書13 §14）
-                        await self._flush_a2e_ahead(force=True, is_final=True)
+                        # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
+                        await self._flush_a2e_buffer(force=True, is_final=True)
                         self._a2e_chunk_index = 0  # 次ターン用にリセット
-                        self._a2e_total_samples_24k = 0
                         self._process_turn_complete()
                         self.socketio.emit('turn_complete', {},
                                            room=self.client_sid)
@@ -613,10 +608,9 @@ class LiveAPISession:
 
                     # 3. 割り込み検知
                     if hasattr(sc, 'interrupted') and sc.interrupted:
-                        # ★ A2E Ahead: 残存バッファをA2E先行処理 → 蓄積音声送信（仕様書13 §14）
-                        await self._flush_a2e_ahead(force=True, is_final=True)
+                        # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
+                        await self._flush_a2e_buffer(force=True, is_final=True)
                         self._a2e_chunk_index = 0  # 次ターン用にリセット
-                        self._a2e_total_samples_24k = 0
                         self.ai_transcript_buffer = ""
                         self.socketio.emit('interrupted', {},
                                            room=self.client_sid)
@@ -646,14 +640,19 @@ class LiveAPISession:
                             # ★ A2E: 句読点検出でバッファフラッシュ（仕様書08 セクション3.2）
                             self._on_output_transcription(text)
 
-                    # 6. 音声データ — A2E Ahead方式（仕様書13 §14）
-                    #    live_audioは即送信せず、PCMを蓄積。
-                    #    フラッシュトリガーでA2E Ahead → 音声送信の順序で処理。
+                    # 6. 音声データ
                     if sc.model_turn:
                         for part in sc.model_turn.parts:
                             if (hasattr(part, 'inline_data')
                                     and part.inline_data):
                                 if isinstance(part.inline_data.data, bytes):
+                                    audio_b64 = base64.b64encode(
+                                        part.inline_data.data
+                                    ).decode('utf-8')
+                                    self.socketio.emit('live_audio',
+                                                       {'data': audio_b64},
+                                                       room=self.client_sid)
+                                    # ★ A2E: PCMバッファ蓄積（仕様書08 セクション3.2）
                                     self._buffer_for_a2e(part.inline_data.data)
 
     async def _handle_tool_call(self, tool_call, session):
@@ -889,7 +888,6 @@ class LiveAPISession:
         # ── A2Eリセット ──
         self.socketio.emit('live_expression_reset', room=self.client_sid)
         self._a2e_chunk_index = 0
-        self._a2e_total_samples_24k = 0  # ★ 仕様書13 §14.6 v2
         self._a2e_audio_buffer = bytearray()
 
         # ── 場繋ぎ: bridge → please_wait を連続再生（約8-9秒）──
@@ -1102,7 +1100,6 @@ class LiveAPISession:
                 'expression_names': a2e_result['expression_names'],
                 'frame_rate': a2e_result['frame_rate'],
                 'chunk_index': 0,
-                'start_frame': 0,  # ★ 仕様書13 §14.6
             }, room=self.client_sid)
             logger.info(f"[A2E] ショップ{shop_number}: 事前計算済みexpression emit ({len(a2e_result['expressions'])} frames)")
         else:
@@ -1138,7 +1135,6 @@ class LiveAPISession:
                     # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
                     await self._flush_a2e_buffer(force=True, is_final=True)
                     self._a2e_chunk_index = 0  # 次ターン用にリセット
-                    self._a2e_total_samples_24k = 0  # ★ 仕様書13 §14.6 v2
                     if self.ai_transcript_buffer.strip():
                         ai_text = self.ai_transcript_buffer.strip()
                         logger.info(f"[ShopDesc] ショップ{shop_number}: {ai_text}")
@@ -1231,16 +1227,12 @@ class LiveAPISession:
     # ============================================================
 
     def _buffer_for_a2e(self, pcm_data: bytes):
-        """PCMをA2Eバッファとフロント送信待ちリストに蓄積（仕様書13 §14）
-
-        live_audioは即送信しない。閾値超過でA2E Ahead処理をスケジュール。
-        """
+        """PCMをバッファに追加。閾値超過で自動フラッシュ（句読点待ち不要）"""
         self._a2e_audio_buffer.extend(pcm_data)
-        self._a2e_pending_audio_chunks.append(pcm_data)
         # ★ 初回は即フラッシュ（遅延最小化）、2回目以降は品質優先で大きく溜める
         threshold = A2E_FIRST_FLUSH_BYTES if self._a2e_chunk_index == 0 else A2E_AUTO_FLUSH_BYTES
         if len(self._a2e_audio_buffer) >= threshold:
-            asyncio.ensure_future(self._flush_a2e_ahead(force=True))
+            asyncio.ensure_future(self._flush_a2e_buffer(force=True))
 
     def _on_output_transcription(self, text: str):
         """句読点検出でフラッシュ判定（仕様書08 セクション3.3）"""
@@ -1248,7 +1240,7 @@ class LiveAPISession:
         # 句読点（。？！）を検出したらフラッシュ
         flush_triggers = ['。', '？', '！', '?', '!']
         if any(t in text for t in flush_triggers):
-            asyncio.ensure_future(self._flush_a2e_ahead(force=False))
+            asyncio.ensure_future(self._flush_a2e_buffer(force=False))
             self._a2e_transcript_buffer = ""
 
     async def _send_a2e_ahead(self, pcm_data: bytes):
@@ -1260,11 +1252,10 @@ class LiveAPISession:
         """
         # chunk_indexリセット（新セグメント）
         self._a2e_chunk_index = 0
-        self._a2e_total_samples_24k = 0  # ★ 仕様書13 §14.6 v2
         self._a2e_audio_buffer = bytearray()
 
         # 一括でA2Eに送信（is_start=True, is_final=True）
-        await self._send_to_a2e(pcm_data, chunk_index=0, start_frame=0, is_final=True)
+        await self._send_to_a2e(pcm_data, chunk_index=0, is_final=True)
 
         # chunk_indexを1に進める（次のフラッシュがis_start=Falseになるように）
         self._a2e_chunk_index = 1
@@ -1312,38 +1303,6 @@ class LiveAPISession:
             logger.error(f"[A2E] 事前計算エラー: {e}")
         return None
 
-    async def _flush_a2e_ahead(self, force: bool = False, is_final: bool = False):
-        """A2E Ahead方式: A2E処理 → Expression送信 → 蓄積音声送信（仕様書13 §14）
-
-        ショップ説明の _emit_collected_shop / _emit_cached_audio と同じ
-        「Expression先着 → 音声再生開始」パターンを通常会話にも適用。
-        """
-        if len(self._a2e_audio_buffer) == 0:
-            return
-
-        # force=Falseの場合、最低バッファサイズをチェック
-        if not force and len(self._a2e_audio_buffer) < A2E_MIN_BUFFER_BYTES:
-            return
-
-        # 蓄積音声チャンクを取得してクリア
-        pending_chunks = self._a2e_pending_audio_chunks[:]
-        self._a2e_pending_audio_chunks = []
-
-        # 1. live_expression_reset → フロントのバッファクリア
-        self.socketio.emit('live_expression_reset', room=self.client_sid)
-
-        # 2. A2E先行: _flush_a2e_buffer で Expression をフロントへ先に届ける
-        await self._flush_a2e_buffer(force=True, is_final=is_final)
-
-        # 3. sleep: Expressionがフロントのバッファに格納される時間マージン
-        await asyncio.sleep(0.05)  # 50ms（docs/12 §2.3）
-
-        # 4. 蓄積した音声チャンクを順次送信
-        for chunk in pending_chunks:
-            audio_b64 = base64.b64encode(chunk).decode('utf-8')
-            self.socketio.emit('live_audio', {'data': audio_b64},
-                               room=self.client_sid)
-
     async def _flush_a2e_buffer(self, force: bool = False, is_final: bool = False):
         """最低バイト数チェック後、非同期でA2E送信（仕様書08 セクション3.3）"""
         if len(self._a2e_audio_buffer) == 0:
@@ -1353,32 +1312,19 @@ class LiveAPISession:
         if not force and len(self._a2e_audio_buffer) < A2E_MIN_BUFFER_BYTES:
             return
 
-        # ★ A-1: 最終チャンクが短すぎる場合、無音paddingで最小長を確保
-        #   （仕様書13 セクション10.3）
-        if is_final and len(self._a2e_audio_buffer) < A2E_FINAL_MIN_BYTES:
-            pad_needed = A2E_FINAL_MIN_BYTES - len(self._a2e_audio_buffer)
-            self._a2e_audio_buffer.extend(b'\x00' * pad_needed)
-            logger.info(f"[A2E] A-1: 最終チャンクが短いため {pad_needed} bytes の無音パディングで補完")
-
         # バッファを取得してクリア
         pcm_data = bytes(self._a2e_audio_buffer)
         self._a2e_audio_buffer = bytearray()
         chunk_index = self._a2e_chunk_index
         self._a2e_chunk_index += 1
 
-        # ★ start_frame を入力音声サンプル数から算出（仕様書13 §14.6 v2）
-        # サンプル数は正確に積算されるため、整数丸めの累積誤差が発生しない
-        # await前に実行されるため、並列コルーチン間でも直列に処理される
-        start_frame = int(self._a2e_total_samples_24k / 24000 * A2E_EXPRESSION_FPS)
-        self._a2e_total_samples_24k += len(pcm_data) // 2  # 16bit PCM → サンプル数
-
         # 非同期でA2Eに送信
         try:
-            await self._send_to_a2e(pcm_data, chunk_index, start_frame=start_frame, is_final=is_final)
+            await self._send_to_a2e(pcm_data, chunk_index, is_final=is_final)
         except Exception as e:
             logger.error(f"[A2E] フラッシュエラー: {e}")
 
-    async def _send_to_a2e(self, pcm_data: bytes, chunk_index: int, start_frame: int = 0, is_final: bool = False):
+    async def _send_to_a2e(self, pcm_data: bytes, chunk_index: int, is_final: bool = False):
         """リサンプリング（24→16kHz）後、A2Eサービスに送信（仕様書08 セクション3.4）
 
         a2e_engine.py _decode_audio の "pcm" フォーマット:
@@ -1386,14 +1332,6 @@ class LiveAPISession:
         → raw int16 PCMバイトをbase64で送信
         """
         try:
-            # ★ A-2: 最終チャンク末尾に200ms無音パディング追加
-            #   （仕様書13 セクション10.4）
-            #   発話終端を明示的にA2Eに伝え、blendshapeをニュートラルへ収束させる
-            if is_final:
-                silence_pad = b'\x00' * A2E_SILENCE_PAD_BYTES
-                pcm_data = pcm_data + silence_pad
-                logger.info(f"[A2E] A-2: 最終チャンク末尾に {A2E_SILENCE_PAD_BYTES} bytes の無音パディング追加")
-
             # PCM 24kHz 16bit mono → numpy int16
             int16_array = np.frombuffer(pcm_data, dtype=np.int16)
 
@@ -1433,9 +1371,8 @@ class LiveAPISession:
                         'expression_names': names,
                         'frame_rate': frame_rate,
                         'chunk_index': chunk_index,
-                        'start_frame': start_frame,  # ★ 仕様書13 §14.6
                     }, room=self.client_sid)
-                    logger.info(f"[A2E] chunk {chunk_index}: {len(frames)} frames送信 (start_frame={start_frame})")
+                    logger.info(f"[A2E] chunk {chunk_index}: {len(frames)} frames送信")
             else:
                 logger.warning(f"[A2E] サービスエラー: {response.status_code}")
 
