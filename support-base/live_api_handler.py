@@ -33,6 +33,8 @@ A2E_MIN_BUFFER_BYTES = 4800      # 最低バッファサイズ（24kHz 16bit mon
 A2E_FIRST_FLUSH_BYTES = 4800     # 初回フラッシュ閾値（0.1秒分 = 4800bytes）遅延最小化
 A2E_AUTO_FLUSH_BYTES = 240000    # 2回目以降フラッシュ閾値（5秒分 = 240000bytes）品質優先
 A2E_EXPRESSION_FPS = 30
+A2E_FINAL_MIN_BYTES = 9600       # 最終チャンク最小長（0.2秒 @ 24kHz 16bit mono）— A-1
+A2E_SILENCE_PAD_BYTES = 9600     # 最終チャンク無音パディング（0.2秒 @ 24kHz 16bit mono）— A-2
 
 # stt_stream.py から転記（変更禁止）
 LIVE_API_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
@@ -1312,6 +1314,13 @@ class LiveAPISession:
         if not force and len(self._a2e_audio_buffer) < A2E_MIN_BUFFER_BYTES:
             return
 
+        # ★ A-1: 最終チャンクが短すぎる場合、無音paddingで最小長を確保
+        #   （仕様書13 セクション10.3）
+        if is_final and len(self._a2e_audio_buffer) < A2E_FINAL_MIN_BYTES:
+            pad_needed = A2E_FINAL_MIN_BYTES - len(self._a2e_audio_buffer)
+            self._a2e_audio_buffer.extend(b'\x00' * pad_needed)
+            logger.info(f"[A2E] A-1: 最終チャンクが短いため {pad_needed} bytes の無音パディングで補完")
+
         # バッファを取得してクリア
         pcm_data = bytes(self._a2e_audio_buffer)
         self._a2e_audio_buffer = bytearray()
@@ -1332,6 +1341,14 @@ class LiveAPISession:
         → raw int16 PCMバイトをbase64で送信
         """
         try:
+            # ★ A-2: 最終チャンク末尾に200ms無音パディング追加
+            #   （仕様書13 セクション10.4）
+            #   発話終端を明示的にA2Eに伝え、blendshapeをニュートラルへ収束させる
+            if is_final:
+                silence_pad = b'\x00' * A2E_SILENCE_PAD_BYTES
+                pcm_data = pcm_data + silence_pad
+                logger.info(f"[A2E] A-2: 最終チャンク末尾に {A2E_SILENCE_PAD_BYTES} bytes の無音パディング追加")
+
             # PCM 24kHz 16bit mono → numpy int16
             int16_array = np.frombuffer(pcm_data, dtype=np.int16)
 
