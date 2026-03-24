@@ -333,7 +333,7 @@ class LiveAPISession:
         self._a2e_audio_buffer = bytearray()       # PCMチャンク蓄積用
         self._a2e_transcript_buffer = ""            # 句読点検出用
         self._a2e_chunk_index = 0                   # expression同期用チャンク識別子
-        self._a2e_total_frames_sent = 0             # ★ 仕様書13 §14.6: 累積フレーム数（start_frame算出用）
+        self._a2e_total_samples_24k = 0              # ★ 仕様書13 §14.6 v2: 累積PCMサンプル数（24kHz基準、start_frame算出用）
         self._a2e_http_client = httpx.AsyncClient(timeout=10.0)
 
         # 非同期キュー
@@ -598,7 +598,7 @@ class LiveAPISession:
                         # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
                         await self._flush_a2e_buffer(force=True, is_final=True)
                         self._a2e_chunk_index = 0  # 次ターン用にリセット
-                        self._a2e_total_frames_sent = 0  # ★ 仕様書13 §14.6
+                        self._a2e_total_samples_24k = 0  # ★ 仕様書13 §14.6 v2
                         self._process_turn_complete()
                         self.socketio.emit('turn_complete', {},
                                            room=self.client_sid)
@@ -615,7 +615,7 @@ class LiveAPISession:
                         # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
                         await self._flush_a2e_buffer(force=True, is_final=True)
                         self._a2e_chunk_index = 0  # 次ターン用にリセット
-                        self._a2e_total_frames_sent = 0  # ★ 仕様書13 §14.6
+                        self._a2e_total_samples_24k = 0  # ★ 仕様書13 §14.6 v2
                         self.ai_transcript_buffer = ""
                         self.socketio.emit('interrupted', {},
                                            room=self.client_sid)
@@ -893,7 +893,7 @@ class LiveAPISession:
         # ── A2Eリセット ──
         self.socketio.emit('live_expression_reset', room=self.client_sid)
         self._a2e_chunk_index = 0
-        self._a2e_total_frames_sent = 0  # ★ 仕様書13 §14.6
+        self._a2e_total_samples_24k = 0  # ★ 仕様書13 §14.6 v2
         self._a2e_audio_buffer = bytearray()
 
         # ── 場繋ぎ: bridge → please_wait を連続再生（約8-9秒）──
@@ -1142,7 +1142,7 @@ class LiveAPISession:
                     # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
                     await self._flush_a2e_buffer(force=True, is_final=True)
                     self._a2e_chunk_index = 0  # 次ターン用にリセット
-                    self._a2e_total_frames_sent = 0  # ★ 仕様書13 §14.6
+                    self._a2e_total_samples_24k = 0  # ★ 仕様書13 §14.6 v2
                     if self.ai_transcript_buffer.strip():
                         ai_text = self.ai_transcript_buffer.strip()
                         logger.info(f"[ShopDesc] ショップ{shop_number}: {ai_text}")
@@ -1260,7 +1260,7 @@ class LiveAPISession:
         """
         # chunk_indexリセット（新セグメント）
         self._a2e_chunk_index = 0
-        self._a2e_total_frames_sent = 0  # ★ 仕様書13 §14.6
+        self._a2e_total_samples_24k = 0  # ★ 仕様書13 §14.6 v2
         self._a2e_audio_buffer = bytearray()
 
         # 一括でA2Eに送信（is_start=True, is_final=True）
@@ -1334,11 +1334,11 @@ class LiveAPISession:
         chunk_index = self._a2e_chunk_index
         self._a2e_chunk_index += 1
 
-        # ★ start_frame をここで確定（仕様書13 §14.6）
+        # ★ start_frame を入力音声サンプル数から算出（仕様書13 §14.6 v2）
+        # サンプル数は正確に積算されるため、整数丸めの累積誤差が発生しない
         # await前に実行されるため、並列コルーチン間でも直列に処理される
-        start_frame = self._a2e_total_frames_sent
-        estimated_frames = int((len(pcm_data) / 2) / 24000 * A2E_EXPRESSION_FPS)
-        self._a2e_total_frames_sent += estimated_frames
+        start_frame = int(self._a2e_total_samples_24k / 24000 * A2E_EXPRESSION_FPS)
+        self._a2e_total_samples_24k += len(pcm_data) // 2  # 16bit PCM → サンプル数
 
         # 非同期でA2Eに送信
         try:

@@ -64,7 +64,8 @@ export class LiveAudioManager {
     private firstChunkStartTime: number = 0;          // 最初のチャンク再生時刻
     private expressionFrameMap: Map<number, ExpressionFrame> = new Map();  // ★ 絶対フレーム位置で格納
     private expressionFrameMaxIndex: number = -1;     // Map内の最大フレームインデックス
-    private lastValidFrame: ExpressionFrame | null = null;  // 未到着フレーム用の前フレーム保持
+    private lastValidFrame: ExpressionFrame | null = null;  // 未到着・範囲外フレーム用
+    private expressionDelayMs: number = 300;           // ★ §14.7 v2: expression参照遅延（ms）
     public expressionFrameRate: number = 30;           // fps（デフォルト30）
     public expressionNames: string[] = [];             // ARKit ブレンドシェイプ名
     private _a2eDebugCounter: number = 0;              // デバッグログ間引き用
@@ -242,21 +243,36 @@ export class LiveAudioManager {
     }
 
     /**
-     * 現在のフレームインデックスからexpressionフレームを取得（仕様書13 §14.7）
-     * ★ Map（絶対フレーム位置）から取得。未到着フレームは前フレームを保持。
+     * 現在のフレームインデックスからexpressionフレームを取得（仕様書13 §14.7 v2）
+     * ★ 三段構え: (1) Map直接hit → (2) maxIndexへのclamping → (3) lastValidFrame
+     * ★ expressionDelayMs で再生ヘッドの先走りを抑制
      */
     getCurrentExpressionFrame(): ExpressionFrame | null {
         if (this.expressionFrameMap.size === 0) return null;
 
-        // ★ 音声と同じ時間ベース（firstChunkStartTime）を使用
-        const offsetMs = this.getCurrentPlaybackOffset();
+        // ★ v2: expression参照を音声再生より expressionDelayMs 遅らせる
+        const audioOffsetMs = this.getCurrentPlaybackOffset();
+        const offsetMs = audioOffsetMs - this.expressionDelayMs;
+        if (offsetMs < 0) return this.lastValidFrame;
+
         const frameIndex = Math.floor((offsetMs / 1000) * this.expressionFrameRate);
 
-        // ★ Mapから絶対フレーム位置で取得
-        const frame = this.expressionFrameMap.get(frameIndex);
+        // ★ 三段構えのフレーム取得（§14.7 v2: Gemini・ChatGPT共通提案）
+        let frame: ExpressionFrame | undefined;
+
+        // 1. Mapに直接存在する場合（理想的なケース）
+        frame = this.expressionFrameMap.get(frameIndex);
         if (frame) {
             this.lastValidFrame = frame;
         }
+        // 2. 再生位置がMap最大インデックスを超えている場合（clamping）
+        else if (frameIndex > this.expressionFrameMaxIndex && this.expressionFrameMaxIndex >= 0) {
+            frame = this.expressionFrameMap.get(this.expressionFrameMaxIndex);
+            if (frame) {
+                this.lastValidFrame = frame;
+            }
+        }
+        // 3. Map範囲内だが穴がある場合 → lastValidFrame を返す（下のreturnで処理）
 
         // デバッグ: 60フレームごと（約1秒）にログ出力
         this._a2eDebugCounter++;
@@ -266,12 +282,13 @@ export class LiveAudioManager {
             const jawVal = currentFrame && jawOpenIdx >= 0 && currentFrame.values[jawOpenIdx] !== undefined
                 ? currentFrame.values[jawOpenIdx].toFixed(3) : 'N/A';
             console.log(
-                `[A2E Sync] offsetMs=${offsetMs.toFixed(0)}, frameIdx=${frameIndex}/${this.expressionFrameMaxIndex}, ` +
-                `hit=${!!frame}, jawOpen=${jawVal}`
+                `[A2E Sync] audioOffsetMs=${audioOffsetMs.toFixed(0)}, exprOffsetMs=${offsetMs.toFixed(0)}, ` +
+                `frameIdx=${frameIndex}/${this.expressionFrameMaxIndex}, ` +
+                `hit=${!!this.expressionFrameMap.get(frameIndex)}, clamped=${frameIndex > this.expressionFrameMaxIndex}, ` +
+                `jawOpen=${jawVal}`
             );
         }
 
-        // フレームが存在すればそれを返す。未到着なら前フレームを保持
         return frame ?? this.lastValidFrame ?? null;
     }
 
