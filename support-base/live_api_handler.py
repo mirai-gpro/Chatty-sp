@@ -1310,7 +1310,7 @@ class LiveAPISession:
 
         # ★ 最終チャンク2秒遅延: 前チャンクのA2Eレスポンス到着を待ち、順序逆転を防止
         if is_final and self._a2e_chunk_index > 0:
-            await asyncio.sleep(2.0)
+            await asyncio.sleep(0.5)
 
         # force=Falseの場合、最低バッファサイズをチェック
         if not force and len(self._a2e_audio_buffer) < A2E_MIN_BUFFER_BYTES:
