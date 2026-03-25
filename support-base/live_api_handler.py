@@ -1026,7 +1026,7 @@ class LiveAPISession:
             model=LIVE_API_MODEL,
             config=config
         ) as session:
-            trigger_text = f"{shop_number}軒目のお店を紹介してください。"
+            trigger_text = f"{shop_number}軒目のお店の説明を読み上げてください。"
             await session.send_client_content(
                 turns=types.Content(
                     role="user",
