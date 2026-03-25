@@ -31,7 +31,7 @@ if A2E_SERVICE_URL and not A2E_SERVICE_URL.startswith("http"):
     A2E_SERVICE_URL = f"https://{A2E_SERVICE_URL}"
 A2E_MIN_BUFFER_BYTES = 4800      # 最低バッファサイズ（24kHz 16bit mono × 0.1秒 = 4800bytes）
 A2E_FIRST_FLUSH_BYTES = 4800     # 初回フラッシュ閾値（0.1秒分 = 4800bytes）遅延最小化
-A2E_AUTO_FLUSH_BYTES = 96000     # 2回目以降フラッシュ閾値（2秒分 = 96000bytes）
+A2E_AUTO_FLUSH_BYTES = 240000    # 2回目以降フラッシュ閾値（5秒分 = 240000bytes）
 A2E_EXPRESSION_FPS = 30
 
 # stt_stream.py から転記（変更禁止）
@@ -644,8 +644,8 @@ class LiveAPISession:
                             self.socketio.emit('ai_transcript',
                                                {'text': text},
                                                room=self.client_sid)
-                            # ★ A2E: 句読点検出フラッシュは廃止（チャンク順序逆転防止）
-                            # self._on_output_transcription(text)
+                            # ★ A2E: 句読点検出フラッシュ（キュー直列化で順序保証済み）
+                            self._on_output_transcription(text)
 
                     # 6. 音声データ
                     if sc.model_turn:
