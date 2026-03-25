@@ -836,31 +836,22 @@ class LiveAPISession:
 
     async def _describe_shops_via_live(self, shops: list):
         """
-        ショップ説明をLiveAPIで読み上げ（案A: enrich並行方式対応）
+        ショップ説明をLiveAPIで読み上げ（1軒目先行 → 2〜5軒目並行方式）
 
         【フロー】
-        - pre_generated_tasks が渡された場合: TTS生成済みタスクを使用（案A）
-        - 渡されない場合: 従来通りここでTTS並行生成を開始
-        - bridge → please_wait のキャッシュ音声を連続再生で時間を稼ぐ
-        - 1軒目collect完了後、A2E事前計算 → emit
-        - 全ショップ統一のcollect+precompute A2E方式でリップシンク品質を均一化
+        Phase 1: 1軒目だけ先行でTTS生成 → 場繋ぎ中に完了待ち → A2E → emit
+        Phase 2: 1軒目emit直後に2〜5軒目を一括生成開始（再生待ち中に接続+生成が進行）
+        Phase 3: 2軒目以降を順次 await → A2E → emit
         """
         total = len(shops)
         if total == 0:
             return
 
-        # ── TTS生成: 全ショップ一括開始（事前生成済みならそれを使う）──
-        if pre_generated_tasks:
-            all_tasks = pre_generated_tasks
-            logger.info(f"[ShopDesc] 事前生成済みTTSタスク {len(all_tasks)}件を使用")
-        else:
-            all_tasks = []
-            for i in range(total):
-                task = asyncio.create_task(
-                    self._collect_shop_audio(shops[i], i + 1, total)
-                )
-                all_tasks.append(task)
-            logger.info(f"[ShopDesc] 全{total}件のTTS生成を一括開始")
+        # ── Phase 1: 1軒目だけ先行でTTS生成開始 ──
+        task1 = asyncio.create_task(
+            self._collect_shop_audio(shops[0], 1, total)
+        )
+        logger.info(f"[ShopDesc] 1軒目のTTS生成を先行開始")
 
         # ── A2Eリセット ──
         self.socketio.emit('live_expression_reset', room=self.client_sid)
@@ -868,46 +859,73 @@ class LiveAPISession:
         self._a2e_chunk_index = 0
         self._a2e_audio_buffer = bytearray()
 
-        # ── 場繋ぎ: bridge → please_wait を連続再生（約8-9秒）──
+        # ── 場繋ぎ: bridge再生 ──
         bridge_start = time.time()
         total_bridge_duration = 0.0
 
-        # 1) bridge: 「お待たせしました。それではお薦めのお店をご紹介します。」
         if _CACHED_BRIDGE_PCM:
             await self._emit_cached_audio(_CACHED_BRIDGE_PCM)
             dur = len(_CACHED_BRIDGE_PCM) / 48000
             total_bridge_duration += dur
-            logger.info(f"[ShopDesc] 場繋ぎ1(bridge)再生: {dur:.1f}秒")
+            logger.info(f"[ShopDesc] 場繋ぎ(bridge)再生: {dur:.1f}秒")
 
-        # bridge再生完了を待ってからplease_waitへ
+        # bridge再生完了を待つ
         elapsed = time.time() - bridge_start
         wait1 = max(total_bridge_duration - elapsed + 0.3, 0.3)
         await asyncio.sleep(wait1)
 
-        # 2) please_wait: コメントアウト（A2Eバッファ衝突切り分け）
-        # if _CACHED_PLEASE_WAIT_PCM:
-        #     await self._emit_cached_audio(_CACHED_PLEASE_WAIT_PCM)
-        #     dur = len(_CACHED_PLEASE_WAIT_PCM) / 48000
-        #     total_bridge_duration += dur
-        #     logger.info(f"[ShopDesc] 場繋ぎ2(please_wait)再生: {dur:.1f}秒")
-
-        # ── 場繋ぎ再生中に1軒目のcollect完了を待つ + A2E事前計算 ──
-        next_a2e_task = None
-        audio_chunks_1, transcript_1 = await all_tasks[0]
+        # ── 場繋ぎ中に1軒目のcollect完了を待つ + A2E事前計算 ──
+        audio_chunks_1, transcript_1 = await task1
+        a2e_result_1 = None
         if audio_chunks_1:
-            next_a2e_task = asyncio.create_task(
-                self._precompute_a2e_expressions(b''.join(audio_chunks_1))
-            )
+            a2e_result_1 = await self._precompute_a2e_expressions(b''.join(audio_chunks_1))
+            logger.info(f"[ShopDesc] 1軒目 A2E事前計算完了")
 
-        # please_wait再生完了を待つ
+        # 場繋ぎ残り時間を待つ
         elapsed = time.time() - bridge_start
         remaining_sleep = max(total_bridge_duration - elapsed + 0.3, 0.5)
-        logger.info(f"[ShopDesc] 場繋ぎ残り待ち: {remaining_sleep:.1f}秒 (経過{elapsed:.1f}秒, 場繋ぎ合計{total_bridge_duration:.1f}秒)")
+        logger.info(f"[ShopDesc] 場繋ぎ残り待ち: {remaining_sleep:.1f}秒 (経過{elapsed:.1f}秒)")
         await asyncio.sleep(remaining_sleep)
-        await asyncio.sleep(0.5)
 
-        # ── 全ショップ: collect済み音声を順次再生（1軒目も同じパス）──
-        for i, task in enumerate(all_tasks):
+        # ── 1軒目を再生 ──
+        if audio_chunks_1:
+            await self._emit_collected_shop(audio_chunks_1, transcript_1, 1, a2e_result_1)
+            all_pcm_1 = b''.join(audio_chunks_1)
+            audio_duration_1 = len(all_pcm_1) / 48000
+            logger.info(f"[ShopDesc] 1軒目再生待ち: {audio_duration_1:.1f}秒")
+
+            # ── Phase 2: 1軒目emit直後に2〜5軒目を一括生成開始 ──
+            remaining_tasks = []
+            for i in range(1, total):
+                task = asyncio.create_task(
+                    self._collect_shop_audio(shops[i], i + 1, total)
+                )
+                remaining_tasks.append(task)
+            if remaining_tasks:
+                logger.info(f"[ShopDesc] 2〜{total}軒目のTTS生成を一括開始（1軒目再生中に接続+生成進行）")
+
+            # 1軒目再生中に2軒目のA2E事前計算を開始
+            next_a2e_task = None
+            if remaining_tasks:
+                next_chunks, _ = await remaining_tasks[0]
+                if next_chunks:
+                    next_a2e_task = asyncio.create_task(
+                        self._precompute_a2e_expressions(b''.join(next_chunks))
+                    )
+
+            await asyncio.sleep(audio_duration_1 + 0.3)
+        else:
+            # 1軒目の生成に失敗した場合、残りを一括開始
+            remaining_tasks = []
+            for i in range(1, total):
+                task = asyncio.create_task(
+                    self._collect_shop_audio(shops[i], i + 1, total)
+                )
+                remaining_tasks.append(task)
+            next_a2e_task = None
+
+        # ── Phase 3: 2軒目以降を順次再生 ──
+        for i, task in enumerate(remaining_tasks):
             if not self.is_running:
                 break
             try:
@@ -920,16 +938,16 @@ class LiveAPISession:
                     next_a2e_task = None
 
                 if audio_chunks:
-                    await self._emit_collected_shop(audio_chunks, transcript, i + 1, a2e_result)
+                    shop_number = i + 2  # 2軒目から
+                    await self._emit_collected_shop(audio_chunks, transcript, shop_number, a2e_result)
 
-                    # ★ 音声再生完了を待ってから次のショップへ（A2E同期崩壊防止）
                     all_pcm = b''.join(audio_chunks)
                     audio_duration = len(all_pcm) / 48000
-                    logger.info(f"[ShopDesc] ショップ{i+1}再生待ち: {audio_duration:.1f}秒")
+                    logger.info(f"[ShopDesc] ショップ{shop_number}再生待ち: {audio_duration:.1f}秒")
 
                     # 次のショップのA2E事前計算をsleep待ち中に開始
-                    if i + 1 < len(all_tasks):
-                        next_chunks, _ = await all_tasks[i + 1]
+                    if i + 1 < len(remaining_tasks):
+                        next_chunks, _ = await remaining_tasks[i + 1]
                         if next_chunks:
                             next_a2e_task = asyncio.create_task(
                                 self._precompute_a2e_expressions(b''.join(next_chunks))
@@ -937,7 +955,7 @@ class LiveAPISession:
 
                     await asyncio.sleep(audio_duration + 0.3)
             except Exception as e:
-                logger.error(f"[ShopDesc] ショップ{i+1}生成エラー: {e}")
+                logger.error(f"[ShopDesc] ショップ{i+2}生成エラー: {e}")
 
         # 全ショップ説明完了 → 通常会話に復帰
         summary = f"{total}軒のお店を紹介しました。気になるお店はありましたか？"
