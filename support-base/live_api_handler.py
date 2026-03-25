@@ -687,16 +687,8 @@ class LiveAPISession:
                 searching_task = asyncio.ensure_future(asyncio.sleep(0))
                 please_wait_task = asyncio.ensure_future(asyncio.sleep(0))
 
-                # ショップ検索を実行（既存セッションを渡して1軒目の読み上げに使用）
-                await self._handle_shop_search(user_request, session)
-
-                # 検索完了 → 未再生のタスクをキャンセル
-                for task, name in [(searching_task, 'searching'), (please_wait_task, 'please_wait')]:
-                    if not task.done():
-                        task.cancel()
-                        logger.info(f"[CachedAudio] {name}: 検索完了によりスキップ")
-
-                # function responseを返す（LiveAPI confirmed syntax）
+                # ★ tool_responseを先に返す（デッドロック回避）
+                # LiveAPIはtool_responseを受け取るまで次のsend_client_contentに応答しない
                 tool_response = types.LiveClientToolResponse(
                     function_responses=[types.FunctionResponse(
                         name=fc.name,
@@ -705,6 +697,16 @@ class LiveAPISession:
                     )]
                 )
                 await session.send_tool_response(tool_response)
+                logger.info(f"[LiveAPI] tool_response送信完了（ショップ検索前）")
+
+                # ショップ検索を実行（既存セッションを渡して1軒目の読み上げに使用）
+                await self._handle_shop_search(user_request, session)
+
+                # 検索完了 → 未再生のタスクをキャンセル
+                for task, name in [(searching_task, 'searching'), (please_wait_task, 'please_wait')]:
+                    if not task.done():
+                        task.cancel()
+                        logger.info(f"[CachedAudio] {name}: 検索完了によりスキップ")
             elif fc.name == "update_user_profile":
                 # ユーザー名登録・変更をDBに永続化
                 updates = fc.args or {}
