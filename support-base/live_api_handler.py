@@ -687,19 +687,9 @@ class LiveAPISession:
                 searching_task = asyncio.ensure_future(asyncio.sleep(0))
                 please_wait_task = asyncio.ensure_future(asyncio.sleep(0))
 
-                # ★ tool_responseを先に返す（デッドロック回避）
-                # LiveAPIはtool_responseを受け取るまで次のsend_client_contentに応答しない
-                await session.send_tool_response(
-                    function_responses=[types.FunctionResponse(
-                        name=fc.name,
-                        id=fc.id,
-                        response={"result": "検索結果をユーザーに表示しました"}
-                    )]
-                )
-                logger.info(f"[LiveAPI] tool_response送信完了（ショップ検索前）")
-
                 # ショップ検索を実行（既存セッションを渡して1軒目の読み上げに使用）
-                await self._handle_shop_search(user_request, session)
+                # tool_responseはsend_client_content直前に送信（デッドロック回避+keepalive対策）
+                await self._handle_shop_search(user_request, session, fc)
 
                 # 検索完了 → 未再生のタスクをキャンセル
                 for task, name in [(searching_task, 'searching'), (please_wait_task, 'please_wait')]:
@@ -732,7 +722,7 @@ class LiveAPISession:
             else:
                 logger.warning(f"[LiveAPI] 未知のfunction call: {fc.name}")
 
-    async def _handle_shop_search(self, user_request: str, session=None):
+    async def _handle_shop_search(self, user_request: str, session=None, fc=None):
         """
         ショップ検索を実行し、結果をブラウザに送信する
 
@@ -786,7 +776,7 @@ class LiveAPISession:
             await asyncio.sleep(0.3)
 
             # 4. TTS再生（1軒目は既存session、2〜5軒目は新規接続）
-            await self._describe_shops_via_live(shops, session=session)
+            await self._describe_shops_via_live(shops, session=session, fc=fc)
 
         except Exception as e:
             logger.error(f"[ShopSearch] エラー: {e}", exc_info=True)
@@ -833,12 +823,12 @@ class LiveAPISession:
                 logger.info("[LiveAPI] 累積制限到達のため再接続")
                 self.needs_reconnect = True
 
-    async def _describe_shops_via_live(self, shops: list, session=None):
+    async def _describe_shops_via_live(self, shops: list, session=None, fc=None):
         """
         ショップ説明をLiveAPIで読み上げ（1軒目既存セッション → 2〜5軒目新規接続方式）
 
         【フロー】
-        Phase 1: 場繋ぎ → 1軒目を既存セッション上でストリーミング（接続コストゼロ）
+        Phase 1: 場繋ぎ → tool_response → 1軒目を既存セッション上でストリーミング（接続コストゼロ）
         Phase 2: 1軒目再生中に2〜5軒目を新規接続で一括生成開始
         Phase 3: 2軒目以降を順次 await → A2E → emit
         """
@@ -876,6 +866,16 @@ class LiveAPISession:
                 f"マークダウン記法は使わないでください。「1軒目は」から始めてください。\n\n"
                 f"{shop_context}"
             )
+            # ★ tool_responseをsend_client_content直前に送信（デッドロック回避+keepalive対策）
+            if fc:
+                await session.send_tool_response(
+                    function_responses=[types.FunctionResponse(
+                        name=fc.name,
+                        id=fc.id,
+                        response={"result": "検索結果をユーザーに表示しました"}
+                    )]
+                )
+                logger.info(f"[ShopDesc] tool_response送信完了（send_client_content直前）")
             logger.info(f"[ShopDesc] 1軒目: 既存セッションで読み上げ開始")
             self._last_stream_pcm_bytes = 0
             self._stream_start_time = None
