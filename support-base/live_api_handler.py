@@ -834,7 +834,7 @@ class LiveAPISession:
                 logger.info("[LiveAPI] 累積制限到達のため再接続")
                 self.needs_reconnect = True
 
-    async def _describe_shops_via_live(self, shops: list):
+    async def _describe_shops_via_live(self, shops: list, pre_generated_tasks: list = None):
         """
         ショップ説明をLiveAPIで読み上げ（案A: enrich並行方式対応）
 
