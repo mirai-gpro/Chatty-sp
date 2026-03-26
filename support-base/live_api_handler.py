@@ -872,21 +872,15 @@ class LiveAPISession:
                     function_responses=[types.FunctionResponse(
                         name=fc.name,
                         id=fc.id,
-                        response={"result": "検索結果をユーザーに表示しました"}
+                        response={
+                            "result": "検索結果をショップカードとしてチャット画面に表示済み。"
+                                      "ユーザーはお店の読み上げ紹介を待っています。"
+                                      "このfunction responseに対しては何も発話しないでください。"
+                                      "次のユーザーメッセージでお店情報が送られるので、それを読み上げてください。"
+                        }
                     )]
                 )
-                logger.info(f"[ShopDesc] tool_response送信完了")
-
-                # ★ tool_responseに対するLLMの自動応答ターンを消費・破棄
-                # tool_responseを送ると、LLMが「検索結果を表示した」ことに反応して
-                # 自動的に喋り始めるため、turn_completeまで読み飛ばす
-                turn = session.receive()
-                async for response in turn:
-                    if response.server_content:
-                        sc = response.server_content
-                        if hasattr(sc, 'turn_complete') and sc.turn_complete:
-                            logger.info(f"[ShopDesc] tool_response自動応答ターン破棄完了")
-                            break
+                logger.info(f"[ShopDesc] tool_response送信完了（応答抑制指示付き）")
             logger.info(f"[ShopDesc] 1軒目: 既存セッションで読み上げ開始")
             self._last_stream_pcm_bytes = 0
             self._stream_start_time = None
