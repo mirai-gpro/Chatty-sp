@@ -891,7 +891,7 @@ class LiveAPISession:
                 ),
                 turn_complete=True
             )
-            await self._receive_shop_description(session, 1)
+            await self._receive_shop_description(session, 1, skip_auto_response=bool(fc))
         else:
             # sessionがない場合はフォールバック（新規接続ストリーミング）
             logger.info(f"[ShopDesc] 1軒目: セッションなし、新規接続ストリーミング")
@@ -1123,13 +1123,16 @@ class LiveAPISession:
             self.socketio.emit('live_audio', {'data': audio_b64},
                                room=self.client_sid)
 
-    async def _receive_shop_description(self, session, shop_number: int):
+    async def _receive_shop_description(self, session, shop_number: int, skip_auto_response: bool = False):
         """
         ショップ説明専用の応答受信（v5 §6.2）
         turn_completeまで受信して終了。
+        skip_auto_response=True の場合、最初のターンが音声なしの短い応答なら
+        tool_responseの自動応答と判定してスキップし、次のターンを待つ。
         """
         self._last_stream_pcm_bytes = 0  # ★ ストリーミング送信バイト数累計
         self._stream_start_time = None  # ★ 最初の音声チャンク送信時刻
+        has_audio_in_turn = False  # 現ターンで音声データがあったか
         turn = session.receive()
         async for response in turn:
             if not self.is_running:
@@ -1140,6 +1143,15 @@ class LiveAPISession:
 
                 # ターン完了
                 if hasattr(sc, 'turn_complete') and sc.turn_complete:
+                    # skip_auto_response: 音声なしの短いターンならtool_response自動応答と判定
+                    if skip_auto_response and not has_audio_in_turn:
+                        logger.info(f"[ShopDesc] tool_response自動応答スキップ（音声なし）")
+                        # 状態リセットして次ターンへ
+                        self.ai_transcript_buffer = ""
+                        has_audio_in_turn = False
+                        skip_auto_response = False  # 2回目以降はスキップしない
+                        continue
+
                     # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
                     await self._flush_a2e_buffer(force=True, is_final=True)
                     await self._a2e_send_queue.join()  # 全チャンク送信完了を待つ
@@ -1174,6 +1186,7 @@ class LiveAPISession:
                         if (hasattr(part, 'inline_data')
                                 and part.inline_data):
                             if isinstance(part.inline_data.data, bytes):
+                                has_audio_in_turn = True
                                 audio_b64 = base64.b64encode(
                                     part.inline_data.data
                                 ).decode('utf-8')
