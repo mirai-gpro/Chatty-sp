@@ -984,74 +984,72 @@ class LiveAPISession:
             logger.error(f"[ShopDesc] ショップ{shop_number}ストリーミングエラー: {e}")
 
     async def _collect_shop_audio(self, shop, shop_number: int, total: int, delay: float = 0):
-        """2軒目以降用: LiveAPI接続して音声をバッファに収集（ブラウザには送信しない）"""
+        """ショップ説明用: REST TTS（Google Cloud TTS）で音声を生成（LiveAPI接続不要）"""
         if delay > 0:
             await asyncio.sleep(delay)
         is_last = (shop_number == total)
-        shop_context = self._format_shop_for_prompt(shop, shop_number, total)
 
-        shop_instruction = self.system_prompt + f"""
+        # ── 読み上げテキストを構成 ──
+        name = shop.get('name', '')
+        area = shop.get('area', '')
+        category = shop.get('category', shop.get('genre', ''))
+        description = shop.get('description', '')
+        price_range = shop.get('priceRange', shop.get('budget', ''))
 
-【現在のタスク：ショップ紹介】
-あなたは今、ユーザーに検索結果のお店を紹介しています。
-
-{shop_context}
-
-【読み上げルール】
-1. このお店の特徴を自然な話し言葉で紹介する（3〜5文程度）
-2. 店名、ジャンル、エリア、特徴、価格帯を含める
-3. マークダウン記法は使わない（音声出力のため）
-4. 「{shop_number}軒目は」から始める
-5. 紹介が終わったら、次のお店の紹介に自然につなげる。「以上です」とは言わない。
-"""
+        script = f"{shop_number}軒目は、{name}です。"
+        if area and category:
+            script += f"{area}にある{category}のお店です。"
+        elif area:
+            script += f"{area}にあるお店です。"
+        if description:
+            script += description
+        if price_range:
+            script += f"ご予算は{price_range}です。"
         if is_last:
-            shop_instruction += f"5の代わりに: 最後のお店です。紹介後「以上、{total}軒のお店をご紹介しました。気になるお店はありましたか？」で締めてください。\n"
+            script += f"以上、{total}軒のお店をご紹介しました。気になるお店はありましたか？"
 
         audio_chunks = []
-        transcript = ""
+        transcript = script
 
-        config = self._build_config()
-        config["system_instruction"] = shop_instruction
-        config.pop("tools", None)
+        try:
+            # REST TTS（Google Cloud TTS）で音声生成（起動時キャッシュと同じ方式）
+            loop = asyncio.get_event_loop()
+            pcm = await loop.run_in_executor(None, self._synthesize_speech, script)
 
-        async with self.client.aio.live.connect(
-            model=LIVE_API_MODEL,
-            config=config
-        ) as session:
-            trigger_text = f"ショップカードとしてチャット画面に表示済みの{shop_number}軒目のお店の説明を、そのまま読み上げてください。"
-            await session.send_client_content(
-                turns=types.Content(
-                    role="user",
-                    parts=[types.Part(text=trigger_text)]
-                ),
-                turn_complete=True
-            )
+            if pcm:
+                audio_chunks = [pcm]
+                logger.info(f"[ShopDesc] ショップ{shop_number} TTS生成完了: {len(pcm)} bytes, {len(transcript)}文字")
+            else:
+                logger.error(f"[ShopDesc] ショップ{shop_number} TTS生成失敗")
 
-            turn = session.receive()
-            async for response in turn:
-                if not self.is_running:
-                    break
+        except Exception as e:
+            logger.error(f"[ShopDesc] ショップ{shop_number} TTS生成エラー: {e}")
 
-                if response.server_content:
-                    sc = response.server_content
-
-                    if hasattr(sc, 'turn_complete') and sc.turn_complete:
-                        break
-
-                    if (hasattr(sc, 'output_transcription')
-                            and sc.output_transcription
-                            and sc.output_transcription.text):
-                        transcript += sc.output_transcription.text
-
-                    if sc.model_turn:
-                        for part in sc.model_turn.parts:
-                            if (hasattr(part, 'inline_data')
-                                    and part.inline_data
-                                    and isinstance(part.inline_data.data, bytes)):
-                                audio_chunks.append(part.inline_data.data)
-
-        logger.info(f"[ShopDesc] ショップ{shop_number}並行生成完了: {len(audio_chunks)}チャンク, {len(transcript)}文字")
         return audio_chunks, transcript
+
+    @staticmethod
+    def _synthesize_speech(text: str) -> bytes | None:
+        """Google Cloud TTSでテキストを24kHz 16bit mono PCMに変換"""
+        try:
+            tts_client = texttospeech.TextToSpeechClient()
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="ja-JP",
+                name="ja-JP-Chirp3-HD-Leda"
+            )
+            audio_config = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.LINEAR16,
+                sample_rate_hertz=24000,
+            )
+            resp = tts_client.synthesize_speech(
+                input=texttospeech.SynthesisInput(text=text),
+                voice=voice,
+                audio_config=audio_config,
+            )
+            # LINEAR16レスポンスにはWAVヘッダ(44bytes)が付くので除去
+            return resp.audio_content[44:]
+        except Exception as e:
+            logger.error(f"[TTS] 音声合成エラー: {e}")
+            return None
 
     async def _emit_collected_shop(self, audio_chunks: list, transcript: str, shop_number: int, a2e_result: dict | None = None):
         """収集済み音声をA2E先行方式で送信（_emit_cached_audioと同パターン）"""
