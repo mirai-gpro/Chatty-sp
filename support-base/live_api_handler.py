@@ -206,10 +206,7 @@ def _get_lesson_first_visit_context(teacher_name: str = 'Lisa') -> str:
     """レッスンモード: 新規ユーザー用コンテキスト"""
     return f"""## 初期あいさつ（新規ユーザー）
 このユーザーは初めてのレッスンです。
-最初の発話で、まず英語で、次に日本語で自己紹介とレッスン案内をしてください。
-英語: "Hi! I'm {teacher_name}, your English teacher. We have two options: travel English lessons, or free talk sessions with me. Which would you like to start with?"
-日本語: 「こんにちは、英会話の先生の{teacher_name}です。旅行で使える英会話レッスンや、私との英語のフリートークレッスンができます。今日は、どちらからやりますか？」
-ユーザーが名前を教えてくれたら、その名前で呼びかけてください。"""
+ユーザーが名前を教えてくれたら、その名前で呼びかけてレッスンを始めてください。"""
 
 
 def _get_lesson_returning_context(preferred_name: str, name_honorific: str,
@@ -218,9 +215,7 @@ def _get_lesson_returning_context(preferred_name: str, name_honorific: str,
     full_name = f"{preferred_name}{name_honorific}"
     return f"""## 初期あいさつ（リピーター）
 このユーザーの名前は「{full_name}」です。
-最初の発話で、まず英語で、次に日本語で挨拶とレッスン案内をしてください。
-英語: "Welcome back, {full_name}! Shall we do a travel English lesson today, or would you like a free talk session with me?"
-日本語: 「おかえりなさい、{full_name}。今日は、旅行で使える英会話レッスンか、私との英語のフリートークレッスン、どちらからやりますか？」"""
+「{full_name}」と呼びかけてください。"""
 
 
 # ============================================================
@@ -229,7 +224,7 @@ def _get_lesson_returning_context(preferred_name: str, name_honorific: str,
 
 SEARCH_SHOPS_DECLARATION = types.FunctionDeclaration(
     name="search_shops",
-    description="レストランを検索する。",
+    description="ユーザーの条件に基づいてレストランを検索する。条件が十分に揃ったと判断した時に呼び出す。user_requestには会話で確認した全条件を必ず含めること。",
     parameters=types.Schema(
         type="OBJECT",
         properties={
@@ -702,13 +697,14 @@ class LiveAPISession:
                         logger.info(f"[CachedAudio] {name}: 検索完了によりスキップ")
 
                 # function responseを返す（LiveAPI confirmed syntax）
-                await session.send_tool_response(
+                tool_response = types.LiveClientToolResponse(
                     function_responses=[types.FunctionResponse(
                         name=fc.name,
                         id=fc.id,
                         response={"result": "検索結果をユーザーに表示しました"}
                     )]
                 )
+                await session.send_tool_response(tool_response)
             elif fc.name == "update_user_profile":
                 # ユーザー名登録・変更をDBに永続化
                 updates = fc.args or {}
@@ -725,25 +721,27 @@ class LiveAPISession:
                         logger.error(f"[LiveAPI] プロファイル更新エラー: {e}")
 
                 # function responseを返す
-                await session.send_tool_response(
+                tool_response = types.LiveClientToolResponse(
                     function_responses=[types.FunctionResponse(
                         name=fc.name,
                         id=fc.id,
                         response={"result": "プロファイルを更新しました"}
                     )]
                 )
+                await session.send_tool_response(tool_response)
             else:
                 logger.warning(f"[LiveAPI] 未知のfunction call: {fc.name}")
 
     async def _handle_shop_search(self, user_request: str):
         """
-        ショップ検索を実行し、結果をブラウザに送信する
+        ショップ検索を実行し、結果をブラウザに送信する（案A: enrich並行方式）
 
         【設計】
         - callbackでLLM JSON生成のみ（enrichなし）→ raw_shopsを取得
-        - enrichをrun_in_executor実行
+        - raw_shopsで即座にTTS並行生成を開始
+        - enrichをTTS生成と並行でrun_in_executor実行
         - enrich完了後にショップカードをブラウザに送信
-        - TTS再生（1軒目は既存session、2〜5軒目は新規接続）
+        - TTS再生（生成済みタスクを_describe_shops_via_liveに渡す）
         """
         if not self._shop_search_callback:
             logger.error("[ShopSearch] shop_search_callback が未設定")
@@ -788,7 +786,7 @@ class LiveAPISession:
             logger.info(f"[ShopSearch] {len(shops)}件のショップをブラウザに送信")
             await asyncio.sleep(0.3)
 
-            # 4. TTS再生（1軒目は既存session、2〜5軒目は新規接続）
+            # 4. TTS再生（ショップカード提示後にTTS生成開始）
             await self._describe_shops_via_live(shops)
 
         except Exception as e:
@@ -838,11 +836,12 @@ class LiveAPISession:
 
     async def _describe_shops_via_live(self, shops: list):
         """
-        ショップ説明をLiveAPIで読み上げ（e7aa11dベースライン方式）
+        ショップ説明をLiveAPIで読み上げ（案A: enrich並行方式対応）
 
         【フロー】
-        - 全ショップのTTS生成を一括開始
-        - bridge場繋ぎ音声を再生して時間を稼ぐ
+        - pre_generated_tasks が渡された場合: TTS生成済みタスクを使用（案A）
+        - 渡されない場合: 従来通りここでTTS並行生成を開始
+        - bridge → please_wait のキャッシュ音声を連続再生で時間を稼ぐ
         - 1軒目collect完了後、A2E事前計算 → emit
         - 全ショップ統一のcollect+precompute A2E方式でリップシンク品質を均一化
         """
@@ -850,14 +849,18 @@ class LiveAPISession:
         if total == 0:
             return
 
-        # ── TTS生成: 全ショップ一括開始 ──
-        all_tasks = []
-        for i in range(total):
-            task = asyncio.create_task(
-                self._collect_shop_audio(shops[i], i + 1, total)
-            )
-            all_tasks.append(task)
-        logger.info(f"[ShopDesc] 全{total}件のTTS生成を一括開始")
+        # ── TTS生成: 全ショップ一括開始（事前生成済みならそれを使う）──
+        if pre_generated_tasks:
+            all_tasks = pre_generated_tasks
+            logger.info(f"[ShopDesc] 事前生成済みTTSタスク {len(all_tasks)}件を使用")
+        else:
+            all_tasks = []
+            for i in range(total):
+                task = asyncio.create_task(
+                    self._collect_shop_audio(shops[i], i + 1, total)
+                )
+                all_tasks.append(task)
+            logger.info(f"[ShopDesc] 全{total}件のTTS生成を一括開始")
 
         # ── A2Eリセット ──
         self.socketio.emit('live_expression_reset', room=self.client_sid)
@@ -865,20 +868,28 @@ class LiveAPISession:
         self._a2e_chunk_index = 0
         self._a2e_audio_buffer = bytearray()
 
-        # ── 場繋ぎ: bridge再生 ──
+        # ── 場繋ぎ: bridge → please_wait を連続再生（約8-9秒）──
         bridge_start = time.time()
         total_bridge_duration = 0.0
 
+        # 1) bridge: 「お待たせしました。それではお薦めのお店をご紹介します。」
         if _CACHED_BRIDGE_PCM:
             await self._emit_cached_audio(_CACHED_BRIDGE_PCM)
             dur = len(_CACHED_BRIDGE_PCM) / 48000
             total_bridge_duration += dur
-            logger.info(f"[ShopDesc] 場繋ぎ(bridge)再生: {dur:.1f}秒")
+            logger.info(f"[ShopDesc] 場繋ぎ1(bridge)再生: {dur:.1f}秒")
 
-        # bridge再生完了を待つ
+        # bridge再生完了を待ってからplease_waitへ
         elapsed = time.time() - bridge_start
         wait1 = max(total_bridge_duration - elapsed + 0.3, 0.3)
         await asyncio.sleep(wait1)
+
+        # 2) please_wait: コメントアウト（A2Eバッファ衝突切り分け）
+        # if _CACHED_PLEASE_WAIT_PCM:
+        #     await self._emit_cached_audio(_CACHED_PLEASE_WAIT_PCM)
+        #     dur = len(_CACHED_PLEASE_WAIT_PCM) / 48000
+        #     total_bridge_duration += dur
+        #     logger.info(f"[ShopDesc] 場繋ぎ2(please_wait)再生: {dur:.1f}秒")
 
         # ── 場繋ぎ再生中に1軒目のcollect完了を待つ + A2E事前計算 ──
         next_a2e_task = None
@@ -888,7 +899,7 @@ class LiveAPISession:
                 self._precompute_a2e_expressions(b''.join(audio_chunks_1))
             )
 
-        # 場繋ぎ再生完了を待つ
+        # please_wait再生完了を待つ
         elapsed = time.time() - bridge_start
         remaining_sleep = max(total_bridge_duration - elapsed + 0.3, 0.5)
         logger.info(f"[ShopDesc] 場繋ぎ残り待ち: {remaining_sleep:.1f}秒 (経過{elapsed:.1f}秒, 場繋ぎ合計{total_bridge_duration:.1f}秒)")
@@ -985,7 +996,10 @@ class LiveAPISession:
         is_last = (shop_number == total)
         shop_context = self._format_shop_for_prompt(shop, shop_number, total)
 
-        shop_instruction = f"""あなたはお店を紹介するナレーターです。
+        shop_instruction = self.system_prompt + f"""
+
+【現在のタスク：ショップ紹介】
+あなたは今、ユーザーに検索結果のお店を紹介しています。
 
 {shop_context}
 
@@ -1004,13 +1018,13 @@ class LiveAPISession:
 
         config = self._build_config()
         config["system_instruction"] = shop_instruction
-        config["tools"] = []  # 明示的に空配列
+        config.pop("tools", None)
 
         async with self.client.aio.live.connect(
             model=LIVE_API_MODEL,
             config=config
         ) as session:
-            trigger_text = f"上記のショップ情報をもとに、{shop_number}軒目のお店を自然な話し言葉で紹介してください。"
+            trigger_text = f"ショップカードとしてチャット画面に表示済みの{shop_number}軒目のお店の説明を、そのまま読み上げてください。"
             await session.send_client_content(
                 turns=types.Content(
                     role="user",
@@ -1079,16 +1093,13 @@ class LiveAPISession:
             self.socketio.emit('live_audio', {'data': audio_b64},
                                room=self.client_sid)
 
-    async def _receive_shop_description(self, session, shop_number: int, skip_auto_response: bool = False):
+    async def _receive_shop_description(self, session, shop_number: int):
         """
         ショップ説明専用の応答受信（v5 §6.2）
         turn_completeまで受信して終了。
-        skip_auto_response=True の場合、最初のターンが音声なしの短い応答なら
-        tool_responseの自動応答と判定してスキップし、次のターンを待つ。
         """
         self._last_stream_pcm_bytes = 0  # ★ ストリーミング送信バイト数累計
         self._stream_start_time = None  # ★ 最初の音声チャンク送信時刻
-        has_audio_in_turn = False  # 現ターンで音声データがあったか
         turn = session.receive()
         async for response in turn:
             if not self.is_running:
@@ -1099,15 +1110,6 @@ class LiveAPISession:
 
                 # ターン完了
                 if hasattr(sc, 'turn_complete') and sc.turn_complete:
-                    # skip_auto_response: 音声なしの短いターンならtool_response自動応答と判定
-                    if skip_auto_response and not has_audio_in_turn:
-                        logger.info(f"[ShopDesc] tool_response自動応答スキップ（音声なし）")
-                        # 状態リセットして次ターンへ
-                        self.ai_transcript_buffer = ""
-                        has_audio_in_turn = False
-                        skip_auto_response = False  # 2回目以降はスキップしない
-                        continue
-
                     # ★ A2E: 残存バッファを強制フラッシュ（最終チャンク）
                     await self._flush_a2e_buffer(force=True, is_final=True)
                     await self._a2e_send_queue.join()  # 全チャンク送信完了を待つ
@@ -1142,7 +1144,6 @@ class LiveAPISession:
                         if (hasattr(part, 'inline_data')
                                 and part.inline_data):
                             if isinstance(part.inline_data.data, bytes):
-                                has_audio_in_turn = True
                                 audio_b64 = base64.b64encode(
                                     part.inline_data.data
                                 ).decode('utf-8')
