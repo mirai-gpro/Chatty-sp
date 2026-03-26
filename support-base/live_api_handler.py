@@ -1025,41 +1025,50 @@ class LiveAPISession:
             logger.error(f"[ShopDesc] ショップ{shop_number}ストリーミングエラー: {e}")
 
     async def _collect_shop_audio(self, shop, shop_number: int, total: int, delay: float = 0):
-        """2軒目以降用: LiveAPI接続して音声をバッファに収集（ブラウザには送信しない）"""
+        """ショップ説明用: LiveAPI接続して音声をバッファに収集（ブラウザには送信しない）"""
         if delay > 0:
             await asyncio.sleep(delay)
         is_last = (shop_number == total)
-        shop_context = self._format_shop_for_prompt(shop, shop_number, total)
 
-        shop_instruction = self.system_prompt + f"""
+        # ── 完成原稿を作成（LLMに「考えさせない」）──
+        name = shop.get('name', '')
+        area = shop.get('area', '')
+        category = shop.get('category', '')
+        description = shop.get('description', '')
+        price_range = shop.get('priceRange', '')
 
-【現在のタスク：ショップ紹介】
-あなたは今、ユーザーに検索結果のお店を紹介しています。
-
-{shop_context}
-
-【読み上げルール】
-1. このお店の特徴を自然な話し言葉で紹介する（3〜5文程度）
-2. 店名、ジャンル、エリア、特徴、価格帯を含める
-3. マークダウン記法は使わない（音声出力のため）
-4. 「{shop_number}軒目は」から始める
-5. 紹介が終わったら、次のお店の紹介に自然につなげる。「以上です」とは言わない。
-"""
+        script = f"{shop_number}軒目は、{name}です。"
+        if area and category:
+            script += f"{area}にある{category}のお店です。"
+        elif area:
+            script += f"{area}にあるお店です。"
+        if description:
+            script += description
+        if price_range:
+            script += f"ご予算は{price_range}です。"
         if is_last:
-            shop_instruction += f"5の代わりに: 最後のお店です。紹介後「以上、{total}軒のお店をご紹介しました。気になるお店はありましたか？」で締めてください。\n"
+            script += f"以上、{total}軒のお店をご紹介しました。気になるお店はありましたか？"
+
+        # ── system_instruction: 読み上げ特化（思考・検索の動機を与えない）──
+        shop_instruction = """あなたは最高のAIナレーターです。
+あなたの強みは、抑揚豊かな表現力と、聞く人の心に響く話し方です。
+ユーザーは今、あなたの生き生きとした語り口でお店の紹介を聞くのを楽しみにしています。
+以下のテキストを、あなたならではの表現力で、臨場感たっぷりに読み上げてください。
+内容の補足や追加情報は不要です。あなたの表現力だけで、このテキストは最高の紹介になります。
+最初の1文字から、迷わず読み上げを開始してください。"""
 
         audio_chunks = []
         transcript = ""
 
         config = self._build_config()
         config["system_instruction"] = shop_instruction
-        config.pop("tools", None)
+        config["tools"] = []  # 明示的に空配列（Google Search含め物理封鎖）
 
         async with self.client.aio.live.connect(
             model=LIVE_API_MODEL,
             config=config
         ) as session:
-            trigger_text = f"上記のショップ情報をもとに、{shop_number}軒目のお店を自然な話し言葉で紹介してください。"
+            trigger_text = script
             await session.send_client_content(
                 turns=types.Content(
                     role="user",
