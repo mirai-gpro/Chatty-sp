@@ -868,17 +868,17 @@ class LiveAPISession:
             total_bridge_duration += dur
             logger.info(f"[ShopDesc] 場繋ぎ(bridge)再生: {dur:.1f}秒")
 
-        # bridge再生完了を待つ
+        # bridge再生完了を待つ（A2E処理時間+伝送遅延を含む余白）
         elapsed = time.time() - bridge_start
-        wait1 = max(total_bridge_duration - elapsed + 0.3, 0.3)
+        wait1 = max(total_bridge_duration - elapsed + 1.5, 1.0)
         await asyncio.sleep(wait1)
 
         # ── 場繋ぎ中に1軒目のTTS完了を待つ ──
         audio_chunks_1, transcript_1 = await task1
 
-        # 場繋ぎ残り時間を待つ
+        # 場繋ぎ残り時間を待つ（場繋ぎ再生完了+余白を確保）
         elapsed = time.time() - bridge_start
-        remaining_sleep = max(total_bridge_duration - elapsed + 0.3, 0.5)
+        remaining_sleep = max(total_bridge_duration - elapsed + 1.5, 1.0)
         logger.info(f"[ShopDesc] 場繋ぎ残り待ち: {remaining_sleep:.1f}秒 (経過{elapsed:.1f}秒)")
         await asyncio.sleep(remaining_sleep)
 
@@ -899,8 +899,8 @@ class LiveAPISession:
             if remaining_tasks:
                 logger.info(f"[ShopDesc] 2〜{total}軒目のTTS生成を一括開始（1軒目再生中に生成進行）")
 
-            # 1軒目の再生待ち
-            await asyncio.sleep(audio_duration_1 + 0.3)
+            # 1軒目の再生待ち（+1.5秒の余白で被り防止）
+            await asyncio.sleep(audio_duration_1 + 1.5)
         else:
             # 1軒目失敗時
             remaining_tasks = []
@@ -924,7 +924,7 @@ class LiveAPISession:
                     all_pcm = b''.join(audio_chunks)
                     audio_duration = len(all_pcm) / 48000
                     logger.info(f"[ShopDesc] ショップ{shop_number}再生待ち: {audio_duration:.1f}秒")
-                    await asyncio.sleep(audio_duration + 0.3)
+                    await asyncio.sleep(audio_duration + 1.5)
             except Exception as e:
                 logger.error(f"[ShopDesc] ショップ{i+2}再生エラー: {e}")
 
