@@ -342,8 +342,8 @@ export class CoreController {
       console.log('[LiveAPI] turn_complete');
       this.liveAudioManager.onAiResponseEnded();
 
-      // ユーザー発話をチャット欄に確定表示
-      if (this.userTranscriptBuffer.trim()) {
+      // ユーザー発話をチャット欄に確定表示（lessonモードでは非表示）
+      if (this.userTranscriptBuffer.trim() && this.currentMode !== 'lesson') {
         this.addMessage('user', this.userTranscriptBuffer.trim());
       }
       this.userTranscriptBuffer = '';
