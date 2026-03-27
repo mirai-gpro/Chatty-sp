@@ -7,7 +7,8 @@ export interface AvatarDef {
   name: string;       // メニュー表示名
   modelUrl: string;   // public/avatar/ 配下のzipパス
   thumbnail?: string; // サムネイル画像パス（なければファイル名表示）
-  voiceModel: string; // 紐づく音声モデル名
+  voiceModel: string; // REST TTS用音声モデル名（例: ja-JP-Chirp3-HD-Leda）
+  liveVoice?: string; // LiveAPI用音声名（例: Leda）
 }
 
 /** デフォルトのアバター一覧（JSONロード失敗時のフォールバック） */
@@ -53,6 +54,7 @@ export function setSelectedAvatar(mode: string, avatar: AvatarDef): void {
   localStorage.setItem(`${STORAGE_KEY}_${mode}`, avatar.id);
   localStorage.setItem(`selectedAvatarUrl_${mode}`, avatar.modelUrl);
   localStorage.setItem(`selectedVoiceModel_${mode}`, avatar.voiceModel);
+  localStorage.setItem(`selectedLiveVoice_${mode}`, avatar.liveVoice || '');
 }
 
 /** IDからアバター定義を取得 */

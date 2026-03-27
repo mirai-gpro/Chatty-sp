@@ -304,7 +304,7 @@ class LiveAPISession:
     def __init__(self, session_id: str, mode: str, language: str,
                  system_prompt: str, socketio, client_sid: str,
                  shop_search_callback=None, user_id: str = None,
-                 voice_model: str = ''):
+                 voice_model: str = '', live_voice: str = ''):
         self.session_id = session_id
         self.mode = mode
         self.language = language
@@ -312,7 +312,8 @@ class LiveAPISession:
         self.socketio = socketio
         self.client_sid = client_sid
         self._shop_search_callback = shop_search_callback  # v5 §5.5: ショップ検索用コールバック
-        self.voice_model = voice_model  # アバターに紐づく音声モデル名
+        self.voice_model = voice_model  # REST TTS用音声モデル名（例: ja-JP-Chirp3-HD-Leda）
+        self.live_voice = live_voice    # LiveAPI用音声名（例: Leda）
         self.user_id = user_id  # 長期記憶のプロファイル更新に使用
 
         # 初期あいさつフェーズ（ダミーメッセージのinput_transcriptionを非表示）
@@ -418,8 +419,14 @@ class LiveAPISession:
         config = {
             "language_code": self._get_speech_language_code(),
         }
-        # voice_modelはREST TTS（ショップ読み上げ）にのみ適用
-        # LiveAPIのspeech_configでのvoice指定は仕様が不明なため含めない
+        # LiveAPI用voice名（Puck, Charon, Kore, Fenrir, Aoede, Leda, Orus, Zephyr）
+        if self.live_voice:
+            config["voice_config"] = {
+                "prebuilt_voice_config": {
+                    "voice_name": self.live_voice
+                }
+            }
+            logger.info(f"[LiveAPI] live_voice設定: {self.live_voice}")
         if self.voice_model:
             logger.info(f"[LiveAPI] voice_model設定あり（REST TTS用）: {self.voice_model}")
         return config
