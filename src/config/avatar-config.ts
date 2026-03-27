@@ -2,6 +2,12 @@
 // アバター定義の一元管理
 // avatar-config.json から動的に読み込み + localStorage で選択を永続化
 
+export interface CameraParams {
+  posY: number;
+  posZ: number;
+  targetY: number;
+}
+
 export interface AvatarDef {
   id: string;
   name: string;       // メニュー表示名
@@ -9,6 +15,7 @@ export interface AvatarDef {
   thumbnail?: string; // サムネイル画像パス（なければファイル名表示）
   voiceModel: string; // REST TTS用音声モデル名（例: ja-JP-Chirp3-HD-Leda）
   liveVoice?: string; // LiveAPI用音声名（例: Leda）
+  camera?: CameraParams; // カメラパラメータ
 }
 
 /** デフォルトのアバター一覧（JSONロード失敗時のフォールバック） */
@@ -55,6 +62,9 @@ export function setSelectedAvatar(mode: string, avatar: AvatarDef): void {
   localStorage.setItem(`selectedAvatarUrl_${mode}`, avatar.modelUrl);
   localStorage.setItem(`selectedVoiceModel_${mode}`, avatar.voiceModel);
   localStorage.setItem(`selectedLiveVoice_${mode}`, avatar.liveVoice || '');
+  if (avatar.camera) {
+    localStorage.setItem(`selectedCamera_${mode}`, JSON.stringify(avatar.camera));
+  }
 }
 
 /** IDからアバター定義を取得 */

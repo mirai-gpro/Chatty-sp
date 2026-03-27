@@ -71,12 +71,18 @@ export class LAMWebSocketManager {
             );
 
             // カメラ位置を調整してアバターの顔サイズ・位置を制御
-            // デフォルト: x=0, y=1.8, z=1
-            // モデルごとにカメラパラメータを切り替え
-            const isElf = config.modelUrl.includes('elf.zip');
-            const camParams = isElf
-                ? { posY: 1.73, posZ: 0.4, targetY: 1.70 }  // elf
-                : { posY: 1.73, posZ: 0.4, targetY: 1.62 }; // meruru: 従来値
+            // avatar-config.json のcameraパラメータをlocalStorageから読み込み
+            const mode = window.location.pathname.includes('concierge') ? 'concierge' : 'lesson';
+            let camParams = { posY: 1.73, posZ: 0.4, targetY: 1.62 }; // デフォルト
+            try {
+                const storedCamera = localStorage.getItem(`selectedCamera_${mode}`);
+                if (storedCamera) {
+                    const parsed = JSON.parse(storedCamera);
+                    camParams = { posY: parsed.posY ?? 1.73, posZ: parsed.posZ ?? 0.4, targetY: parsed.targetY ?? 1.62 };
+                }
+            } catch (e) {
+                // パース失敗時はデフォルト使用
+            }
 
             if (this.renderer.viewer && this.renderer.viewer.camera) {
                 const camera = this.renderer.viewer.camera;
