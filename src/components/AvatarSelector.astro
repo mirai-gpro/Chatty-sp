@@ -130,7 +130,7 @@
   const closeBtn = document.getElementById('avatarModalClose');
   const body = document.getElementById('avatarModalBody');
 
-  const mode = window.location.pathname.includes('lesson') ? 'lesson' : 'concierge';
+  const mode = window.location.pathname.includes('concierge') ? 'concierge' : 'lesson';
 
   btn?.addEventListener('click', async () => {
     const avatars = await loadAvatarConfig();

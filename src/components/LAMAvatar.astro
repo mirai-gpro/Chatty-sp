@@ -113,7 +113,7 @@ const {
 
 <script define:vars={{ modelUrl }}>
   // localStorageに選択アバターのmodelUrlがあればそちらを優先
-  const mode = window.location.pathname.includes('lesson') ? 'lesson' : 'concierge';
+  const mode = window.location.pathname.includes('concierge') ? 'concierge' : 'lesson';
   const storedUrl = localStorage.getItem('selectedAvatarUrl_' + mode);
   window.__lamAvatarConfig = { modelUrl: storedUrl || modelUrl };
 </script>
