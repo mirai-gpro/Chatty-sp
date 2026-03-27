@@ -1166,7 +1166,7 @@ class LiveAPISession:
             audio_config = texttospeech.AudioConfig(
                 audio_encoding=texttospeech.AudioEncoding.LINEAR16,
                 sample_rate_hertz=24000,
-                speaking_rate=1.4,
+                speaking_rate=1.2,
             )
             resp = tts_client.synthesize_speech(
                 input=texttospeech.SynthesisInput(text=text),
