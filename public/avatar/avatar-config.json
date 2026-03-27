@@ -24,6 +24,14 @@
     "liveVoice": "Leda"
   },
   {
+    "id": "mio",
+    "name": "ミオ",
+    "modelUrl": "/avatar/mio.zip",
+    "thumbnail": "/avatar/thumbs/mio.png",
+    "voiceModel": "ja-JP-Chirp3-HD-Leda",
+    "liveVoice": "Leda"
+  },  
+  {
     "id": "okabe",
     "name": "オカベ",
     "modelUrl": "/avatar/okabe.zip",
