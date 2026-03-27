@@ -69,12 +69,8 @@ const { apiBaseUrl = '' } = Astro.props;
 
   <div class="chat-area" id="chatArea"></div>
 
-  <div class="input-area">
-    <div class="input-group">
-      <input type="text" id="userInput" placeholder="メッセージを入力..." />
-      <button class="btn btn-send-expanded" id="sendBtn">Send</button>
-    </div>
-  </div>
+  <!-- レッスンモードではテキスト入力不要（音声のみ）-->
+  <input type="hidden" id="userInput" />
 
   <div class="floating-buttons">
     <button class="btn-floating btn-speaker-float" id="speakerBtnFloat" title="Speaker">
