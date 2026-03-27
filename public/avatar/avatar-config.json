@@ -18,10 +18,10 @@
     "camera": { "posY": 1.73, "posZ": 0.4, "targetY": 1.70 }
   },
   {
-    "id": "gakki",
-    "name": "ガッキー",
-    "modelUrl": "/avatar/gakki.zip",
-    "thumbnail": "/avatar/thumbs/gakki.png",
+    "id": "mizuki",
+    "name": "みづき",
+    "modelUrl": "/avatar/mizuki.zip",
+    "thumbnail": "/avatar/thumbs/mizuki.png",
     "voiceModel": "ja-JP-Chirp3-HD-Leda",
     "liveVoice": "Leda",
     "camera": { "posY": 1.73, "posZ": 0.4, "targetY": 1.62 }
