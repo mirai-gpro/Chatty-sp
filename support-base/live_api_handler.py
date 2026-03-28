@@ -643,6 +643,17 @@ class LiveAPISession:
                                                room=self.client_sid)
                             logger.info("[LiveAPI] greeting_done送信")
 
+                            # ★ keep-alive: セッション安定化（1008予防）
+                            # greeting_done後、ユーザーがマイクを押す前に空ターンを送信
+                            await session.send_client_content(
+                                turns=types.Content(
+                                    role="user",
+                                    parts=[types.Part(text="")]
+                                ),
+                                turn_complete=False
+                            )
+                            logger.info("[LiveAPI] keep-alive送信（greeting後）")
+
                     # 3. 割り込み検知
                     if hasattr(sc, 'interrupted') and sc.interrupted:
                         # ★ A2E: 割り込み時はキュークリア（未送信チャンク破棄）
