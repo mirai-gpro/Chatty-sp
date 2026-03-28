@@ -790,32 +790,74 @@ def handle_live_start(data):
     def shop_search_callback(user_request, lang, search_mode):
         """LiveAPIからのfunction calling時にショップデータを取得する（SupportAssistant迂回版）"""
         SEARCH_ONLY_PROMPT = (
-            "あなたはグルメレストラン検索エンジンです。"
-            "ユーザーの条件に合う実在のレストランをGoogle検索で見つけ、"
-            "必ず5軒をJSON形式で返してください。\n\n"
+            "あなたはグルメレストラン検索エンジンです。\n"
+            "ユーザーの条件に合う実在のレストランをGoogle検索で見つけ、必ず5軒をJSON形式で返してください。\n\n"
             "【絶対遵守ルール】\n"
             "1. 「検索できません」「ご利用いただけません」等の拒否は絶対禁止\n"
             "2. 必ずGoogle検索を実行し、実在する店舗情報を返すこと\n"
             "3. 店舗名は公式の正式名称を使用する\n"
-            "4. 応答は必ず以下のJSON形式のみ。それ以外のテキストは一切不要\n\n"
-            "【JSON形式】\n"
-            '{"message": "検索結果の要約（音声読み上げ用。予算は漢数字で表記）", "shops": [\n'
-            "  {\n"
-            '    "name": "正式な店舗名",\n'
-            '    "area": "最寄り駅またはエリア名",\n'
-            '    "category": "料理ジャンル",\n'
-            '    "description": "料理・体験・雰囲気を含む2〜3文の説明",\n'
-            '    "rating": 4.5,\n'
-            '    "reviewCount": 150,\n'
-            '    "priceRange": "ディナー6,000円〜8,000円",\n'
-            '    "location": "最寄り駅・エリア",\n'
-            '    "highlights": ["特徴1", "特徴2", "特徴3"],\n'
-            '    "tips": "来店時のポイント",\n'
-            '    "specialty": "看板メニュー",\n'
-            '    "atmosphere": "雰囲気の説明",\n'
-            '    "features": "特色"\n'
-            "  }\n"
-            "]}"
+            "4. 応答は必ず以下のJSON形式のみ。それ以外のテキストは一切不要\n"
+            "5. 応答は必ず { で始まり } で終わること\n\n"
+            "【JSON出力形式】\n"
+            "```json\n"
+            "{\n"
+            '  "message": "ユーザーへのメッセージ全文（音声読み上げ用。予算は漢数字で表記。店舗リストを1〜5の番号付きで含める）",\n'
+            '  "shops": [\n'
+            "    {\n"
+            '      "name": "正式な店舗名",\n'
+            '      "area": "最寄り駅またはエリア名",\n'
+            '      "category": "料理ジャンル",\n'
+            '      "description": "料理内容・体験価値・雰囲気を含む要約（2〜3文）",\n'
+            '      "rating": 4.5,\n'
+            '      "reviewCount": 150,\n'
+            '      "priceRange": "ランチ1,500円〜、ディナー6,000円〜8,000円",\n'
+            '      "location": "最寄り駅・エリア",\n'
+            '      "highlights": ["看板メニューや特徴", "雰囲気や設備の特徴", "利用シーンの特徴"],\n'
+            '      "tips": "来店時のおすすめポイント",\n'
+            '      "specialty": "看板メニューや得意料理",\n'
+            '      "price_range": "予算帯",\n'
+            '      "atmosphere": "雰囲気",\n'
+            '      "features": "特色",\n'
+            '      "hotpepper_url": "",\n'
+            '      "maps_url": "",\n'
+            '      "tabelog_url": "",\n'
+            '      "gnavi_url": "",\n'
+            '      "tripadvisor_url": "",\n'
+            '      "tripadvisor_rating": null,\n'
+            '      "tripadvisor_reviews": null,\n'
+            '      "latitude": null,\n'
+            '      "longitude": null\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+            "```\n\n"
+            "【shops配列の詳細仕様】\n"
+            "基本フィールド（重要度：高）:\n"
+            "- name: 正式な店舗名\n"
+            "- area: 最寄り駅またはエリア名\n"
+            "- description: 料理内容・体験価値・雰囲気を含む要約（2〜3文）\n"
+            "- category: 料理ジャンル\n"
+            "- priceRange: 価格帯（数字+カンマ形式、例：「ランチ2,000円〜、ディナー6,000円〜8,000円」）\n\n"
+            "充実情報フィールド（推奨）:\n"
+            "- rating: 評価（数値）\n"
+            "- reviewCount: レビュー数\n"
+            "- location: 最寄り駅・エリア\n"
+            "- highlights: 3つ程度の特徴（配列）\n"
+            "- tips: 来店時のおすすめポイント\n"
+            "- specialty: 看板メニューや得意料理\n"
+            "- atmosphere: 雰囲気\n"
+            "- features: 特色\n\n"
+            "外部リンク（取得できた場合のみ）:\n"
+            "- hotpepper_url, maps_url, tabelog_url, gnavi_url, tripadvisor_url\n"
+            "- tripadvisor_rating, tripadvisor_reviews\n"
+            "- latitude, longitude\n\n"
+            "【予算表記ルール】\n"
+            "- messageフィールド内: 漢数字（五千円、一万円）で音声読み上げに対応\n"
+            "- priceRangeフィールド: 数字+カンマ形式（6,000円〜8,000円）でカード表示に対応\n\n"
+            "【messageの構成】\n"
+            "1. 導入文（条件の要約）\n"
+            "2. 店舗リスト（1〜5の番号付き、各店舗2〜3文の説明、予算は漢数字）\n"
+            "3. 締め文（「気になるお店はありましたか？」等）\n"
         )
         try:
             logger.info(f"[ShopSearch] 案C: 検索専用プロンプトで直接API呼び出し: '{user_request}'")
