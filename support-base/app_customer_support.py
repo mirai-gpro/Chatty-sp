@@ -858,6 +858,8 @@ def handle_live_start(data):
                 from api_integrations import extract_shops_from_response
                 shops = extract_shops_from_response(assistant_text)
 
+            if shops is None:
+                shops = []
             logger.info(f"[ShopSearch] 案C: {len(shops)}件のショップを取得")
 
             result = {
