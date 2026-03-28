@@ -1361,11 +1361,18 @@ class LiveAPISession:
     def _on_output_transcription(self, text: str):
         """句読点検出でフラッシュ判定（仕様書08 セクション3.3）"""
         self._a2e_transcript_buffer += text
-        # 句読点（。？！）を検出したらフラッシュ
+        # 句読点（。？！）を検出したら、250ms遅延後にフラッシュ
+        # 余韻の無音データがバッファに入ってからフラッシュすることで、
+        # A2Eが口を閉じるための無音区間（7フレーム=233ms以上）を確保する
         flush_triggers = ['。', '？', '！', '?', '!']
         if any(t in text for t in flush_triggers):
-            asyncio.ensure_future(self._flush_a2e_buffer(force=False))
+            asyncio.ensure_future(self._delayed_a2e_flush())
             self._a2e_transcript_buffer = ""
+
+    async def _delayed_a2e_flush(self):
+        """句読点フラッシュの遅延実行（250ms後）"""
+        await asyncio.sleep(0.25)
+        await self._flush_a2e_buffer(force=False)
 
     async def _send_a2e_ahead(self, pcm_data: bytes):
         """A2E先行送信: 音声をフロントに送る前にExpressionを先に届ける
