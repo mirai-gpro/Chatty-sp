@@ -188,12 +188,6 @@ export class LessonController extends CoreController {
       pageTitle.innerHTML = `<img src="/pwa-152x152.png" alt="Logo" class="app-logo" /> ${this.t('pageTitleLesson')}`;
     }
 
-    // ✅ サブタイトルをレッスン用に設定（親クラスのグルメ用上書きを防止）
-    const pageSubtitle = document.getElementById('pageSubtitle');
-    if (pageSubtitle) {
-      pageSubtitle.textContent = this.t('initialGreetingLesson');
-    }
-
     // ✅ 相手先言語ラベルを更新
     const targetLangLabel = this.container.querySelector('#targetLangLabel');
     if (targetLangLabel) {
