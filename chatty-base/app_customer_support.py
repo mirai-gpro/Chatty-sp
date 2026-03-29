@@ -81,6 +81,7 @@ allowed_origins = [
     "https://gourmet-sp.vercel.app",
     "https://gourmet-sp3.vercel.app",
     "https://travel-sp.vercel.app",
+    "https://chatty-sp.vercel.app",
     "http://localhost:4321"
 ]
 
