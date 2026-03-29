@@ -4,13 +4,13 @@ on:
   push:
     branches: [main, 'claude/*']
     paths:
-      - 'support-base/**'
+      - 'chatty-base/**'
       - '.github/workflows/deploy-cloud-run.yml'
   workflow_dispatch:
 
 env:
   PROJECT_ID: ai-meet-486502
-  SERVICE_NAME: travel-sp-base
+  SERVICE_NAME: chatty-sp-base
   REGION: us-central1
   GAR_LOCATION: us-central1-docker.pkg.dev
 
@@ -49,7 +49,7 @@ jobs:
       - name: Build and push Docker image
         run: |
           IMAGE="${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-          docker build -t $IMAGE ./support-base
+          docker build -t $IMAGE ./chatty-base
           docker push $IMAGE
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
