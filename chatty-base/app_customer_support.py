@@ -756,6 +756,7 @@ def handle_live_start(data):
     language = data.get('language', 'ja')
     voice_model = data.get('voice_model', '')
     live_voice = data.get('live_voice', '')
+    shop_id = data.get('shop_id', '')
 
     # 既存のLiveAPIセッションがあれば停止
     if client_sid in active_live_sessions:
@@ -785,7 +786,8 @@ def handle_live_start(data):
             logger.warning(f"[LiveAPI] プロファイル取得エラー: {e}")
 
     system_prompt = build_system_instruction(mode, user_profile=user_profile,
-                                               system_prompts=SYSTEM_PROMPTS, language=language)
+                                               system_prompts=SYSTEM_PROMPTS, language=language,
+                                               shop_id=shop_id)
 
     # ショップ検索コールバック（案C: SupportAssistant迂回、検索専用プロンプトで直接API呼び出し）
     def shop_search_callback(user_request, lang, search_mode):

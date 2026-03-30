@@ -101,9 +101,48 @@ _generate_cached_audio()
 # build_system_instruction() で GCS/ローカルのプロンプトを参照
 # ============================================================
 
+SHOP_DISPLAY_NAMES = {
+    'dennys': 'デニーズ',
+    'kfc': 'KFC',
+}
+
+
+def _get_shop_display_name(shop_id: str) -> str:
+    return SHOP_DISPLAY_NAMES.get(shop_id, shop_id)
+
+
+def _load_menu_markdown(shop_id: str) -> str:
+    """メニューMarkdownを読み込む（GCS優先、ローカルフォールバック）"""
+    # GCS
+    try:
+        bucket_name = os.getenv('PROMPTS_BUCKET_NAME')
+        if bucket_name:
+            from google.cloud import storage as gcs_storage
+            client = gcs_storage.Client()
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(f'menu_data/{shop_id}/{shop_id}_menu.md')
+            if blob.exists():
+                content = blob.download_as_text(encoding='utf-8')
+                logger.info(f"[Menu] GCSからメニューMarkdown読み込み成功: {shop_id} ({len(content)}文字)")
+                return content
+    except Exception as e:
+        logger.info(f"[Menu] GCS読み込みスキップ: {e}")
+
+    # ローカル
+    local_path = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id, f'{shop_id}_menu.md')
+    if os.path.exists(local_path):
+        with open(local_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        logger.info(f"[Menu] ローカルからメニューMarkdown読み込み成功: {shop_id} ({len(content)}文字)")
+        return content
+
+    logger.warning(f"[Menu] メニューMarkdownが見つかりません: {shop_id}")
+    return "（メニューデータが利用できません）"
+
 
 def build_system_instruction(mode: str, user_profile: dict = None,
-                             system_prompts: dict = None, language: str = 'ja') -> str:
+                             system_prompts: dict = None, language: str = 'ja',
+                             shop_id: str = None) -> str:
     """モードに応じたシステムインストラクションを組み立てる
     （03_prompt_modification_spec.md セクション7.1）
 
@@ -136,7 +175,13 @@ def build_system_instruction(mode: str, user_profile: dict = None,
     if mode == 'concierge':
         # ユーザープロファイルに応じた初期あいさつ指示を構築
         user_context = _build_concierge_user_context(user_profile)
-        return base_prompt.replace('{user_context}', user_context)
+        prompt = base_prompt.replace('{user_context}', user_context)
+
+        # メニューMarkdownを注入（注文サポートモード）
+        menu_markdown = _load_menu_markdown(shop_id or 'dennys')
+        prompt = prompt.replace('{menu_data}', menu_markdown)
+        prompt = prompt.replace('{shop_name}', _get_shop_display_name(shop_id or 'dennys'))
+        return prompt
     elif mode == 'lesson':
         # レッスンモード: 講師名・ユーザー名・user_contextを埋め込む
         teacher_name = (user_profile or {}).get('lesson_teacher_name', 'Lisa')
