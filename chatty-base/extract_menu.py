@@ -155,17 +155,17 @@ def extract_menu_markdown(pdf_path: str, shop_id: str, image_urls: dict) -> str:
             pdf_part,
             f"""このPDFは「{shop_name}」のメニューです。
 メニューのカテゴリ（大分類）を全て列挙してください。
-カンマ区切りのテキストのみ出力。"""
+1行に1カテゴリ、日本語のみで出力。英語名は不要。"""
         ],
         config=types.GenerateContentConfig(temperature=0.1),
     )
     categories_text = cat_response.text.strip()
-    logger.info(f"[Menu] カテゴリ一覧: {categories_text}")
+    logger.info(f"[Menu] カテゴリ一覧:\n{categories_text}")
 
     # カテゴリごとにMarkdown抽出
     all_markdown = f"# {shop_name} メニュー\n\n"
 
-    categories = [c.strip() for c in categories_text.split(',')]
+    categories = [c.strip() for c in categories_text.strip().split('\n') if c.strip()]
     for cat in categories:
         logger.info(f"[Menu] Step 2: 「{cat}」カテゴリを抽出中...")
         prompt = f"""このPDFは「{shop_name}」のメニューです。
@@ -195,19 +195,27 @@ def extract_menu_markdown(pdf_path: str, shop_id: str, image_urls: dict) -> str:
 ---
 """
 
-        try:
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=[pdf_part, prompt],
-                config=types.GenerateContentConfig(temperature=0.1),
-            )
-            cat_markdown = response.text.strip()
-            item_count = cat_markdown.count('### ')
-            all_markdown += f"\n## {cat}\n\n{cat_markdown}\n"
-            logger.info(f"[Menu]   「{cat}」: {item_count}品 抽出")
-        except Exception as e:
-            logger.warning(f"[Menu]   「{cat}」抽出失敗: {e}")
-            continue
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=[pdf_part, prompt],
+                    config=types.GenerateContentConfig(temperature=0.1),
+                )
+                cat_markdown = response.text.strip()
+                item_count = cat_markdown.count('### ')
+                all_markdown += f"\n## {cat}\n\n{cat_markdown}\n"
+                logger.info(f"[Menu]   「{cat}」: {item_count}品 抽出")
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    import time
+                    wait = 2 ** (attempt + 1)
+                    logger.warning(f"[Menu]   「{cat}」失敗（リトライ {attempt+1}/{max_retries}、{wait}秒後）: {e}")
+                    time.sleep(wait)
+                else:
+                    logger.warning(f"[Menu]   「{cat}」抽出失敗（全リトライ失敗）: {e}")
 
     logger.info(f"[Menu] 全カテゴリ抽出完了")
     return all_markdown
