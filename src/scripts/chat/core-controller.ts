@@ -90,8 +90,7 @@ export class CoreController {
         }
     }, 10000);
 
-    // ★ 案3: 初期起動もresetAppContent()経由で実行（ソフトリセットと同じパス）
-    await this.resetAppContent();
+    await this.initializeSession();
     this.updateUILanguage();
 
     setTimeout(() => {
@@ -102,6 +101,9 @@ export class CoreController {
     }, 2000);
 
     console.log('[Core] Initialization completed');
+
+    // ★ 初期起動完了後にソフトリセットを自動実行（差異をゼロにする）
+    await this.resetAppContent();
   }
 
   protected getUserId(): string {
