@@ -79,9 +79,6 @@ export class CoreController {
   protected async init() {
     console.log('[Core] Starting initialization...');
 
-    // ★ 仮説1テスト: isUserInteracted を強制true
-    this.isUserInteracted = true;
-
     this.bindEvents();
     this.initSocket();
 
