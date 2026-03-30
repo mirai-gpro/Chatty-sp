@@ -598,7 +598,8 @@ export class CoreController {
         mode: this.currentMode,
         language: this.currentLanguage,
         voice_model: voiceModel,
-        live_voice: liveVoice
+        live_voice: liveVoice,
+        shop_id: this.currentMode === 'concierge' ? 'dennys' : ''
       });
 
       this.isLiveMode = true;
