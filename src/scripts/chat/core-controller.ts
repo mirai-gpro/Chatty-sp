@@ -299,10 +299,9 @@ export class CoreController {
 
     this.socket.on('live_audio', (data: any) => {
       if (!this.isLiveMode) return;
+      if (!this.isTTSEnabled) return;
       this.liveAudioManager.onAiResponseStarted();
-      if (this.isTTSEnabled) {
-        this.liveAudioManager.playPcmAudio(data.data);
-      }
+      this.liveAudioManager.playPcmAudio(data.data);
     });
 
     // ★ A2E expressionデータ受信（仕様書08 セクション5.1）
@@ -371,13 +370,6 @@ export class CoreController {
       // AI発話のストリーミング表示を確定
       const streaming = this.els.chatArea.querySelector('.message.assistant.live-streaming');
       if (streaming) {
-        // conciergeモード: Markdownにメニューカードが含まれていればカード変換
-        if (this.currentMode === 'concierge' && this.aiTranscriptBuffer.includes('###')) {
-          const msgContent = streaming.querySelector('.message-content');
-          if (msgContent) {
-            msgContent.innerHTML = this.markdownToMenuCards(this.aiTranscriptBuffer);
-          }
-        }
         streaming.classList.remove('live-streaming');
       }
       this.aiTranscriptBuffer = '';
@@ -392,28 +384,6 @@ export class CoreController {
       // ストリーミング中のメッセージを削除
       const streaming = this.els.chatArea.querySelector('.message.assistant.live-streaming');
       if (streaming) streaming.remove();
-    });
-
-    // メニューカード表示（注文サポートモード）
-    this.socket.on('menu_recommend', (data: any) => {
-      if (!data.items || data.items.length === 0) return;
-      console.log('[Menu] メニューカード受信:', data.items.length, '品');
-
-      let cardsHtml = '';
-      for (const item of data.items) {
-        const imgSrc = item.image_url || '';
-        const imageHtml = imgSrc
-          ? `<img src="${imgSrc}" alt="${item.name}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block;" />`
-          : '';
-        cardsHtml += `<div style="background:#fff;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.12);overflow:hidden;margin-bottom:12px;border:1px solid #e5e7eb;white-space:normal;">${imageHtml}<div style="padding:12px 16px;"><div style="font-size:16px;font-weight:700;color:#1f2937;margin-bottom:4px;">${item.name}</div>${item.price ? `<div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:6px;">${item.price}</div>` : ''}${item.description ? `<div style="font-size:13px;color:#6b7280;line-height:1.4;">${item.description}</div>` : ''}</div></div>`;
-      }
-
-      // message構造の外にカードを直接挿入
-      const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'padding:8px 20px;white-space:normal;';
-      wrapper.innerHTML = cardsHtml;
-      this.els.chatArea.appendChild(wrapper);
-      this.els.chatArea.scrollTop = this.els.chatArea.scrollHeight;
     });
 
     this.socket.on('live_reconnecting', () => {
@@ -628,8 +598,7 @@ export class CoreController {
         mode: this.currentMode,
         language: this.currentLanguage,
         voice_model: voiceModel,
-        live_voice: liveVoice,
-        shop_id: this.currentMode === 'concierge' ? 'dennys' : ''
+        live_voice: liveVoice
       });
 
       this.isLiveMode = true;
@@ -1239,87 +1208,6 @@ export class CoreController {
     if (window.innerWidth < 1024) {
       setTimeout(() => { this.container.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
     }
-  }
-
-  /**
-   * Markdown形式のメニューアイテムをカードHTMLに変換
-   * ### メニュー名 → カードタイトル
-   * ![alt](url) → カード画像
-   * **価格:** ¥xxx → 価格表示
-   * **説明:** xxx → 説明文
-   * etc.
-   */
-  protected markdownToMenuCards(markdown: string): string {
-    // メニューアイテムを --- で分割
-    const items = markdown.split(/\n---\n/).filter(s => s.trim());
-
-    let html = '';
-    for (const item of items) {
-      const lines = item.trim().split('\n');
-      let title = '';
-      let imageUrl = '';
-      let fields: { label: string; value: string }[] = [];
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-
-        // ### メニュー名
-        const titleMatch = trimmed.match(/^###\s+(.+)/);
-        if (titleMatch) {
-          title = titleMatch[1];
-          continue;
-        }
-
-        // ![alt](url)
-        const imgMatch = trimmed.match(/^!\[.*?\]\((.+?)\)/);
-        if (imgMatch) {
-          imageUrl = imgMatch[1];
-          continue;
-        }
-
-        // **ラベル:** 値
-        const fieldMatch = trimmed.match(/^\*\*(.+?):\*\*\s*(.+)/);
-        if (fieldMatch) {
-          fields.push({ label: fieldMatch[1], value: fieldMatch[2] });
-          continue;
-        }
-      }
-
-      if (!title) continue;
-
-      // カードHTMLを組み立て
-      const imageHtml = imageUrl
-        ? `<div class="menu-card-image"><img src="${imageUrl}" alt="${title}" loading="lazy" /></div>`
-        : '';
-
-      const priceField = fields.find(f => f.label === '価格');
-      const descField = fields.find(f => f.label === '説明');
-      const otherFields = fields.filter(f => f.label !== '価格' && f.label !== '説明');
-
-      const priceHtml = priceField
-        ? `<div class="menu-card-price">${priceField.value}</div>`
-        : '';
-
-      const descHtml = descField
-        ? `<div class="menu-card-desc">${descField.value}</div>`
-        : '';
-
-      const detailsHtml = otherFields.length > 0
-        ? `<div class="menu-card-details">${otherFields.map(f => `<span class="menu-card-detail"><strong>${f.label}:</strong> ${f.value}</span>`).join('')}</div>`
-        : '';
-
-      html += `<div class="menu-card">
-        ${imageHtml}
-        <div class="menu-card-body">
-          <div class="menu-card-title">${title}</div>
-          ${priceHtml}
-          ${descHtml}
-          ${detailsHtml}
-        </div>
-      </div>`;
-    }
-
-    return html || markdown;
   }
 
   protected addMessage(role: string, text: string, summary: string | null = null, isInitial: boolean = false) {
