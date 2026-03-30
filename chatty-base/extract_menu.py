@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-GCSからメニューPDFをダウンロードしてテキスト抽出 → menu.json生成
+メニューPDFからGemini APIを使ってmenu.jsonを生成
 
 使い方:
   python extract_menu.py dennys
   python extract_menu.py kfc
 
 環境変数:
-  PROMPTS_BUCKET_NAME: GCSバケット名
+  GEMINI_API_KEY: Gemini APIキー
+  PROMPTS_BUCKET_NAME: GCSバケット名（オプション）
 """
 
 import sys
@@ -18,6 +19,11 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+SHOP_NAMES = {
+    'dennys': 'デニーズ',
+    'kfc': 'KFC',
+}
 
 
 def download_pdf_from_gcs(shop_id: str) -> str:
@@ -41,59 +47,8 @@ def download_pdf_from_gcs(shop_id: str) -> str:
     return tmp_path
 
 
-def extract_text_from_pdf(pdf_path: str) -> list[dict]:
-    """PDFからページごとにテキストを抽出"""
-    import pdfplumber
-
-    pages = []
-    with pdfplumber.open(pdf_path) as pdf:
-        logger.info(f"[Menu] PDF読み込み: {len(pdf.pages)} ページ")
-        for i, page in enumerate(pdf.pages):
-            text = page.extract_text()
-            tables = page.extract_tables()
-            pages.append({
-                'page': i + 1,
-                'text': text or '',
-                'tables': tables or [],
-                'has_text': bool(text and text.strip()),
-                'has_tables': bool(tables)
-            })
-            if text and text.strip():
-                logger.info(f"  ページ {i+1}: テキストあり ({len(text)} 文字)")
-            else:
-                logger.info(f"  ページ {i+1}: テキストなし（画像のみの可能性）")
-    return pages
-
-
-def save_raw_extraction(shop_id: str, pages: list[dict]):
-    """生のテキスト抽出結果をJSONで保存（デバッグ・確認用）"""
-    output_dir = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id)
-    os.makedirs(output_dir, exist_ok=True)
-
-    raw_path = os.path.join(output_dir, 'raw_extraction.json')
-    with open(raw_path, 'w', encoding='utf-8') as f:
-        json.dump(pages, f, ensure_ascii=False, indent=2)
-    logger.info(f"[Menu] 生テキスト抽出結果を保存: {raw_path}")
-
-    # テキストのみのサマリーも保存
-    text_path = os.path.join(output_dir, 'raw_text.txt')
-    with open(text_path, 'w', encoding='utf-8') as f:
-        for page in pages:
-            f.write(f"=== ページ {page['page']} ===\n")
-            f.write(page['text'] + '\n\n')
-    logger.info(f"[Menu] テキストサマリーを保存: {text_path}")
-
-
-def main():
-    if len(sys.argv) < 2:
-        print("使い方: python extract_menu.py <shop_id>")
-        print("  例: python extract_menu.py dennys")
-        sys.exit(1)
-
-    shop_id = sys.argv[1]
-    logger.info(f"[Menu] {shop_id} のメニューPDFを処理開始")
-
-    # 1. GCSからPDFをダウンロード（失敗時はローカルフォールバック）
+def get_pdf_path(shop_id: str) -> str:
+    """PDFのパスを取得（GCS優先、ローカルフォールバック）"""
     pdf_path = None
     try:
         pdf_path = download_pdf_from_gcs(shop_id)
@@ -108,18 +63,132 @@ def main():
         else:
             logger.error(f"[Menu] PDFが見つかりません: menu_data/{shop_id}/menu.pdf")
             sys.exit(1)
+    return pdf_path
 
-    # 2. テキスト抽出
-    pages = extract_text_from_pdf(pdf_path)
 
-    # 3. 生の抽出結果を保存
-    save_raw_extraction(shop_id, pages)
+def extract_menu_with_gemini(pdf_path: str, shop_id: str) -> dict:
+    """Gemini APIにPDFを送ってmenu.jsonを生成"""
+    import google.generativeai as genai
 
-    # サマリー
-    text_pages = sum(1 for p in pages if p['has_text'])
-    table_pages = sum(1 for p in pages if p['has_tables'])
-    logger.info(f"[Menu] 完了: 全{len(pages)}ページ, テキストあり={text_pages}, テーブルあり={table_pages}")
-    logger.info(f"[Menu] 次のステップ: raw_text.txt を確認し、menu.json のフォーマットに整形")
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key:
+        logger.error("[Menu] GEMINI_API_KEY が設定されていません")
+        sys.exit(1)
+
+    genai.configure(api_key=api_key)
+
+    shop_name = SHOP_NAMES.get(shop_id, shop_id)
+
+    # PDFをアップロード
+    logger.info(f"[Menu] PDFをGemini APIにアップロード中...")
+    pdf_file = genai.upload_file(pdf_path, mime_type='application/pdf')
+    logger.info(f"[Menu] アップロード完了: {pdf_file.name}")
+
+    prompt = f"""このPDFは「{shop_name}」のメニューです。
+全ページを読み取り、以下のJSON形式でメニューデータを抽出してください。
+
+【ルール】
+- 全てのメニューアイテムを漏れなく抽出すること
+- 価格は税込価格（円）を整数で記載
+- カテゴリはPDFの構成に従う（モーニング、ランチ、グランドメニュー、デザート、ドリンク等）
+- メニュー番号（5桁）があれば記載
+- セット価格がある場合はset_priceに記載
+- ドリンクバー付きの価格がある場合はwith_drink_bar_priceに記載
+- 説明文はPDFに記載のものを簡潔に記載
+- JSON以外のテキストは一切出力しないこと
+
+【出力JSON形式】
+{{
+  "shop_name": "{shop_name}",
+  "categories": [
+    {{
+      "name": "カテゴリ名",
+      "time_restriction": "販売時間制限があれば記載（例: 開店〜11:00）、なければnull",
+      "items": [
+        {{
+          "id": "メニュー番号（5桁）、なければnull",
+          "name": "メニュー名（日本語）",
+          "name_en": "メニュー名（英語）、あれば",
+          "price": 税込価格（整数）,
+          "price_without_tax": 税抜価格（整数）、あれば,
+          "description": "説明文",
+          "with_drink_bar_price": ドリンクバー付き税込価格、あればnullでなければ整数,
+          "set_price": セット税込価格、あればnullでなければ整数,
+          "is_set_available": セットメニューが選択可能か（true/false）
+        }}
+      ]
+    }}
+  ]
+}}"""
+
+    logger.info(f"[Menu] Gemini APIでメニュー抽出中...（時間がかかります）")
+
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    response = model.generate_content(
+        [pdf_file, prompt],
+        generation_config=genai.GenerationConfig(
+            response_mime_type='application/json',
+            temperature=0.1,
+        ),
+    )
+
+    # レスポンスからJSONを取得
+    result_text = response.text
+    logger.info(f"[Menu] Gemini応答受信: {len(result_text)} 文字")
+
+    try:
+        menu_data = json.loads(result_text)
+    except json.JSONDecodeError:
+        # JSON部分だけ抽出を試みる
+        start = result_text.find('{')
+        end = result_text.rfind('}') + 1
+        if start >= 0 and end > start:
+            menu_data = json.loads(result_text[start:end])
+        else:
+            logger.error(f"[Menu] JSON解析失敗。レスポンス:\n{result_text[:500]}")
+            sys.exit(1)
+
+    return menu_data
+
+
+def save_menu_json(shop_id: str, menu_data: dict):
+    """menu.jsonを保存"""
+    output_dir = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id)
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(output_dir, 'menu.json')
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(menu_data, f, ensure_ascii=False, indent=2)
+    logger.info(f"[Menu] menu.json保存完了: {output_path}")
+
+    # サマリー表示
+    total_items = 0
+    for cat in menu_data.get('categories', []):
+        items = cat.get('items', [])
+        total_items += len(items)
+        logger.info(f"  カテゴリ: {cat['name']} ({len(items)}品)")
+    logger.info(f"[Menu] 合計: {total_items}品")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("使い方: python extract_menu.py <shop_id>")
+        print("  例: python extract_menu.py dennys")
+        sys.exit(1)
+
+    shop_id = sys.argv[1]
+    logger.info(f"[Menu] {shop_id} のメニューPDF → menu.json 変換開始")
+
+    # 1. PDFパスを取得
+    pdf_path = get_pdf_path(shop_id)
+
+    # 2. Gemini APIでメニュー抽出
+    menu_data = extract_menu_with_gemini(pdf_path, shop_id)
+
+    # 3. menu.jsonを保存
+    save_menu_json(shop_id, menu_data)
+
+    logger.info(f"[Menu] 完了！")
 
 
 if __name__ == '__main__':
