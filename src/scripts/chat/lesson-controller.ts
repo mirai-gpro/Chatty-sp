@@ -20,6 +20,7 @@ export class LessonController extends CoreController {
 
     // レッスンモードに設定
     this.currentMode = 'lesson';
+    this.showTranscriptInInput = false;
     this.init();
   }
 
@@ -134,8 +135,7 @@ export class LessonController extends CoreController {
         this.handleStreamingSTTComplete(text);
         this.currentAISpeech = "";
       } else {
-        this.els.userInput.value = text;
-        this.els.userInput.classList.add('voice-input-hidden');
+        if (this.showTranscriptInInput) this.els.userInput.value = text;
       }
     });
   }
@@ -251,8 +251,7 @@ export class LessonController extends CoreController {
         return;
     }
 
-    this.els.userInput.value = transcript;
-    this.els.userInput.classList.add('voice-input-hidden');
+    if (this.showTranscriptInInput) this.els.userInput.value = transcript;
 
     // 短すぎる入力チェック
     const textLength = transcript.trim().replace(/\s+/g, '').length;
@@ -340,12 +339,6 @@ export class LessonController extends CoreController {
            return;
       }
 
-      this.els.userInput.value = '';
-    }
-
-    // 音声入力時: inputの非表示クラスを除去してクリア
-    if (this.isFromVoiceInput) {
-      this.els.userInput.classList.remove('voice-input-hidden');
       this.els.userInput.value = '';
     }
 

@@ -27,6 +27,7 @@ export class CoreController {
   protected isAISpeaking = false;
   protected currentAISpeech = "";
   protected currentMode: 'chat' | 'concierge' | 'lesson' = 'chat';
+  protected showTranscriptInInput = true;
 
   // ★ LiveAPI状態変数（仕様書02 セクション4.4.2）
   protected isLiveMode = false;
@@ -272,7 +273,7 @@ export class CoreController {
         this.handleStreamingSTTComplete(text);
         this.currentAISpeech = "";
       } else {
-        this.els.userInput.value = text;
+        if (this.showTranscriptInInput) this.els.userInput.value = text;
       }
     });
 
@@ -329,7 +330,7 @@ export class CoreController {
       const text = data.text;
       if (text) {
         this.userTranscriptBuffer += text;
-        this.els.userInput.value = this.userTranscriptBuffer;
+        if (this.showTranscriptInInput) this.els.userInput.value = this.userTranscriptBuffer;
       }
     });
 
@@ -653,7 +654,7 @@ export class CoreController {
         return;
     }
 
-    this.els.userInput.value = transcript;
+    if (this.showTranscriptInInput) this.els.userInput.value = transcript;
     this.addMessage('user', transcript);
     
     const textLength = transcript.trim().replace(/\s+/g, '').length;
