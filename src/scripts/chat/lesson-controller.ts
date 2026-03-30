@@ -129,6 +129,7 @@ export class LessonController extends CoreController {
         this.currentAISpeech = "";
       } else {
         this.els.userInput.value = text;
+        this.els.userInput.classList.add('voice-input-hidden');
       }
     });
   }
