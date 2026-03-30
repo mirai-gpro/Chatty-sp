@@ -10,6 +10,7 @@ stt_stream.py の GeminiLiveApp をWebアプリ向けに改変
 """
 
 import asyncio
+import threading
 import base64
 import os
 import logging
@@ -344,8 +345,8 @@ class LiveAPISession:
         self._a2e_send_queue: asyncio.Queue = asyncio.Queue()
         self._a2e_worker_task: asyncio.Task | None = None
 
-        # ★ 案B: アバター準備完了待ちイベント
-        self._greeting_trigger_event: asyncio.Event = asyncio.Event()
+        # ★ 案B: アバター準備完了待ちイベント（threading.Event: Flask threadからset()される）
+        self._greeting_trigger_event: threading.Event = threading.Event()
 
         # 非同期キュー
         self.audio_queue_to_gemini = None
@@ -486,10 +487,11 @@ class LiveAPISession:
                             self.socketio.emit('live_ready', {}, room=self.client_sid)
                             logger.info("[LiveAPI] live_ready送信 → greeting_trigger待機")
 
-                            # ★ 案B: アバター準備完了を待つ（最大30秒）
-                            try:
-                                await asyncio.wait_for(self._greeting_trigger_event.wait(), timeout=30.0)
-                            except asyncio.TimeoutError:
+                            # ★ 案B: アバター準備完了を待つ（最大30秒、threading.Event）
+                            triggered = await asyncio.get_event_loop().run_in_executor(
+                                None, self._greeting_trigger_event.wait, 30.0
+                            )
+                            if not triggered:
                                 logger.warning("[LiveAPI] greeting_trigger タイムアウト（30秒）、greeting発火します")
 
                             trigger_msgs = self.INITIAL_GREETING_TRIGGERS
