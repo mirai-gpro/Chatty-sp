@@ -85,13 +85,13 @@ def load_prompts_from_gcs():
             else:
                 logger.warning(f"[Prompt] GCSに見つかりません: concierge_{lang}.txt")
 
-            # 会話レッスンモード用プロンプト
-            lesson_blob = bucket.blob(f'prompts/lesson_{lang}.txt')
+            # Chatty AIモード用プロンプト
+            lesson_blob = bucket.blob(f'prompts/chatty_system_{lang}.txt')
             if lesson_blob.exists():
                 prompts['lesson'][lang] = lesson_blob.download_as_text(encoding='utf-8')
-                logger.info(f"[Prompt] GCSから読み込み成功: lesson_{lang}.txt")
+                logger.info(f"[Prompt] GCSから読み込み成功: chatty_system_{lang}.txt")
             else:
-                logger.warning(f"[Prompt] GCSに見つかりません: lesson_{lang}.txt")
+                logger.warning(f"[Prompt] GCSに見つかりません: chatty_system_{lang}.txt")
 
         return prompts if (prompts['chat'] or prompts['concierge'] or prompts['lesson']) else None
 
@@ -137,12 +137,12 @@ def load_prompts_from_local():
         except Exception as e:
             logger.error(f"[Prompt] ローカル読み込みエラー (concierge/{lang}): {e}")
 
-        # 会話レッスンモード用
-        lesson_file = f'prompts/lesson_{lang}.txt'
+        # Chatty AIモード用
+        lesson_file = f'prompts/chatty_system_{lang}.txt'
         try:
             with open(lesson_file, 'r', encoding='utf-8') as f:
                 prompts['lesson'][lang] = f.read()
-                logger.info(f"[Prompt] ローカルから読み込み成功: lesson_{lang}.txt")
+                logger.info(f"[Prompt] ローカルから読み込み成功: chatty_system_{lang}.txt")
         except FileNotFoundError:
             logger.warning(f"[Prompt] ローカルファイルが見つかりません: {lesson_file}")
         except Exception as e:

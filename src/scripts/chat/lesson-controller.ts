@@ -188,10 +188,16 @@ export class LessonController extends CoreController {
       initialMessage.textContent = savedGreeting;
     }
 
-    // ✅ ページタイトルをレッスン用に設定
+    // ✅ ページタイトルをChatty AI用に設定
     const pageTitle = document.getElementById('pageTitle');
     if (pageTitle) {
       pageTitle.innerHTML = `<img src="/pwa-152x152.png" alt="Logo" class="app-logo" /> ${this.t('pageTitleLesson')}`;
+    }
+
+    // ✅ サブタイトルをChatty AI用に設定
+    const pageSubtitle = document.getElementById('pageSubtitle');
+    if (pageSubtitle) {
+      pageSubtitle.textContent = this.t('pageSubtitleLesson');
     }
 
     // ✅ 相手先言語ラベルを更新
