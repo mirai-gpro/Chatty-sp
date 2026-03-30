@@ -251,7 +251,7 @@ export class LessonController extends CoreController {
     }
 
     this.els.userInput.value = transcript;
-    // ユーザー発話はチャット欄に非表示（lessonモード）
+    this.els.userInput.classList.add('voice-input-hidden');
 
     // 短すぎる入力チェック
     const textLength = transcript.trim().replace(/\s+/g, '').length;
@@ -327,7 +327,7 @@ export class LessonController extends CoreController {
     this.els.micBtn.disabled = true;
     this.els.userInput.disabled = true;
 
-    // テキスト入力時の即答処理
+    // テキスト入力時の処理
     if (!this.isFromVoiceInput) {
       this.addMessage('user', message);
       const textLength = message.trim().replace(/\s+/g, '').length;
@@ -340,27 +340,12 @@ export class LessonController extends CoreController {
       }
 
       this.els.userInput.value = '';
+    }
 
-      const ackText = this.t('ackYes');
-      this.currentAISpeech = ackText;
-      this.addMessage('assistant', ackText);
-
-      if (this.isTTSEnabled && !isTextInput) {
-        try {
-          const preGeneratedAudio = this.preGeneratedAcks.get(ackText);
-          if (preGeneratedAudio && this.isUserInteracted) {
-            firstAckPromise = new Promise<void>((resolve) => {
-              this.lastAISpeech = this.normalizeText(ackText);
-              this.ttsPlayer.src = `data:audio/mp3;base64,${preGeneratedAudio}`;
-              this.ttsPlayer.onended = () => resolve();
-              this.ttsPlayer.play().catch(_e => resolve());
-            });
-          } else {
-            firstAckPromise = this.speakTextGCP(ackText, false);
-          }
-        } catch (_e) {}
-      }
-      if (firstAckPromise) await firstAckPromise;
+    // 音声入力時: inputの非表示クラスを除去してクリア
+    if (this.isFromVoiceInput) {
+      this.els.userInput.classList.remove('voice-input-hidden');
+      this.els.userInput.value = '';
     }
 
     this.isFromVoiceInput = false;

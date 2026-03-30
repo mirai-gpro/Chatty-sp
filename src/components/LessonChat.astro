@@ -230,6 +230,7 @@ const { apiBaseUrl = '' } = Astro.props;
 .input-group { display: flex; gap: 10px; align-items: center; }
 #userInput { flex: 1; padding: 10px 14px; border: 2px solid #e5e7eb; border-radius: 20px; font-size: 14px; outline: none; transition: border-color 0.2s; }
 #userInput:focus { border-color: #10b981; }
+#userInput.voice-input-hidden { color: transparent; caret-color: transparent; }
 .btn { padding: 10px 16px; background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; border: none; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
 .btn:hover:not(:disabled) { transform: translateY(-2px); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
