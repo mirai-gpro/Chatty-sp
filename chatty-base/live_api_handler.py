@@ -203,24 +203,22 @@ def _build_lesson_user_context(user_profile: dict = None) -> str:
 
 
 def _get_lesson_first_visit_context(teacher_name: str = 'Lisa') -> str:
-    """レッスンモード: 新規ユーザー用コンテキスト"""
+    """Chatty AIモード: 新規ユーザー用コンテキスト"""
     return f"""## 初期あいさつ（新規ユーザー）
-このユーザーは初めてのレッスンです。
-最初の発話で、まず英語で、次に日本語で自己紹介とレッスン案内をしてください。
-英語: "Hi! I'm {teacher_name}, your English teacher. We have two options: travel English lessons, or free talk sessions with me. Which would you like to start with?"
-日本語: 「こんにちは、英会話の先生の{teacher_name}です。旅行で使える英会話レッスンや、私との英語のフリートークレッスンができます。今日は、どちらからやりますか？」
+このユーザーは初めての訪問です。
+最初の発話で、日本語で自己紹介をしてください。
+「こんにちは、{teacher_name}です。あなたの相談相手、おしゃべりの相棒です。何でも気軽に話しかけてくださいね。」
 ユーザーが名前を教えてくれたら、その名前で呼びかけてください。"""
 
 
 def _get_lesson_returning_context(preferred_name: str, name_honorific: str,
                                    teacher_name: str = 'Lisa') -> str:
-    """レッスンモード: リピーター用コンテキスト"""
+    """Chatty AIモード: リピーター用コンテキスト"""
     full_name = f"{preferred_name}{name_honorific}"
     return f"""## 初期あいさつ（リピーター）
 このユーザーの名前は「{full_name}」です。
-最初の発話で、まず英語で、次に日本語で挨拶とレッスン案内をしてください。
-英語: "Welcome back, {full_name}! Shall we do a travel English lesson today, or would you like a free talk session with me?"
-日本語: 「おかえりなさい、{full_name}。今日は、旅行で使える英会話レッスンか、私との英語のフリートークレッスン、どちらからやりますか？」"""
+最初の発話で、日本語で挨拶をしてください。
+「おかえりなさい、{full_name}。今日は何をお話ししましょうか？」"""
 
 
 # ============================================================
@@ -294,10 +292,10 @@ class LiveAPISession:
             'ko': '안녕하세요.',
         },
         'lesson': {
-            'ja': 'こんにちは。英会話のレッスンをお願いします。',
-            'en': 'Hello. I would like an English conversation lesson.',
-            'zh': '你好。我想上英语会话课。',
-            'ko': '안녕하세요. 영어 회화 레슨을 부탁합니다.',
+            'ja': 'こんにちは。',
+            'en': 'Hello.',
+            'zh': '你好。',
+            'ko': '안녕하세요.',
         },
     }
 

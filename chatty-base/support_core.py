@@ -535,10 +535,10 @@ class SupportAssistant:
 
             if is_first_visit:
                 first_lesson_greetings = {
-                    'ja': f'Hello! I\'m {teacher_name}, your English conversation coach.\nこんにちは！{teacher_name}です。英会話レッスンを担当します。\nお名前を教えてください。',
-                    'en': f'Hello! I\'m {teacher_name}, your English conversation coach.\nMay I ask your name?',
-                    'zh': f'Hello! I\'m {teacher_name}, your English conversation coach.\n你好！我是{teacher_name}，你的英语会话教练。\n请问你叫什么名字？',
-                    'ko': f'Hello! I\'m {teacher_name}, your English conversation coach.\n안녕하세요! {teacher_name}입니다. 영어 회화 코치를 맡고 있습니다.\n이름을 알려주시겠어요?'
+                    'ja': f'こんにちは！{teacher_name}です。あなたの相談相手、おしゃべりの相棒です。\nお名前を教えてください。',
+                    'en': f'Hello! I\'m {teacher_name}, your companion for advice and friendly chats.\nMay I ask your name?',
+                    'zh': f'你好！我是{teacher_name}，您的聊天伙伴和咨询好友。\n请问你叫什么名字？',
+                    'ko': f'안녕하세요! {teacher_name}입니다. 당신의 상담 친구이자 수다 친구입니다.\n이름을 알려주시겠어요?'
                 }
                 return first_lesson_greetings.get(self.language, first_lesson_greetings['ja'])
 
@@ -547,10 +547,10 @@ class SupportAssistant:
 
             if preferred_name:
                 returning_lesson_greetings = {
-                    'ja': f'Hi {preferred_name}! It\'s {teacher_name}.\n{preferred_name}{name_honorific}、こんにちは！{teacher_name}です。\n今日はどんな練習をしましょうか？',
-                    'en': f'Hi {preferred_name}! It\'s {teacher_name}.\nWhat would you like to practice today?',
-                    'zh': f'Hi {preferred_name}! It\'s {teacher_name}.\n{preferred_name}，你好！我是{teacher_name}。\n今天想练习什么？',
-                    'ko': f'Hi {preferred_name}! It\'s {teacher_name}.\n{preferred_name}{name_honorific}, 안녕하세요! {teacher_name}입니다.\n오늘은 어떤 연습을 할까요?'
+                    'ja': f'{preferred_name}{name_honorific}、こんにちは！{teacher_name}です。\n今日は何をお話ししましょうか？',
+                    'en': f'Hi {preferred_name}! It\'s {teacher_name}.\nWhat shall we chat about today?',
+                    'zh': f'{preferred_name}，你好！我是{teacher_name}。\n今天聊点什么？',
+                    'ko': f'{preferred_name}{name_honorific}, 안녕하세요! {teacher_name}입니다.\n오늘은 무슨 이야기를 할까요?'
                 }
                 return returning_lesson_greetings.get(self.language, returning_lesson_greetings['ja'])
 
