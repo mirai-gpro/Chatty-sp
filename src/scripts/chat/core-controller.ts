@@ -393,6 +393,47 @@ export class CoreController {
       if (streaming) streaming.remove();
     });
 
+    // メニューカード表示（注文サポートモード）
+    this.socket.on('menu_recommend', (data: any) => {
+      if (!data.items || data.items.length === 0) return;
+      console.log('[Menu] メニューカード受信:', data.items.length, '品');
+
+      let cardsHtml = '';
+      for (const item of data.items) {
+        const imageHtml = item.image_url
+          ? `<div class="menu-card-image"><img src="${item.image_url}" alt="${item.name}" loading="lazy" /></div>`
+          : '';
+        const priceHtml = item.price
+          ? `<div class="menu-card-price">${item.price}</div>`
+          : '';
+        const descHtml = item.description
+          ? `<div class="menu-card-desc">${item.description}</div>`
+          : '';
+
+        const details: string[] = [];
+        if (item.menu_number) details.push(`<span class="menu-card-detail"><strong>番号:</strong> ${item.menu_number}</span>`);
+        if (item.drink_bar_price) details.push(`<span class="menu-card-detail"><strong>ドリンクバー付:</strong> ${item.drink_bar_price}</span>`);
+        if (item.time_restriction) details.push(`<span class="menu-card-detail"><strong>販売時間:</strong> ${item.time_restriction}</span>`);
+        const detailsHtml = details.length > 0 ? `<div class="menu-card-details">${details.join('')}</div>` : '';
+
+        cardsHtml += `<div class="menu-card">
+          ${imageHtml}
+          <div class="menu-card-body">
+            <div class="menu-card-title">${item.name}</div>
+            ${priceHtml}
+            ${descHtml}
+            ${detailsHtml}
+          </div>
+        </div>`;
+      }
+
+      const div = document.createElement('div');
+      div.className = 'message assistant menu-cards';
+      div.innerHTML = `<div class="message-avatar">🍽</div><div class="message-content">${cardsHtml}</div>`;
+      this.els.chatArea.appendChild(div);
+      this.els.chatArea.scrollTop = this.els.chatArea.scrollHeight;
+    });
+
     this.socket.on('live_reconnecting', () => {
       if (!this.isLiveMode) return;
       console.log('[LiveAPI] 再接続中...');

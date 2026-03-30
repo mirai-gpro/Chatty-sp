@@ -933,7 +933,8 @@ def handle_live_start(data):
         shop_search_callback=shop_search_callback,
         user_id=user_id,
         voice_model=voice_model,
-        live_voice=live_voice
+        live_voice=live_voice,
+        shop_id=shop_id
     )
     # ★ 挨拶ガード: 同一client_sidで既に挨拶済みなら session_count を1に設定
     #    → run() 内で session_count > 1 の分岐に入り、挨拶をスキップ
