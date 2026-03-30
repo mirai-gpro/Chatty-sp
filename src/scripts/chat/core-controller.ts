@@ -299,9 +299,10 @@ export class CoreController {
 
     this.socket.on('live_audio', (data: any) => {
       if (!this.isLiveMode) return;
-      if (!this.isTTSEnabled) return;
       this.liveAudioManager.onAiResponseStarted();
-      this.liveAudioManager.playPcmAudio(data.data);
+      if (this.isTTSEnabled) {
+        this.liveAudioManager.playPcmAudio(data.data);
+      }
     });
 
     // ★ A2E expressionデータ受信（仕様書08 セクション5.1）
