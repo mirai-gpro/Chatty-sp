@@ -52,30 +52,24 @@ export class LessonController extends CoreController {
   }
 
   // ★ LAMAvatarにLiveAudioManagerをバインド（仕様書08 セクション7.1）
-  // ★ 仮説3テスト: コントローラーが見つかるまで最大3秒リトライ
   private async linkLamAvatar(): Promise<void> {
-    let controller = (window as any).__lamAvatarController;
-    if (!controller) {
-      console.log('[LessonController] ★ LAMAvatarController未検出、待機開始...');
-      for (let i = 0; i < 30; i++) {
-        await new Promise(r => setTimeout(r, 100));
-        controller = (window as any).__lamAvatarController;
-        if (controller) {
-          console.log(`[LessonController] ★ LAMAvatarController検出 (${(i+1)*100}ms後)`);
-          break;
-        }
-      }
-    }
+    const controller = (window as any).__lamAvatarController;
     if (controller) {
       this.lamAvatarController = controller;
       try {
         await controller.initialize(this.liveAudioManager);
         console.log('[LessonController] LAMAvatar連携完了');
+
+        // ★ 案B: アバター準備完了をサーバーに通知 → greeting発火を許可
+        if (this.socket && this.socket.connected) {
+          this.socket.emit('greeting_trigger');
+          console.log('[LessonController] greeting_trigger送信');
+        }
       } catch (e) {
         console.error('[LessonController] LAMAvatar連携エラー:', e);
       }
     } else {
-      console.warn('[LessonController] LAMAvatarController が見つかりません（3秒待機後）');
+      console.warn('[LessonController] LAMAvatarController が見つかりません');
     }
   }
 

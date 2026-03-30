@@ -344,6 +344,9 @@ class LiveAPISession:
         self._a2e_send_queue: asyncio.Queue = asyncio.Queue()
         self._a2e_worker_task: asyncio.Task | None = None
 
+        # ★ 案B: アバター準備完了待ちイベント
+        self._greeting_trigger_event: asyncio.Event = asyncio.Event()
+
         # 非同期キュー
         self.audio_queue_to_gemini = None
         self.is_running = False
@@ -432,6 +435,11 @@ class LiveAPISession:
             logger.info(f"[LiveAPI] voice_model設定あり（REST TTS用）: {self.voice_model}")
         return config
 
+    def on_greeting_trigger(self):
+        """フロントエンドのアバター準備完了通知を受信"""
+        self._greeting_trigger_event.set()
+        logger.info("[LiveAPI] greeting_trigger受信: アバター準備完了")
+
     def enqueue_audio(self, pcm_bytes: bytes):
         """ブラウザから受信したPCMデータをキューに追加"""
         if self.audio_queue_to_gemini and self.is_running:
@@ -473,8 +481,17 @@ class LiveAPISession:
                     ) as session:
 
                         if self.session_count == 1:
-                            # 初回接続: ダミーメッセージで初期あいさつを発火
+                            # 初回接続: live_readyを先に送信し、アバター準備完了を待ってからgreeting発火
                             self._is_initial_greeting_phase = True
+                            self.socketio.emit('live_ready', {}, room=self.client_sid)
+                            logger.info("[LiveAPI] live_ready送信 → greeting_trigger待機")
+
+                            # ★ 案B: アバター準備完了を待つ（最大30秒）
+                            try:
+                                await asyncio.wait_for(self._greeting_trigger_event.wait(), timeout=30.0)
+                            except asyncio.TimeoutError:
+                                logger.warning("[LiveAPI] greeting_trigger タイムアウト（30秒）、greeting発火します")
+
                             trigger_msgs = self.INITIAL_GREETING_TRIGGERS
                             mode_msgs = trigger_msgs.get(self.mode, trigger_msgs['chat'])
                             dummy_text = mode_msgs.get(self.language, mode_msgs['ja'])
