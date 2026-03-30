@@ -400,30 +400,18 @@ export class CoreController {
 
       let cardsHtml = '';
       for (const item of data.items) {
-        const imageHtml = item.image_url
-          ? `<div style="width:100%;aspect-ratio:16/9;overflow:hidden;background:#f0f0f0;"><img src="${item.image_url}" alt="${item.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" /></div>`
+        const imgSrc = item.image_url || '';
+        const imageHtml = imgSrc
+          ? `<img src="${imgSrc}" alt="${item.name}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block;" />`
           : '';
-        const priceHtml = item.price
-          ? `<div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:6px;">${item.price}</div>`
-          : '';
-        const descHtml = item.description
-          ? `<div style="font-size:13px;color:#6b7280;line-height:1.4;margin-bottom:6px;">${item.description}</div>`
-          : '';
-
-        cardsHtml += `<div style="background:white;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.1);overflow:hidden;margin:8px 0;">
-          ${imageHtml}
-          <div style="padding:12px 16px;">
-            <div style="font-size:16px;font-weight:700;color:#1f2937;margin-bottom:4px;">${item.name}</div>
-            ${priceHtml}
-            ${descHtml}
-          </div>
-        </div>`;
+        cardsHtml += `<div style="background:#fff;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.12);overflow:hidden;margin-bottom:12px;border:1px solid #e5e7eb;white-space:normal;">${imageHtml}<div style="padding:12px 16px;"><div style="font-size:16px;font-weight:700;color:#1f2937;margin-bottom:4px;">${item.name}</div>${item.price ? `<div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:6px;">${item.price}</div>` : ''}${item.description ? `<div style="font-size:13px;color:#6b7280;line-height:1.4;">${item.description}</div>` : ''}</div></div>`;
       }
 
-      const div = document.createElement('div');
-      div.className = 'message assistant';
-      div.innerHTML = `<div class="message-avatar">🍽</div><div class="message-content" style="max-width:90%;padding:4px;background:transparent;border:none;">${cardsHtml}</div>`;
-      this.els.chatArea.appendChild(div);
+      // message構造の外にカードを直接挿入
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'padding:8px 20px;white-space:normal;';
+      wrapper.innerHTML = cardsHtml;
+      this.els.chatArea.appendChild(wrapper);
       this.els.chatArea.scrollTop = this.els.chatArea.scrollHeight;
     });
 
