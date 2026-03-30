@@ -72,18 +72,13 @@ def load_prompts_from_gcs():
             else:
                 logger.warning(f"[Prompt] GCSに見つかりません: support_system_{lang}.txt")
 
-            # コンシェルジュモード用プロンプト
-            concierge_blob = bucket.blob(f'prompts/concierge_{lang}.txt')
+            # 注文サポートモード用プロンプト
+            concierge_blob = bucket.blob(f'prompts/order_support_{lang}.txt')
             if concierge_blob.exists():
-                content = concierge_blob.download_as_text(encoding='utf-8')
-                try:
-                    json_data = json.loads(content)
-                    prompts['concierge'][lang] = json_data.get('concierge_system', content)
-                except json.JSONDecodeError:
-                    prompts['concierge'][lang] = content
-                logger.info(f"[Prompt] GCSから読み込み成功: concierge_{lang}.txt")
+                prompts['concierge'][lang] = concierge_blob.download_as_text(encoding='utf-8')
+                logger.info(f"[Prompt] GCSから読み込み成功: order_support_{lang}.txt")
             else:
-                logger.warning(f"[Prompt] GCSに見つかりません: concierge_{lang}.txt")
+                logger.warning(f"[Prompt] GCSに見つかりません: order_support_{lang}.txt")
 
             # Chatty AIモード用プロンプト
             lesson_blob = bucket.blob(f'prompts/chatty_system_{lang}.txt')
@@ -121,17 +116,12 @@ def load_prompts_from_local():
         except Exception as e:
             logger.error(f"[Prompt] ローカル読み込みエラー (chat/{lang}): {e}")
 
-        # コンシェルジュモード用
-        concierge_file = f'prompts/concierge_{lang}.txt'
+        # 注文サポートモード用
+        concierge_file = f'prompts/order_support_{lang}.txt'
         try:
             with open(concierge_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-                try:
-                    json_data = json.loads(content)
-                    prompts['concierge'][lang] = json_data.get('concierge_system', content)
-                except json.JSONDecodeError:
-                    prompts['concierge'][lang] = content
-                logger.info(f"[Prompt] ローカルから読み込み成功: concierge_{lang}.txt")
+                prompts['concierge'][lang] = f.read()
+                logger.info(f"[Prompt] ローカルから読み込み成功: order_support_{lang}.txt")
         except FileNotFoundError:
             logger.warning(f"[Prompt] ローカルファイルが見つかりません: {concierge_file}")
         except Exception as e:
