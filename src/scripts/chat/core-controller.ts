@@ -82,10 +82,6 @@ export class CoreController {
     this.bindEvents();
     this.initSocket();
 
-    // ★ 案2: A2E同期に関係する最小限の前処理を初期起動にも実行
-    this.liveAudioManager.clearPlaybackQueue();
-    this.liveAudioManager.onAiResponseEnded();
-
     setTimeout(() => {
         if (this.els.splashVideo) this.els.splashVideo.loop = false;
         if (this.els.splashOverlay) {
@@ -94,7 +90,8 @@ export class CoreController {
         }
     }, 10000);
 
-    await this.initializeSession();
+    // ★ 案3: 初期起動もresetAppContent()経由で実行（ソフトリセットと同じパス）
+    await this.resetAppContent();
     this.updateUILanguage();
 
     setTimeout(() => {
