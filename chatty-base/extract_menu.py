@@ -223,18 +223,43 @@ def extract_menu_markdown(pdf_path: str, shop_id: str, image_urls: dict) -> str:
 
 def main():
     if len(sys.argv) < 2:
-        print("使い方: python extract_menu.py <shop_id>")
+        print("使い方: python extract_menu.py <shop_id> [--skip-images]")
         print("  例: python extract_menu.py dennys")
+        print("  例: python extract_menu.py dennys --skip-images")
         sys.exit(1)
 
     shop_id = sys.argv[1]
+    skip_images = '--skip-images' in sys.argv
     logger.info(f"[Menu] {shop_id} のメニューPDF → Markdown変換開始")
 
     # 1. PDFパスを取得
     pdf_path = get_pdf_path(shop_id)
 
     # 2. PDFから画像抽出 → Supabase Storageにアップロード
-    image_urls = extract_images_from_pdf(pdf_path, shop_id)
+    if skip_images:
+        logger.info(f"[Menu] 画像アップロードスキップ（--skip-images）")
+        # 前回アップ済みのURLを構築
+        supabase_url = os.getenv('SUPABASE_URL', 'https://bisguyfngvlpcgagrdmr.supabase.co')
+        image_urls = {}
+        try:
+            import pdfplumber
+            with pdfplumber.open(pdf_path) as pdf:
+                for page_num, page in enumerate(pdf.pages, 1):
+                    if not hasattr(page, 'images') or not page.images:
+                        continue
+                    for img_idx, img_info in enumerate(page.images):
+                        x0, y0, x1, y1 = img_info['x0'], img_info['top'], img_info['x1'], img_info['bottom']
+                        if (x1 - x0) < 50 or (y1 - y0) < 50:
+                            continue
+                        file_path = f"{shop_id}/page{page_num}_img{img_idx}.jpg"
+                        image_key = f"page{page_num}_img{img_idx}"
+                        image_urls[image_key] = f"{supabase_url}/storage/v1/object/public/menu/{file_path}"
+            logger.info(f"[Menu] 既存画像URL {len(image_urls)}件を使用")
+        except Exception as e:
+            logger.warning(f"[Menu] 画像URL構築失敗: {e}")
+            image_urls = {}
+    else:
+        image_urls = extract_images_from_pdf(pdf_path, shop_id)
 
     # 3. Gemini APIでMarkdown抽出（画像URL埋め込み）
     markdown = extract_menu_markdown(pdf_path, shop_id, image_urls)
