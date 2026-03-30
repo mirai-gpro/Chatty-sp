@@ -170,9 +170,10 @@ def _search_menu_items(menu_markdown: str, item_names: list[str]) -> list[dict]:
         if not title:
             continue
 
-        # 指定アイテム名と部分一致でマッチング
+        # 指定アイテム名とマッチング（完全一致優先、含む一致はフォールバック）
         for name in item_names:
-            if name in title or title in name:
+            # 完全一致 or アイテム名がタイトルに含まれる（逆は除外＝広すぎるマッチ防止）
+            if name == title or name in title:
                 results.append({
                     'name': title,
                     'image_url': image_url,
