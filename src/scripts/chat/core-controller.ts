@@ -401,35 +401,28 @@ export class CoreController {
       let cardsHtml = '';
       for (const item of data.items) {
         const imageHtml = item.image_url
-          ? `<div class="menu-card-image"><img src="${item.image_url}" alt="${item.name}" loading="lazy" /></div>`
+          ? `<div style="width:100%;aspect-ratio:16/9;overflow:hidden;background:#f0f0f0;"><img src="${item.image_url}" alt="${item.name}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" /></div>`
           : '';
         const priceHtml = item.price
-          ? `<div class="menu-card-price">${item.price}</div>`
+          ? `<div style="font-size:18px;font-weight:700;color:#dc2626;margin-bottom:6px;">${item.price}</div>`
           : '';
         const descHtml = item.description
-          ? `<div class="menu-card-desc">${item.description}</div>`
+          ? `<div style="font-size:13px;color:#6b7280;line-height:1.4;margin-bottom:6px;">${item.description}</div>`
           : '';
 
-        const details: string[] = [];
-        if (item.menu_number) details.push(`<span class="menu-card-detail"><strong>番号:</strong> ${item.menu_number}</span>`);
-        if (item.drink_bar_price) details.push(`<span class="menu-card-detail"><strong>ドリンクバー付:</strong> ${item.drink_bar_price}</span>`);
-        if (item.time_restriction) details.push(`<span class="menu-card-detail"><strong>販売時間:</strong> ${item.time_restriction}</span>`);
-        const detailsHtml = details.length > 0 ? `<div class="menu-card-details">${details.join('')}</div>` : '';
-
-        cardsHtml += `<div class="menu-card">
+        cardsHtml += `<div style="background:white;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.1);overflow:hidden;margin:8px 0;">
           ${imageHtml}
-          <div class="menu-card-body">
-            <div class="menu-card-title">${item.name}</div>
+          <div style="padding:12px 16px;">
+            <div style="font-size:16px;font-weight:700;color:#1f2937;margin-bottom:4px;">${item.name}</div>
             ${priceHtml}
             ${descHtml}
-            ${detailsHtml}
           </div>
         </div>`;
       }
 
       const div = document.createElement('div');
-      div.className = 'message assistant menu-cards';
-      div.innerHTML = `<div class="message-avatar">🍽</div><div class="message-content">${cardsHtml}</div>`;
+      div.className = 'message assistant';
+      div.innerHTML = `<div class="message-avatar">🍽</div><div class="message-content" style="max-width:90%;padding:4px;background:transparent;border:none;">${cardsHtml}</div>`;
       this.els.chatArea.appendChild(div);
       this.els.chatArea.scrollTop = this.els.chatArea.scrollHeight;
     });
