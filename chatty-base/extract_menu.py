@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 メニューPDFからGemini APIでMarkdown形式のメニューデータを生成
+画像はPDFから抽出しSupabase Storageにアップロード
 
 使い方:
   python extract_menu.py dennys
@@ -8,10 +9,13 @@
 
 環境変数:
   GEMINI_API_KEY: Gemini APIキー
+  SUPABASE_URL: Supabase URL
+  SUPABASE_SERVICE_KEY: Supabase Service Role Key
 """
 
 import sys
 import os
+import io
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -50,7 +54,73 @@ def get_pdf_path(shop_id: str) -> str:
     sys.exit(1)
 
 
-def extract_menu_markdown(pdf_path: str, shop_id: str) -> str:
+def extract_images_from_pdf(pdf_path: str, shop_id: str) -> dict:
+    """PDFから画像を抽出しSupabase Storageにアップロード。ページ番号→URL のマッピングを返す"""
+    import pdfplumber
+    from PIL import Image
+    from supabase import create_client
+
+    url = os.getenv('SUPABASE_URL')
+    key = os.getenv('SUPABASE_SERVICE_KEY')
+    if not url or not key:
+        logger.warning("[Menu] SUPABASE_URL/KEY未設定。画像アップロードスキップ")
+        return {}
+
+    supabase = create_client(url, key)
+    image_urls = {}  # "page_N_img_M" → public URL
+    img_counter = 0
+
+    logger.info(f"[Menu] PDFから画像を抽出中...")
+    with pdfplumber.open(pdf_path) as pdf:
+        for page_num, page in enumerate(pdf.pages, 1):
+            if not hasattr(page, 'images') or not page.images:
+                continue
+
+            for img_idx, img_info in enumerate(page.images):
+                try:
+                    # 画像のバウンディングボックスからクロップ
+                    x0 = img_info['x0']
+                    y0 = img_info['top']
+                    x1 = img_info['x1']
+                    y1 = img_info['bottom']
+
+                    # 小さすぎる画像（アイコン等）はスキップ
+                    if (x1 - x0) < 50 or (y1 - y0) < 50:
+                        continue
+
+                    cropped = page.crop((x0, y0, x1, y1))
+                    pil_image = cropped.to_image(resolution=150).original
+
+                    # JPEGに変換
+                    img_buffer = io.BytesIO()
+                    if pil_image.mode == 'RGBA':
+                        pil_image = pil_image.convert('RGB')
+                    pil_image.save(img_buffer, format='JPEG', quality=80)
+                    img_bytes = img_buffer.getvalue()
+
+                    # Supabase Storageにアップロード
+                    file_path = f"{shop_id}/page{page_num}_img{img_idx}.jpg"
+                    supabase.storage.from_('menu').upload(
+                        file_path,
+                        img_bytes,
+                        file_options={"content-type": "image/jpeg", "upsert": "true"}
+                    )
+
+                    # 公開URLを取得
+                    public_url = f"{url}/storage/v1/object/public/menu/{file_path}"
+                    image_key = f"page{page_num}_img{img_idx}"
+                    image_urls[image_key] = public_url
+                    img_counter += 1
+
+                except Exception as e:
+                    logger.debug(f"[Menu] 画像抽出スキップ (p{page_num}, img{img_idx}): {e}")
+                    continue
+
+    logger.info(f"[Menu] 画像抽出完了: {img_counter}枚アップロード")
+    return image_urls
+
+
+def extract_menu_markdown(pdf_path: str, shop_id: str, image_urls: dict) -> str:
     """Gemini APIにPDFを送ってMarkdown形式のメニューデータを生成"""
     from google import genai
     from google.genai import types
@@ -68,6 +138,14 @@ def extract_menu_markdown(pdf_path: str, shop_id: str) -> str:
         pdf_bytes = f.read()
     pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type='application/pdf')
     logger.info(f"[Menu] PDF読み込み完了: {len(pdf_bytes)} bytes")
+
+    # 画像URLリストをプロンプトに含める
+    image_list_text = ""
+    if image_urls:
+        image_list_text = "\n\n【利用可能な画像URL一覧】\n"
+        for key, url in image_urls.items():
+            image_list_text += f"- {key}: {url}\n"
+        image_list_text += "\n各メニューアイテムに最も関連する画像があれば、![メニュー名](URL) 形式で含めてください。"
 
     # カテゴリ一覧を先に取得
     logger.info(f"[Menu] Step 1: カテゴリ一覧を取得中...")
@@ -101,10 +179,12 @@ def extract_menu_markdown(pdf_path: str, shop_id: str) -> str:
 - 販売時間制限があれば記載
 - ドリンクバー付き価格、セット価格があれば記載
 - カテゴリ見出し（##）は不要（こちらで付けます）
+{image_list_text}
 
 【出力Markdown形式】— 各アイテムを以下の形式で出力
 
 ### メニュー名
+![メニュー名](画像URL)
 **価格:** ¥税込価格
 **メニュー番号:** 5桁番号
 **説明:** 説明文
@@ -145,10 +225,13 @@ def main():
     # 1. PDFパスを取得
     pdf_path = get_pdf_path(shop_id)
 
-    # 2. Gemini APIでMarkdown抽出
-    markdown = extract_menu_markdown(pdf_path, shop_id)
+    # 2. PDFから画像抽出 → Supabase Storageにアップロード
+    image_urls = extract_images_from_pdf(pdf_path, shop_id)
 
-    # 3. Markdownファイルを保存
+    # 3. Gemini APIでMarkdown抽出（画像URL埋め込み）
+    markdown = extract_menu_markdown(pdf_path, shop_id, image_urls)
+
+    # 4. Markdownファイルを保存
     output_dir = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'{shop_id}_menu.md')
@@ -158,7 +241,7 @@ def main():
 
     # サマリー
     item_count = markdown.count('### ')
-    logger.info(f"[Menu] 合計: 約{item_count}品")
+    logger.info(f"[Menu] 合計: 約{item_count}品, 画像: {len(image_urls)}枚")
     logger.info(f"[Menu] 完了！")
 
 
