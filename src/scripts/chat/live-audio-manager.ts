@@ -287,10 +287,11 @@ export class LiveAudioManager {
             this.expressionNames = data.expression_names;
         }
 
-        // ★ chunk=0 受信時: 次のplayPcmAudioでfirstChunkStartTimeをリセットさせる
+        // ★ chunk=0 受信時: firstChunkStartTimeを即座に0クリアし、同期計算をロック
         if (data.chunk_index === 0) {
+            this.firstChunkStartTime = 0;
             this._shouldResetStartTime = true;
-            console.log('[Sync] live_expression chunk=0 受信 → StartTimeリセット予約');
+            console.log('[Sync] live_expression chunk=0 受信 → StartTime=0にクリア、次のPCMで再設定');
         }
 
         // フレームデータをバッファに追加
