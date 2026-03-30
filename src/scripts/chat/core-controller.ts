@@ -82,6 +82,9 @@ export class CoreController {
     this.bindEvents();
     this.initSocket();
 
+    // ★ 案1: ソフトリセットと同じ前処理を初期起動にも実行
+    this.stopAllActivities();
+
     setTimeout(() => {
         if (this.els.splashVideo) this.els.splashVideo.loop = false;
         if (this.els.splashOverlay) {
