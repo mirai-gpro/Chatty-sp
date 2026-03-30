@@ -80,13 +80,6 @@ export class LiveAudioManager {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         this.audioContext = new AudioContextClass({ sampleRate: 48000 });
 
-        // ★ 仮説2テスト: AudioContextがsuspendedなら強制resume
-        if (this.audioContext.state === 'suspended') {
-            console.log('[LiveAudio] ★ AudioContext is suspended, forcing resume...');
-            await this.audioContext.resume();
-            console.log('[LiveAudio] ★ AudioContext state after resume:', this.audioContext.state);
-        }
-
         // 2. getUserMedia (1回だけ)
         this.mediaStream = await navigator.mediaDevices.getUserMedia({
             audio: {
