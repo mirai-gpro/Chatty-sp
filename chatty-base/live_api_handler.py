@@ -203,20 +203,22 @@ def _build_lesson_user_context(user_profile: dict = None) -> str:
 
 
 def _get_lesson_first_visit_context(teacher_name: str = 'Lisa') -> str:
-    """Chatty AIモード: 新規ユーザー用コンテキスト（データのみ）"""
-    return f"""## ユーザー情報
-- 初回訪問
-- あなたの名前: {teacher_name}"""
+    """Chatty AIモード: 新規ユーザー用コンテキスト"""
+    return f"""## 初期あいさつ（新規ユーザー）
+このユーザーは初めての訪問です。
+最初の発話で、日本語で自己紹介をしてください。
+「こんにちは、{teacher_name}です。あなたの相談相手、おしゃべりの相棒です。何でも気軽に話しかけてくださいね。」
+ユーザーが名前を教えてくれたら、その名前で呼びかけてください。"""
 
 
 def _get_lesson_returning_context(preferred_name: str, name_honorific: str,
                                    teacher_name: str = 'Lisa') -> str:
-    """Chatty AIモード: リピーター用コンテキスト（データのみ）"""
+    """Chatty AIモード: リピーター用コンテキスト"""
     full_name = f"{preferred_name}{name_honorific}"
-    return f"""## ユーザー情報
-- リピーター
-- ユーザーの名前: {full_name}
-- あなたの名前: {teacher_name}"""
+    return f"""## 初期あいさつ（リピーター）
+このユーザーの名前は「{full_name}」です。
+最初の発話で、日本語で挨拶をしてください。
+「おかえりなさい、{full_name}。今日は何をお話ししましょうか？」"""
 
 
 # ============================================================

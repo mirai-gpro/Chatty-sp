@@ -527,8 +527,33 @@ class SupportAssistant:
         # 以下はコンシェルジュ/レッスンモード（パーソナライズ対応）
         # ========================================
 
-        # lessonモード（Chatty AI）: LiveAPIが挨拶を生成するため、ここではbase_greetingを返す
+        # Chatty AIモードの初期メッセージ
         if self.mode == 'lesson':
+            is_first_visit = session_data.get('is_first_visit', True) if session_data else True
+            profile = session_data.get('long_term_profile', {}) if session_data else {}
+            teacher_name = profile.get('lesson_teacher_name', 'Lisa') if profile else 'Lisa'
+
+            if is_first_visit:
+                first_greetings = {
+                    'ja': f'こんにちは！{teacher_name}です。あなたの相談相手、おしゃべりの相棒です。\nお名前を教えてください。',
+                    'en': f'Hello! I\'m {teacher_name}, your companion for advice and friendly chats.\nMay I ask your name?',
+                    'zh': f'你好！我是{teacher_name}，您的聊天伙伴和咨询好友。\n请问你叫什么名字？',
+                    'ko': f'안녕하세요! {teacher_name}입니다. 당신의 상담 친구이자 수다 친구입니다.\n이름을 알려주시겠어요?'
+                }
+                return first_greetings.get(self.language, first_greetings['ja'])
+
+            preferred_name = profile.get('preferred_name', '') if profile else ''
+            name_honorific = profile.get('name_honorific', 'さん') if profile else 'さん'
+
+            if preferred_name:
+                returning_greetings = {
+                    'ja': f'{preferred_name}{name_honorific}、こんにちは！{teacher_name}です。\n今日は何をお話ししましょうか？',
+                    'en': f'Hi {preferred_name}! It\'s {teacher_name}.\nWhat shall we chat about today?',
+                    'zh': f'{preferred_name}，你好！我是{teacher_name}。\n今天聊点什么？',
+                    'ko': f'{preferred_name}{name_honorific}, 안녕하세요! {teacher_name}입니다.\n오늘은 무슨 이야기를 할까요?'
+                }
+                return returning_greetings.get(self.language, returning_greetings['ja'])
+
             return base_greeting
 
         is_first_visit = session_data.get('is_first_visit', True) if session_data else True
