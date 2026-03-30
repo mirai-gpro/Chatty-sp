@@ -264,7 +264,25 @@ def main():
     # 3. Gemini APIでMarkdown抽出（画像URL埋め込み）
     markdown = extract_menu_markdown(pdf_path, shop_id, image_urls)
 
-    # 4. Markdownファイルを保存
+    # 4. 画像キーをフルURLに置換
+    import re
+    if image_urls:
+        def replace_image_key(match):
+            alt = match.group(1)
+            key = match.group(2)
+            if key in image_urls:
+                return f"![{alt}]({image_urls[key]})"
+            # キーがURLでなければ、ベースURLで補完を試みる
+            supabase_url = os.getenv('SUPABASE_URL', 'https://bisguyfngvlpcgagrdmr.supabase.co')
+            if not key.startswith('http'):
+                guessed_url = f"{supabase_url}/storage/v1/object/public/menu/{shop_id}/{key}.jpg"
+                return f"![{alt}]({guessed_url})"
+            return match.group(0)
+
+        markdown = re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', replace_image_key, markdown)
+        logger.info(f"[Menu] 画像URLを置換完了")
+
+    # 5. Markdownファイルを保存
     output_dir = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f'{shop_id}_menu.md')
