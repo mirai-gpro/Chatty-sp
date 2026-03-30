@@ -82,8 +82,9 @@ export class CoreController {
     this.bindEvents();
     this.initSocket();
 
-    // ★ 案1: ソフトリセットと同じ前処理を初期起動にも実行
-    this.stopAllActivities();
+    // ★ 案2: A2E同期に関係する最小限の前処理を初期起動にも実行
+    this.liveAudioManager.clearPlaybackQueue();
+    this.liveAudioManager.onAiResponseEnded();
 
     setTimeout(() => {
         if (this.els.splashVideo) this.els.splashVideo.loop = false;
