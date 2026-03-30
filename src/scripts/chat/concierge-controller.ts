@@ -181,10 +181,16 @@ export class ConciergeController extends CoreController {
       initialMessage.textContent = savedGreeting;
     }
 
-    // ✅ ページタイトルをコンシェルジュ用に設定
+    // ✅ ページタイトルを注文サポートAI用に設定
     const pageTitle = document.getElementById('pageTitle');
     if (pageTitle) {
       pageTitle.innerHTML = `<img src="/pwa-152x152.png" alt="Logo" class="app-logo" /> ${this.t('pageTitleConcierge')}`;
+    }
+
+    // ✅ サブタイトルを注文サポートAI用に設定
+    const pageSubtitle = document.getElementById('pageSubtitle');
+    if (pageSubtitle) {
+      pageSubtitle.textContent = this.t('pageSubtitleConcierge');
     }
   }
 
