@@ -58,19 +58,22 @@ def get_pdf_path(shop_id: str) -> str:
 
 def extract_menu_with_gemini(pdf_path: str, shop_id: str) -> list[dict]:
     """Gemini APIにPDFを送ってメニューデータを抽出"""
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
 
     api_key = os.getenv('GEMINI_API_KEY')
     if not api_key:
         logger.error("[Menu] GEMINI_API_KEY が設定されていません")
         sys.exit(1)
 
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
     shop_name = SHOP_NAMES.get(shop_id, shop_id)
 
-    logger.info(f"[Menu] PDFをGemini APIにアップロード中...")
-    pdf_file = genai.upload_file(pdf_path, mime_type='application/pdf')
-    logger.info(f"[Menu] アップロード完了: {pdf_file.name}")
+    # PDFをバイトで読み込み
+    logger.info(f"[Menu] PDFを読み込み中...")
+    with open(pdf_path, 'rb') as f:
+        pdf_bytes = f.read()
+    logger.info(f"[Menu] PDF読み込み完了: {len(pdf_bytes)} bytes")
 
     prompt = f"""このPDFは「{shop_name}」のメニューです。
 全ページを読み取り、以下のJSON配列形式でメニューデータを抽出してください。
@@ -106,10 +109,13 @@ def extract_menu_with_gemini(pdf_path: str, shop_id: str) -> list[dict]:
 
     logger.info(f"[Menu] Gemini APIでメニュー抽出中...（時間がかかります）")
 
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    response = model.generate_content(
-        [pdf_file, prompt],
-        generation_config=genai.GenerationConfig(
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=[
+            types.Part.from_bytes(data=pdf_bytes, mime_type='application/pdf'),
+            prompt,
+        ],
+        config=types.GenerateContentConfig(
             response_mime_type='application/json',
             temperature=0.1,
         ),
