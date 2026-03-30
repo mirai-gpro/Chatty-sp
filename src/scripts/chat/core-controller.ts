@@ -299,7 +299,6 @@ export class CoreController {
 
     this.socket.on('live_audio', (data: any) => {
       if (!this.isLiveMode) return;
-      if (!this.isTTSEnabled) return;
       this.liveAudioManager.onAiResponseStarted();
       this.liveAudioManager.playPcmAudio(data.data);
     });
