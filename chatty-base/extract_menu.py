@@ -93,17 +93,20 @@ def main():
     shop_id = sys.argv[1]
     logger.info(f"[Menu] {shop_id} のメニューPDFを処理開始")
 
-    # 1. GCSからPDFをダウンロード
+    # 1. GCSからPDFをダウンロード（失敗時はローカルフォールバック）
+    pdf_path = None
     try:
         pdf_path = download_pdf_from_gcs(shop_id)
-    except FileNotFoundError:
-        # ローカルフォールバック
+    except Exception as e:
+        logger.info(f"[Menu] GCSダウンロードスキップ: {e}")
+
+    if not pdf_path:
         local_path = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id, 'menu.pdf')
         if os.path.exists(local_path):
             pdf_path = local_path
             logger.info(f"[Menu] ローカルPDFを使用: {local_path}")
         else:
-            logger.error(f"[Menu] PDFが見つかりません: GCS menu_data/{shop_id}/menu.pdf")
+            logger.error(f"[Menu] PDFが見つかりません: menu_data/{shop_id}/menu.pdf")
             sys.exit(1)
 
     # 2. テキスト抽出
