@@ -90,8 +90,7 @@ export class CoreController {
         }
     }, 10000);
 
-    await this.initializeSession();
-    this.updateUILanguage();
+    await this.resetAppContent();
 
     setTimeout(() => {
       if (this.els.splashOverlay) {
@@ -101,9 +100,6 @@ export class CoreController {
     }, 2000);
 
     console.log('[Core] Initialization completed');
-
-    // ★ 初期起動完了後にソフトリセットを自動実行（差異をゼロにする）
-    await this.resetAppContent();
   }
 
   protected getUserId(): string {
@@ -156,6 +152,8 @@ export class CoreController {
     this.isFromVoiceInput = false;
     await new Promise(resolve => setTimeout(resolve, 300));
     await this.initializeSession();
+
+    this.updateUILanguage();
 
     // ★追加: スクロール位置をリセット（ヘッダーが隠れないように）
     this.container.scrollIntoView({ behavior: 'smooth', block: 'start' });
