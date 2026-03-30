@@ -57,7 +57,7 @@ def get_pdf_path(shop_id: str) -> str:
 
 
 def extract_menu_with_gemini(pdf_path: str, shop_id: str) -> list[dict]:
-    """Gemini APIにPDFを送ってメニューデータを抽出"""
+    """Gemini APIにPDFを送ってメニューデータを抽出（カテゴリ分割で出力制限回避）"""
     from google import genai
     from google.genai import types
 
@@ -73,70 +73,79 @@ def extract_menu_with_gemini(pdf_path: str, shop_id: str) -> list[dict]:
     logger.info(f"[Menu] PDFを読み込み中...")
     with open(pdf_path, 'rb') as f:
         pdf_bytes = f.read()
+    pdf_part = types.Part.from_bytes(data=pdf_bytes, mime_type='application/pdf')
     logger.info(f"[Menu] PDF読み込み完了: {len(pdf_bytes)} bytes")
 
-    prompt = f"""このPDFは「{shop_name}」のメニューです。
-全ページを読み取り、以下のJSON配列形式でメニューデータを抽出してください。
-
-【ルール】
-- 全てのメニューアイテムを漏れなく抽出すること
-- 価格は税込価格（円）を整数で記載
-- カテゴリはPDFの構成に従う（モーニング、ランチ、グランドメニュー、デザート、ドリンク等）
-- メニュー番号（5桁）があれば id に記載
-- ドリンクバー付き価格がある場合は with_drink_bar_price に記載
-- セット価格がある場合は set_price に記載
-- 販売時間制限があれば time_restriction に記載（例: "開店〜11:00"）
-- 説明文はPDFに記載のものを簡潔に
-- JSON以外のテキストは一切出力しないこと
-
-【出力JSON形式】 — 配列のみ出力
-[
-  {{
-    "id": "メニュー番号5桁（なければshop_id + 連番で生成。例: dennys_001）",
-    "shop_id": "{shop_id}",
-    "name": "メニュー名（日本語）",
-    "name_en": "メニュー名（英語）あれば、なければnull",
-    "category": "カテゴリ名",
-    "price": 税込価格（整数）,
-    "price_without_tax": 税抜価格（整数）あれば、なければnull,
-    "description": "説明文、なければnull",
-    "with_drink_bar_price": ドリンクバー付き税込価格（整数）あれば、なければnull,
-    "set_price": セット税込価格（整数）あれば、なければnull,
-    "is_set_available": セットメニューが選択可能か（true/false）,
-    "time_restriction": "販売時間制限、なければnull"
-  }}
-]"""
-
-    logger.info(f"[Menu] Gemini APIでメニュー抽出中...（時間がかかります）")
-
-    response = client.models.generate_content(
+    # Step 1: カテゴリ一覧を取得
+    logger.info(f"[Menu] Step 1: カテゴリ一覧を取得中...")
+    cat_response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=[
-            types.Part.from_bytes(data=pdf_bytes, mime_type='application/pdf'),
-            prompt,
+            pdf_part,
+            f"""このPDFは「{shop_name}」のメニューです。
+メニューのカテゴリ（大分類）を全て列挙してください。
+JSON配列形式で、カテゴリ名だけを出力してください。
+例: ["モーニング", "ランチ", "ハンバーグ", "デザート", "ドリンク"]"""
         ],
         config=types.GenerateContentConfig(
             response_mime_type='application/json',
             temperature=0.1,
         ),
     )
+    categories = json.loads(cat_response.text)
+    logger.info(f"[Menu] カテゴリ一覧: {categories}")
 
-    result_text = response.text
-    logger.info(f"[Menu] Gemini応答受信: {len(result_text)} 文字")
+    # Step 2: カテゴリごとにメニュー抽出
+    all_items = []
+    for cat in categories:
+        logger.info(f"[Menu] Step 2: 「{cat}」カテゴリを抽出中...")
+        item_prompt = f"""このPDFは「{shop_name}」のメニューです。
+「{cat}」カテゴリに属するメニューアイテムのみを全て抽出し、以下のJSON配列で出力してください。
 
-    try:
-        items = json.loads(result_text)
-    except json.JSONDecodeError:
-        start = result_text.find('[')
-        end = result_text.rfind(']') + 1
-        if start >= 0 and end > start:
-            items = json.loads(result_text[start:end])
-        else:
-            logger.error(f"[Menu] JSON解析失敗。レスポンス:\n{result_text[:500]}")
-            sys.exit(1)
+【ルール】
+- 「{cat}」カテゴリのアイテムのみ。他カテゴリは含めない
+- 価格は税込価格（円）を整数で記載
+- メニュー番号（5桁）があれば id に記載、なければ "{shop_id}_" + 連番
+- 説明文はPDFに記載のものを簡潔に
+- JSON以外のテキストは一切出力しないこと
 
-    logger.info(f"[Menu] 抽出完了: {len(items)} アイテム")
-    return items
+【出力JSON形式】
+[
+  {{
+    "id": "メニュー番号5桁 or {shop_id}_連番",
+    "shop_id": "{shop_id}",
+    "name": "メニュー名（日本語）",
+    "name_en": "メニュー名（英語）あれば、なければnull",
+    "category": "{cat}",
+    "price": 税込価格（整数）,
+    "price_without_tax": 税抜価格（整数）あれば、なければnull,
+    "description": "説明文、なければnull",
+    "with_drink_bar_price": ドリンクバー付き税込価格あれば、なければnull,
+    "set_price": セット税込価格あれば、なければnull,
+    "is_set_available": true/false,
+    "time_restriction": "販売時間制限、なければnull"
+  }}
+]"""
+
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=[pdf_part, item_prompt],
+                config=types.GenerateContentConfig(
+                    response_mime_type='application/json',
+                    temperature=0.1,
+                ),
+            )
+            result_text = response.text
+            items = json.loads(result_text)
+            all_items.extend(items)
+            logger.info(f"[Menu]   「{cat}」: {len(items)}品 抽出")
+        except Exception as e:
+            logger.warning(f"[Menu]   「{cat}」抽出失敗: {e}")
+            continue
+
+    logger.info(f"[Menu] 全カテゴリ抽出完了: 合計 {len(all_items)} アイテム")
+    return all_items
 
 
 def save_to_supabase(items: list[dict]):
