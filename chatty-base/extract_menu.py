@@ -167,15 +167,22 @@ def save_to_supabase(items: list[dict]):
             supabase.table('menus').delete().eq('shop_id', shop_id).execute()
             logger.info(f"[Menu] 既存データ削除: shop_id={shop_id}")
 
+    # IDをユニーク化（shop_id + カテゴリ + 連番）
+    seen_ids = set()
+    for item in items:
+        original_id = str(item.get('id', ''))
+        uid = f"{item['shop_id']}_{original_id}"
+        counter = 1
+        while uid in seen_ids:
+            uid = f"{item['shop_id']}_{original_id}_{counter}"
+            counter += 1
+        seen_ids.add(uid)
+        item['id'] = uid
+
     # バッチ投入（100件ずつ）
     batch_size = 100
     for i in range(0, len(items), batch_size):
         batch = items[i:i + batch_size]
-        # None値をnullに変換
-        for item in batch:
-            for k, v in item.items():
-                if v is None:
-                    item[k] = None
         result = supabase.table('menus').insert(batch).execute()
         logger.info(f"[Menu] DB投入: {i+1}〜{i+len(batch)} / {len(items)}")
 
