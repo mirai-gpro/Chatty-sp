@@ -308,13 +308,9 @@ export class LessonController extends CoreController {
   // （ショップ検索・予約ロジックを除外したシンプル版）
   // ========================================
   protected async sendMessage() {
-    let firstAckPromise: Promise<void> | null = null;
     this.unlockAudioParams();
     const message = this.els.userInput.value.trim();
     if (!message || this.isProcessing) return;
-
-    const currentSessionId = this.sessionId;
-    const isTextInput = !this.isFromVoiceInput;
 
     this.isProcessing = true;
     this.els.sendBtn.disabled = true;
@@ -338,58 +334,16 @@ export class LessonController extends CoreController {
 
     this.isFromVoiceInput = false;
 
-    // 待機アニメーション
-    if (this.waitOverlayTimer) clearTimeout(this.waitOverlayTimer);
-    let responseReceived = false;
-
-    this.waitOverlayTimer = window.setTimeout(() => {
-      if (!responseReceived) {
-        this.showWaitOverlay();
-      }
-    }, 6500);
-
-    try {
-      const response = await fetch(`${this.apiBase}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: currentSessionId,
-          message: message,
-          stage: this.currentStage,
-          language: this.currentLanguage,
-          mode: this.currentMode
-        })
+    // LiveAPIセッション経由でテキスト送信
+    if (this.isLiveMode && this.socket?.connected) {
+      this.socket.emit('live_text_input', {
+        session_id: this.sessionId,
+        text: message
       });
-      const data = await response.json();
-
-      responseReceived = true;
-
-      if (this.sessionId !== currentSessionId) return;
-
-      if (this.waitOverlayTimer) {
-        clearTimeout(this.waitOverlayTimer);
-        this.waitOverlayTimer = null;
-      }
-      this.hideWaitOverlay();
-      this.currentAISpeech = data.response;
-      this.addMessage('assistant', data.response, data.summary);
-
-      if (!isTextInput && this.isTTSEnabled) {
-        this.stopCurrentAudio();
-      }
-
-      // レッスンモード: ショップ検索なし、シンプルにTTS再生
-      if (data.response) {
-        await this.speakTextGCP(data.response, true, false, isTextInput);
-      }
-    } catch (error) {
-      console.error('送信エラー:', error);
-      this.hideWaitOverlay();
-      this.showError('メッセージの送信に失敗しました。');
-    } finally {
-      this.resetInputState();
-      this.els.userInput.blur();
     }
+
+    // 応答はLiveAPIリスナー（ai_transcript, live_audio, turn_complete）で処理
+    this.resetInputState();
   }
 
 }

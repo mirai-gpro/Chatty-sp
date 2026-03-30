@@ -998,6 +998,23 @@ def handle_live_stop():
     emit('live_stopped', {'status': 'disconnected'})
 
 
+@socketio.on('live_text_input')
+def handle_live_text_input(data):
+    """テキスト入力をLiveAPIセッションに送信"""
+    client_sid = request.sid
+    text = data.get('text', '').strip()
+
+    if not text:
+        return
+
+    live_session = active_live_sessions.get(client_sid)
+    if not live_session or not live_session.is_running:
+        emit('live_text_error', {'error': 'LiveAPIセッションが未接続です'})
+        return
+
+    live_session.enqueue_text(text)
+
+
 # ========================================
 # WebSocket Streaming STT
 # ========================================

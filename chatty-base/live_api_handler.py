@@ -344,6 +344,7 @@ class LiveAPISession:
 
         # 非同期キュー
         self.audio_queue_to_gemini = None
+        self.text_queue = None  # テキスト入力用キュー
         self.is_running = False
 
     def _build_config(self, with_context=None):
@@ -438,6 +439,14 @@ class LiveAPISession:
             except asyncio.QueueFull:
                 pass  # キューが満杯の場合はドロップ
 
+    def enqueue_text(self, text: str):
+        """テキスト入力をキューに追加"""
+        if self.text_queue and self.is_running:
+            try:
+                self.text_queue.put_nowait(text)
+            except asyncio.QueueFull:
+                pass
+
     def stop(self):
         """セッションを停止"""
         self.is_running = False
@@ -449,6 +458,7 @@ class LiveAPISession:
         仕様書 セクション6.1 の run() を移植
         """
         self.audio_queue_to_gemini = asyncio.Queue(maxsize=5)
+        self.text_queue = asyncio.Queue(maxsize=10)
         self.is_running = True
         self._a2e_worker_task = asyncio.ensure_future(self._a2e_send_worker())
 
@@ -568,6 +578,32 @@ class LiveAPISession:
                     self.needs_reconnect = True
                     return
 
+        async def send_text():
+            """テキスト入力をLiveAPIに送信"""
+            while not self.needs_reconnect and self.is_running:
+                try:
+                    text = await asyncio.wait_for(
+                        self.text_queue.get(),
+                        timeout=0.1
+                    )
+                    await session.send_client_content(
+                        turns=types.Content(
+                            role="user",
+                            parts=[types.Part(text=text)]
+                        ),
+                        turn_complete=True
+                    )
+                    self._add_to_history("user", text)
+                    logger.info(f"[LiveAPI] テキスト入力送信: '{text[:50]}'")
+                except asyncio.TimeoutError:
+                    continue
+                except Exception as e:
+                    if self.needs_reconnect or not self.is_running:
+                        return
+                    logger.error(f"[LiveAPI] テキスト送信エラー: {e}")
+                    self.needs_reconnect = True
+                    return
+
         async def receive():
             """LiveAPIからの応答を受信してブラウザに転送"""
             try:
@@ -591,10 +627,16 @@ class LiveAPISession:
                 self.audio_queue_to_gemini.get_nowait()
             except asyncio.QueueEmpty:
                 break
+        while not self.text_queue.empty():
+            try:
+                self.text_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
 
         try:
             async with asyncio.TaskGroup() as tg:
                 tg.create_task(send_audio())
+                tg.create_task(send_text())
                 tg.create_task(receive())
         except* Exception as eg:
             if not self.needs_reconnect:
