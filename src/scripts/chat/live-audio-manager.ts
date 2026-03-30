@@ -66,6 +66,7 @@ export class LiveAudioManager {
     public expressionFrameRate: number = 30;           // fps（デフォルト30）
     public expressionNames: string[] = [];             // ARKit ブレンドシェイプ名
     private _a2eDebugCounter: number = 0;              // デバッグログ間引き用
+    private _shouldResetStartTime: boolean = false;    // ★ live_expression chunk=0 受信時にtrue
 
     // ========================================
     // セッション開始時に1度だけ呼ぶ
@@ -185,9 +186,11 @@ export class LiveAudioManager {
     playPcmAudio(pcmBase64: string): void {
         if (!this.audioContext) return;
 
-        // ★ 最初のチャンク時にfirstChunkStartTimeを記録（仕様書08 セクション4.2）
-        if (this.firstChunkStartTime === 0) {
+        // ★ 最初のチャンク、またはlive_expression chunk=0受信後にfirstChunkStartTimeをリセット
+        if (this.firstChunkStartTime === 0 || this._shouldResetStartTime) {
             this.firstChunkStartTime = this.audioContext.currentTime;
+            this._shouldResetStartTime = false;
+            console.log(`[Sync] StartTime reset to: ${this.firstChunkStartTime.toFixed(3)}`);
         }
 
         const pcmBytes = base64ToArrayBuffer(pcmBase64);
@@ -282,6 +285,12 @@ export class LiveAudioManager {
         if (data.frame_rate) this.expressionFrameRate = data.frame_rate;
         if (data.expression_names && data.expression_names.length > 0) {
             this.expressionNames = data.expression_names;
+        }
+
+        // ★ chunk=0 受信時: 次のplayPcmAudioでfirstChunkStartTimeをリセットさせる
+        if (data.chunk_index === 0) {
+            this._shouldResetStartTime = true;
+            console.log('[Sync] live_expression chunk=0 受信 → StartTimeリセット予約');
         }
 
         // フレームデータをバッファに追加
