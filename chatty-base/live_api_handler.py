@@ -294,6 +294,14 @@ def build_system_instruction(mode: str, user_profile: dict = None,
         user_context = _build_concierge_user_context(user_profile)
         prompt = base_prompt.replace('{user_context}', user_context)
 
+        # 日本時間を注入（販売時間フィルタリング用）
+        jst = pytz.timezone('Asia/Tokyo')
+        now = datetime.now(jst)
+        weekday_names = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日']
+        holiday_label = '（祝日）' if jpholiday.is_holiday(now.date()) else ''
+        current_dt = f"{now.strftime('%Y-%m-%d %H:%M')} {weekday_names[now.weekday()]}{holiday_label}"
+        prompt = prompt.replace('{current_datetime}', current_dt)
+
         # メニューMarkdownを注入（注文サポートモード）
         menu_markdown = _load_menu_markdown(shop_id or 'dennys')
         prompt = prompt.replace('{menu_data}', menu_markdown)
