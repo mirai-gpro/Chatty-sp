@@ -420,6 +420,52 @@ export class CoreController {
       }
     });
 
+    // ★ 注文更新通知（注文サポートモード）
+    this.socket.on('order_updated', (data: any) => {
+      console.log('[Order] 注文更新:', data.items?.length, '品, 合計', data.total_price);
+    });
+
+    // ★ 注文一覧モーダル表示（注文サポートモード）
+    this.socket.on('show_order_summary', (data: any) => {
+      console.log('[Order] 注文一覧表示:', data.items?.length, '品');
+      const overlay = document.getElementById('orderModalOverlay');
+      const body = document.getElementById('orderModalBody');
+      const totalEl = document.getElementById('orderTotalPrice');
+      const closeBtn = document.getElementById('orderModalClose');
+
+      if (!overlay || !body || !totalEl) return;
+
+      const items = data.items || [];
+      const totalPrice = data.total_price || 0;
+
+      if (items.length === 0) {
+        body.innerHTML = '<p class="order-empty">まだ注文がありません</p>';
+      } else {
+        body.innerHTML = items.map((item: any) => {
+          const subtotal = item.price * item.quantity;
+          const imgHtml = item.image_url
+            ? `<div class="order-item-image"><img src="${item.image_url}" alt="${item.name}" /></div>`
+            : `<div class="order-item-image"></div>`;
+          return `<div class="order-item">${imgHtml}<div class="order-item-info"><div class="order-item-name">${item.name}</div><div class="order-item-qty">×${item.quantity}</div></div><div class="order-item-subtotal">¥${subtotal.toLocaleString()}</div></div>`;
+        }).join('');
+      }
+
+      totalEl.textContent = `¥${totalPrice.toLocaleString()}`;
+      overlay.classList.remove('hidden');
+
+      // 閉じるボタン
+      const closeHandler = () => {
+        overlay.classList.add('hidden');
+        closeBtn?.removeEventListener('click', closeHandler);
+        overlay?.removeEventListener('click', bgClickHandler);
+      };
+      const bgClickHandler = (e: Event) => {
+        if (e.target === overlay) closeHandler();
+      };
+      closeBtn?.addEventListener('click', closeHandler);
+      overlay?.addEventListener('click', bgClickHandler);
+    });
+
     // ★ ショップ検索開始（§3.6: 待機アニメーション表示）
     this.socket.on('shop_search_start', () => {
       console.log('[LiveAPI] shop_search_start: 待機アニメーション表示');

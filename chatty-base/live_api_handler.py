@@ -346,6 +346,38 @@ RECOMMEND_MENU_DECLARATION = types.FunctionDeclaration(
     )
 )
 
+ADD_TO_ORDER_DECLARATION = types.FunctionDeclaration(
+    name="add_to_order",
+    description="ユーザーが注文を決めた時に呼び出す。メニュー名と個数を指定して仮注文リストに追加する。",
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "item_name": types.Schema(
+                type="STRING",
+                description="注文するメニュー名（例: '和風ハンバーグ'）"
+            ),
+            "quantity": types.Schema(
+                type="INTEGER",
+                description="個数（デフォルト1）"
+            ),
+            "price": types.Schema(
+                type="INTEGER",
+                description="税込価格（整数、例: 1089）"
+            )
+        },
+        required=["item_name", "price"]
+    )
+)
+
+SHOW_ORDER_SUMMARY_DECLARATION = types.FunctionDeclaration(
+    name="show_order_summary",
+    description="ユーザーが注文内容の確認を求めた時に呼び出す。現在の仮注文一覧をカード形式で画面に表示する。",
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={}
+    )
+)
+
 UPDATE_USER_PROFILE_DECLARATION = types.FunctionDeclaration(
     name="update_user_profile",
     description="ユーザーが名前を教えてくれた時、または名前の変更を依頼された時に呼び出す。初回の名前登録にも、名前変更にも使用する。",
@@ -421,6 +453,9 @@ class LiveAPISession:
         self.voice_model = voice_model  # REST TTS用音声モデル名（例: ja-JP-Chirp3-HD-Leda）
         self.live_voice = live_voice    # LiveAPI用音声名（例: Leda）
         self.user_id = user_id  # 長期記憶のプロファイル更新に使用
+
+        # 注文サポートモード: 仮オーダーリスト
+        self._current_order = []  # [{"name": str, "price": int, "quantity": int, "image_url": str}, ...]
 
         # 初期あいさつフェーズ（ダミーメッセージのinput_transcriptionを非表示）
         # （仕様書02 セクション4.5.5）
@@ -511,7 +546,7 @@ class LiveAPISession:
             config["tools"] = [types.Tool(function_declarations=[UPDATE_USER_PROFILE_DECLARATION])]
         else:
             # conciergeモード: メニュー提案 + プロファイル更新
-            config["tools"] = [types.Tool(function_declarations=[RECOMMEND_MENU_DECLARATION, UPDATE_USER_PROFILE_DECLARATION])]
+            config["tools"] = [types.Tool(function_declarations=[RECOMMEND_MENU_DECLARATION, ADD_TO_ORDER_DECLARATION, SHOW_ORDER_SUMMARY_DECLARATION, UPDATE_USER_PROFILE_DECLARATION])]
 
         return config
 
@@ -943,6 +978,62 @@ class LiveAPISession:
                         name=fc.name,
                         id=fc.id,
                         response={"result": f"{len(found_items)}品のメニューカードを表示しました"}
+                    )]
+                )
+            elif fc.name == "add_to_order":
+                item_name = fc.args.get("item_name", "")
+                quantity = fc.args.get("quantity", 1)
+                price = fc.args.get("price", 0)
+                logger.info(f"[LiveAPI] add_to_order: {item_name} x{quantity} ¥{price}")
+
+                # メニューMarkdownから画像URLを取得
+                image_url = ""
+                menu_markdown = _load_menu_markdown(self._shop_id or 'dennys')
+                found = _search_menu_items(menu_markdown, [item_name])
+                if found:
+                    image_url = found[0].get('image_url', '')
+
+                # 既存アイテムがあれば数量加算、なければ追加
+                existing = next((o for o in self._current_order if o['name'] == item_name), None)
+                if existing:
+                    existing['quantity'] += quantity
+                else:
+                    self._current_order.append({
+                        'name': item_name,
+                        'price': price,
+                        'quantity': quantity,
+                        'image_url': image_url,
+                    })
+
+                # フロントに更新を通知
+                total = sum(o['price'] * o['quantity'] for o in self._current_order)
+                self.socketio.emit('order_updated', {
+                    'items': self._current_order,
+                    'total_price': total,
+                }, room=self.client_sid)
+
+                await session.send_tool_response(
+                    function_responses=[types.FunctionResponse(
+                        name=fc.name,
+                        id=fc.id,
+                        response={"result": f"{item_name}を{quantity}個追加しました。合計{total}円"}
+                    )]
+                )
+            elif fc.name == "show_order_summary":
+                logger.info(f"[LiveAPI] show_order_summary: {len(self._current_order)}品")
+
+                total = sum(o['price'] * o['quantity'] for o in self._current_order)
+                self.socketio.emit('show_order_summary', {
+                    'items': self._current_order,
+                    'total_price': total,
+                }, room=self.client_sid)
+
+                order_text = ', '.join([f"{o['name']}x{o['quantity']}" for o in self._current_order])
+                await session.send_tool_response(
+                    function_responses=[types.FunctionResponse(
+                        name=fc.name,
+                        id=fc.id,
+                        response={"result": f"注文一覧を表示しました: {order_text}, 合計{total}円"}
                     )]
                 )
             elif fc.name == "update_user_profile":

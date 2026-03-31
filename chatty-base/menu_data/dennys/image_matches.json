@@ -1,0 +1,902 @@
+[
+  {
+    "menu_number": 128,
+    "menu_name": "ケールのグリーンサラダボウル",
+    "confidence": 90,
+    "reason": "画像に「Green Salad」と「グリーンサラダ」の表記があり、器がボウルであるため、メニューリストの中で「ケールのグリーンサラダボウル」が最も合致すると判断しました。また、「にんじんドレッシング」の表記もあります。",
+    "image_file": "page10_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 0,
+    "menu_name": "不明",
+    "confidence": 0,
+    "reason": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}",
+    "image_file": "page10_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img2.jpg",
+    "status": "review"
+  },
+  {
+    "menu_number": 18,
+    "menu_name": "たらマヨポテト",
+    "confidence": 100,
+    "reason": "画像に『たらマヨポテト』というメニュー名と『French Fries with Cod Roe Mayonnaise Sauce』という英語表記がはっきりと表示されており、メニューリストの18番と完全に一致するため。",
+    "image_file": "page10_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 0,
+    "menu_name": "不明",
+    "confidence": 0,
+    "reason": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}",
+    "image_file": "page10_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img4.jpg",
+    "status": "review"
+  },
+  {
+    "menu_number": 16,
+    "menu_name": "ベーコンとほうれん草",
+    "confidence": 100,
+    "reason": "画像に「Bacon & Spinach」と「ベーコンとほうれん草」という表記があり、料理の内容と完全に一致するため。",
+    "image_file": "page10_img5.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img5.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 16,
+    "menu_name": "ベーコンとほうれん草",
+    "confidence": 98,
+    "reason": "画像の中央に「Bacon & Spinach」と「ベーコンとほうれん草」という英語と日本語のメニュー名が明記されており、料理の見た目とも完全に一致するため。",
+    "image_file": "page10_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 18,
+    "menu_name": "たらマヨポテト",
+    "confidence": 100,
+    "reason": "画像に「たらマヨポテト」と明記されており、メニューリストの18番と完全に一致するため。",
+    "image_file": "page10_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img7.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 18,
+    "menu_name": "たらマヨポテト",
+    "confidence": 100,
+    "reason": "画像に『たらマヨポテト』と英語の説明『French Fries with Cod Roe Mayonnaise Sauce』が明記されており、メニューリストの18番と完全に一致するため。",
+    "image_file": "page10_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 45,
+    "menu_name": "とろ〜り卵とチーズのオムライス",
+    "confidence": 100,
+    "reason": "画像に「とろ〜り卵とチーズのオムライス」というメニュー名が明記されており、メニューリストの45番と完全に一致するため。",
+    "image_file": "page11_img0.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page11_img0.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 49,
+    "menu_name": "BEEFハンバーグステーキ ~おろしソース |約200g",
+    "confidence": 100,
+    "reason": "画像内のメニュー名「BEEFハンバーグステーキ ~おろしソース | 約200g」と完全に一致するため。",
+    "image_file": "page11_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page11_img2.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 42,
+    "menu_name": "なすのミートソース",
+    "confidence": 100,
+    "reason": "画像内の日本語テキスト「なすのミートソース」と英語の説明「Meat Sauce Spaghetti with Eggplant, topped with Raw Egg」がメニューリストの「なすのミートソース」と完全に一致しているため。",
+    "image_file": "page11_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page11_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 43,
+    "menu_name": "北海道バターを使用したたらこソース",
+    "confidence": 100,
+    "reason": "画像には「Spaghetti with Hokkaido Butter Cod Roe Sauce」と「北海道バターを使用したたらこソース」という説明があり、メニューリストの43番と完全に一致します。",
+    "image_file": "page11_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page11_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 46,
+    "menu_name": "和風ハンバーグ",
+    "confidence": 100,
+    "reason": "画像には「和風ハンバーグ」というメニュー名が日本語と英語で明記されており、メニューリストの46番と完全に一致します。",
+    "image_file": "page11_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page11_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名『ふわふわチーズと生ハムのミニシーザーサラダ』とメニュー番号『40802』がリストの80番と完全に一致します。",
+    "image_file": "page12_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page12_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 81,
+    "menu_name": "海老とハーブ鶏のミニCOBBサラダ",
+    "confidence": 100,
+    "reason": "画像中央に『40803 海老とハーブ鶏のミニCOBBサラダ 400円(税込440円)』と明記されており、メニューリストの81番と完全に一致するため。",
+    "image_file": "page12_img5.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page12_img5.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 82,
+    "menu_name": "オニオングラタンスープ",
+    "confidence": 100,
+    "reason": "画像中央に『オニオングラタンスープ』の文字と料理が明確に写っており、メニューリストの82番と完全に一致するため。",
+    "image_file": "page12_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page12_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 16,
+    "menu_name": "ベーコンとほうれん草",
+    "confidence": 100,
+    "reason": "画像に「ベーコンとほうれん草」と明記されており、メニューリストの16番と完全に一致するため。",
+    "image_file": "page12_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page12_img7.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 0,
+    "menu_name": "不明",
+    "confidence": 0,
+    "reason": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}",
+    "image_file": "page13_img10.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page13_img10.jpg",
+    "status": "review"
+  },
+  {
+    "menu_number": 25,
+    "menu_name": "白玉あずき ~バニラアイス添え",
+    "confidence": 100,
+    "reason": "画像内に「白玉あずき ~バニラアイス添え」というメニュー名が明確に表示されており、リストの25番と完全に一致します。",
+    "image_file": "page13_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page13_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 0,
+    "menu_name": "不明",
+    "confidence": 0,
+    "reason": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}",
+    "image_file": "page13_img9.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page13_img9.jpg",
+    "status": "review"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に『ふわふわチーズと生ハムのミニシーザーサラダ』というメニュー名が明瞭に記載されており、メニューリストの80番と完全に一致するため。",
+    "image_file": "page14_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page14_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 81,
+    "menu_name": "海老とハーブ鶏のミニCOBBサラダ",
+    "confidence": 100,
+    "reason": "画像中央のメニューに『海老とハーブ鶏のミニCOBBサラダ 400円(税込440円)』と明記されており、メニューリストの81番と完全に一致するため。",
+    "image_file": "page14_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page14_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 82,
+    "menu_name": "オニオングラタンスープ",
+    "confidence": 100,
+    "reason": "画像中央に「オニオングラタンスープ」のメニュー名と価格が明瞭に表示されているため。",
+    "image_file": "page14_img5.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page14_img5.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 16,
+    "menu_name": "ベーコンとほうれん草",
+    "confidence": 100,
+    "reason": "画像の中央に表示されているメニュー名「ベーコンとほうれん草」が、メニューリストの16番と完全に一致するため。",
+    "image_file": "page14_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page14_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 25,
+    "menu_name": "白玉あずき ~バニラアイス添え",
+    "confidence": 100,
+    "reason": "画像中央に「白玉あずき ~バニラアイス添え」というメニュー名と商品番号「61804」がはっきりと写っており、メニューリストの25番と完全に一致するため。",
+    "image_file": "page15_img10.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page15_img10.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 111,
+    "menu_name": "ドリンクバー (セット)",
+    "confidence": 95,
+    "reason": "画像には「Drink Bar」のセクションが大きく表示されており、その中に「セット」という項目がメニュー番号「70702」と価格「420円(税込462円)」で明確に記載されているため、リストの「ドリンクバー (セット)」と完全に一致します。",
+    "image_file": "page15_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page15_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 24,
+    "menu_name": "ルビーグレープフルーツとレモンソルベのパフェ",
+    "confidence": 100,
+    "reason": "画像中央のメニュー名「ルビーグレープフルーツとレモンソルベのパフェ」がメニューリストの24番と完全に一致しているため。",
+    "image_file": "page15_img9.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page15_img9.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像には「ふわふわチーズと生ハムのミニシーザーサラダ」と「たっぷりコーンのコーンスープ」の2つのメニューが示されていますが、1つだけ選択する指示のため、画像の上部に表示されている「ふわふわチーズと生ハムのミニシーザーサラダ」を選択しました。メニューリスト80番と完全に一致します。",
+    "image_file": "page18_img0.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img0.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に「ふわふわチーズと生ハムのミニシーザーサラダ」と明記されており、メニューリスト80番と完全に一致するため。画像にはもう一つのメニューも表示されていますが、指示に従い最も合致するメニューを1つ選択しました。",
+    "image_file": "page18_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名「ふわふわチーズと生ハムのミニシーザーサラダ」とメニューリストの80番が完全に一致するため。",
+    "image_file": "page18_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img2.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像内のメニュー名「ふわふわチーズと生ハムのミニシーザーサラダ」がメニューリストの80番と完全に一致するため。",
+    "image_file": "page18_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 36,
+    "menu_name": "サントリー・ザ・プレミアム・モルツ 生ビール",
+    "confidence": 100,
+    "reason": "画像には生ビールとハイボールが写っており、画像下のテキストには『サントリー・ザ・プレミアム・モルツ』と『角ハイボール』が明記されているため、最も合致するメニューの一つとして選択しました。",
+    "image_file": "page18_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 111,
+    "menu_name": "ドリンクバー (セット)",
+    "confidence": 85,
+    "reason": "画像には「ドリンクバー」と「or」の文字、そして「アルコールより一杯」という選択肢が示されており、複数のアルコール飲料（生ビール、ワイン、レモンサワーのようなもの）が並んでいます。メニューリストに「ドリンクバーまたはアルコール一杯」という直接的な項目はありませんが、「ドリンクバー (セット)」は、食事などと組み合わせて提供されるドリンクオプションであり、その中でアルコール飲料への変更や選択肢が提供される可能性が最も高いと判断しました。",
+    "image_file": "page18_img5.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img5.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 39,
+    "menu_name": "ハウスワイン グラス 赤",
+    "confidence": 95,
+    "reason": "画像には赤ワインのグラスがはっきりと写っており、メニューリストの「ハウスワイン グラス 赤」に直接合致するため。白ワインのグラスも写っているが、最も合致する1つを選ぶため赤ワインを選択した。",
+    "image_file": "page18_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 0,
+    "menu_name": "不明",
+    "confidence": 0,
+    "reason": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}",
+    "image_file": "page18_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img7.jpg",
+    "status": "review"
+  },
+  {
+    "menu_number": 111,
+    "menu_name": "ドリンクバー (セット)",
+    "confidence": 95,
+    "reason": "画像には様々な飲み物が写っており、その下に「ドリンクバー」という文字が明記されているため、ドリンクバーのメニューが最も合致すると判断しました。セットか単品かの区別は画像からは判断できませんが、最も直接的な選択肢の一つです。",
+    "image_file": "page18_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 47,
+    "menu_name": "デミ煮込みハンバーグ",
+    "confidence": 95,
+    "reason": "画像にはデミグラスソースがかかったハンバーグがメイン料理として写っており、メニューリストの中で「デミ煮込みハンバーグ」が最も視覚的に一致します。価格やサイドメニュー、ドリンクの記載は、このハンバーグを中心としたセットメニューの提供内容を示していると判断しました。",
+    "image_file": "page18_img9.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img9.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 87,
+    "menu_name": "シーフードアヒージョ",
+    "confidence": 100,
+    "reason": "画像中央に大きく表示されているメニュー名「シーフードアヒージョ」がメニューリストの87番と完全に一致します。",
+    "image_file": "page20_img11.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page20_img11.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 97,
+    "menu_name": "BLUE MOON (ブルームーン)",
+    "confidence": 100,
+    "reason": "画像には『BLUE MOON BELGIAN WHITE』のボトルがはっきりと写っており、メニューリストの97番『BLUE MOON (ブルームーン)』と完全に一致します。",
+    "image_file": "page21_img14.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page21_img14.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 97,
+    "menu_name": "BLUE MOON (ブルームーン)",
+    "confidence": 100,
+    "reason": "画像上部に大きく表示され、商品名、説明、価格、そして「当店イチ押し」のタグが明確に確認できるため。",
+    "image_file": "page23_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 41,
+    "menu_name": "角ハイボール",
+    "confidence": 100,
+    "reason": "画像には「角ハイボール」というメニュー名と価格が明確に表示されており、メニューリストの41番と完全に一致します。",
+    "image_file": "page23_img10.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img10.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 103,
+    "menu_name": "こだわり酒場 レモンサワー",
+    "confidence": 100,
+    "reason": "画像の中央に「こだわり酒場 レモンサワー」というメニュー名がはっきりと表示されており、メニューリストの103番と完全に一致するため。",
+    "image_file": "page23_img11.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img11.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 108,
+    "menu_name": "レッドワイン&オレンジ サングリア風",
+    "confidence": 100,
+    "reason": "画像には「フレッシュ グレープフルーツ、オレンジ入りの赤ワインベースのカクテル」と説明され、英語で「Red Wine & Orange in Sangria Style」と記載されたドリンクが写っており、メニューリストの「レッドワイン&オレンジ サングリア風」と完全に一致するため。",
+    "image_file": "page23_img12.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img12.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 114,
+    "menu_name": "ジンジャービア",
+    "confidence": 100,
+    "reason": "画像に写っているボトルのラベルに「FENTIMANS GINGER BEER」と明記されており、メニューリストの「ジンジャービア」と完全に一致するため。",
+    "image_file": "page23_img13.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img13.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 115,
+    "menu_name": "ビクトリアンレモネード",
+    "confidence": 100,
+    "reason": "画像に写っているボトルのラベルに「VICTORIAN LEMONADE」と明記されており、メニューリストの「ビクトリアンレモネード」と完全に一致するため。",
+    "image_file": "page23_img14.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img14.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 37,
+    "menu_name": "サントリー・ザ・プレミアム・モルツ 中ビン (500ml)",
+    "confidence": 95,
+    "reason": "画像にはサントリー・ザ・プレミアム・モルツの中ビンがはっきりと写っており、もう一方のオールフリーよりも視覚的に大きく配置されているため。",
+    "image_file": "page23_img17.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img17.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 98,
+    "menu_name": "BIG WAVE (ビッグウェーブ)",
+    "confidence": 100,
+    "reason": "画像には「BIG WAVE (ビッグウェーブ)」というビールが大きく表示されており、その商品名、価格、説明がメニューリストの98番と完全に一致するため。",
+    "image_file": "page23_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img2.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 98,
+    "menu_name": "BIG WAVE (ビッグウェーブ)",
+    "confidence": 100,
+    "reason": "画像に写っているビールのボトルラベルに「BIG WAVE」と明記されており、メニューリストの98番と完全に一致するため。",
+    "image_file": "page23_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 97,
+    "menu_name": "BLUE MOON (ブルームーン)",
+    "confidence": 100,
+    "reason": "画像には「BLUE MOON BELGIAN WHITE」と書かれたビールのボトルが写っており、メニューリストの97番が「BLUE MOON (ブルームーン)」であるため、完全に一致します。",
+    "image_file": "page23_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img7.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 39,
+    "menu_name": "ハウスワイン グラス 赤",
+    "confidence": 90,
+    "reason": "画像には「ハウスワイン グラス」として赤ワインと白ワインの両方が表示されており、メニューリストではそれぞれが個別の項目として存在します。赤ワインが画像内で左側に表示され、メニューリストでも先に記載されているため、これを最も合致するメニューとして選択しました。",
+    "image_file": "page23_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 39,
+    "menu_name": "ハウスワイン グラス 赤",
+    "confidence": 95,
+    "reason": "画像には「ワイン」のセクションがあり、赤ワインのグラスが明確に表示され、「赤」と明記されています。また、英語で「Glass of House Wine (Red)(White)」とあり、日本語で「ハウスワイン グラス」と記載されているため、メニューリストの「ハウスワイン グラス 赤」が最も合致します。",
+    "image_file": "page23_img9.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page23_img9.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 137,
+    "menu_name": "イベリコベーコンとふわふわチーズのカルボナーラ",
+    "confidence": 98,
+    "reason": "画像の中央下部に最も大きく表示されており、メニュー名、ID、価格が明確に記載されているため、この画像に最も合致するメニューと判断しました。",
+    "image_file": "page26_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page26_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に『ふわふわチーズと生ハムのミニシーザーサラダ』というメニュー名が明記されており、メニューリストの80番と完全に一致するため。",
+    "image_file": "page26_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page26_img7.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 81,
+    "menu_name": "海老とハーブ鶏のミニCOBBサラダ",
+    "confidence": 100,
+    "reason": "画像中央に「40803 海老とハーブ鶏のミニCOBBサラダ 400円(税込440円)」と明記されており、メニューリストの81番と完全に一致するため。",
+    "image_file": "page26_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page26_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 82,
+    "menu_name": "オニオングラタンスープ",
+    "confidence": 100,
+    "reason": "画像中央のメニューに「オニオングラタンスープ」と明記されており、メニューリストの82番と完全に一致するため。",
+    "image_file": "page26_img9.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page26_img9.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 148,
+    "menu_name": "アボカドのジェノベーゼ",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名「アボカドのジェノベーゼ」と英語表記「Spaghetti with Basil Pesto & Avocado」が、メニューリストの148番と完全に一致するため。",
+    "image_file": "page27_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page27_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名「ふわふわチーズと生ハムのミニシーザーサラダ」がメニューリストの80番と完全に一致するため。",
+    "image_file": "page28_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page28_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 81,
+    "menu_name": "海老とハーブ鶏のミニCOBBサラダ",
+    "confidence": 100,
+    "reason": "画像中央のメニュー名「海老とハーブ鶏のミニCOBBサラダ」がメニューリストの81番と完全に一致しています。",
+    "image_file": "page28_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page28_img2.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 82,
+    "menu_name": "オニオングラタンスープ",
+    "confidence": 100,
+    "reason": "画像中央に「オニオングラタンスープ」というメニュー名がはっきりと表示されており、メニューリストの82番と完全に一致するため。",
+    "image_file": "page28_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page28_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 112,
+    "menu_name": "ドリンクバー (単品)",
+    "confidence": 95,
+    "reason": "画像には「Drink Bar」という大きな見出しがあり、その中に「ドリンクバー (単品)」が明確に表示されているため。",
+    "image_file": "page29_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page29_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 90,
+    "reason": "画像には「石窯ブール」が明示されており、メニューリストの中で「石窯ブール」を含む唯一の項目が「クリーミークラムチャウダー&石窯ブール」であるため。",
+    "image_file": "page29_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page29_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 95,
+    "reason": "画像には「石窯ブール」と「ホイップバターつき」が明記されており、メニューリストの中で「石窯ブール」を含むのは5番のみであるため。",
+    "image_file": "page29_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page29_img7.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 90,
+    "reason": "画像には「石窯ブールセット」と「Stone Oven-Baked Boule Bread」の表記があり、ホイップバターが添えられた石窯ブールが写っています。メニューリストの中で「石窯ブール」という具体的な名称を含むのは「クリーミークラムチャウダー&石窯ブール」のみであるため、このメニューが最も合致すると判断しました。画像はセットの一部である石窯ブールをクローズアップしていると考えられます。",
+    "image_file": "page2_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 7,
+    "menu_name": "グリルドチーズサンドモーニング",
+    "confidence": 95,
+    "reason": "画像には「Grilled Cheese Sandwich」と「グリルドチーズサンドセット」の表記があり、メニューリストの「グリルドチーズサンドモーニング」と名称が非常に一致しているため。",
+    "image_file": "page2_img10.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img10.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 8,
+    "menu_name": "自家製フレンチトースト",
+    "confidence": 95,
+    "reason": "画像には「Mini French Toast」と「ミニフレンチトーストセット」の文字があり、フレンチトーストの写真が掲載されているため、メニューリストの中で最も合致する「自家製フレンチトースト」を選択しました。",
+    "image_file": "page2_img11.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img11.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 8,
+    "menu_name": "自家製フレンチトースト",
+    "confidence": 95,
+    "reason": "画像には「ミニフレンチトースト」と「メープルタイプ シロップつき」と明記されており、メニューリストの「自家製フレンチトースト」が最も合致する。",
+    "image_file": "page2_img12.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img12.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 85,
+    "reason": "画像には「石窯ブールセット」と「Stone Oven-Baked Boule Bread」が明記されており、メニューリストの中で「石窯ブール」を含むのは5番のみであるため。",
+    "image_file": "page2_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img2.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 95,
+    "reason": "画像には「石窯ブールセット」と記載されており、メニューリストの中で「石窯ブール」という具体的な名称が含まれるのは「クリーミークラムチャウダー&石窯ブール」のみであるため、最も合致すると判断しました。",
+    "image_file": "page2_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 90,
+    "reason": "画像には「石窯ブールセット」という見出しがあり、メニューリストの5番「クリーミークラムチャウダー&石窯ブール」には「石窯ブール」が含まれているため、最も合致すると判断しました。画像下部の「ごはん・みそ汁セット」はリストに単一のメニューとして存在しません。",
+    "image_file": "page2_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 7,
+    "menu_name": "グリルドチーズサンドモーニング",
+    "confidence": 98,
+    "reason": "画像には「Grilled Cheese Sandwich」と「グリルドチーズサンドセット」と明記されており、メニューリストの「グリルドチーズサンドモーニング」が最も合致する。",
+    "image_file": "page2_img5.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img5.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 7,
+    "menu_name": "グリルドチーズサンドモーニング",
+    "confidence": 98,
+    "reason": "画像に「Grilled Cheese Sandwich」と「グリルドチーズサンドセット」と明記されており、メニューリストの「グリルドチーズサンドモーニング」が最も合致するため。",
+    "image_file": "page2_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 6,
+    "menu_name": "トーストモーニング",
+    "confidence": 95,
+    "reason": "画像には「トーストセット」と明記されており、メニューリストの「トーストモーニング」が最も合致するセットメニューであるため。",
+    "image_file": "page2_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img7.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 6,
+    "menu_name": "トーストモーニング",
+    "confidence": 95,
+    "reason": "画像には「Toast」と「トーストセット」という文字が明記されており、さらに「ホイップバター・ジャムつき」と記載されていることから、セットメニューであることが示唆されています。メニューリストの中で最も合致するのは「トーストモーニング」です。「厚切りトースト」は単品の可能性があり、セットのニュアンスが薄いため、「トーストモーニング」がより適切と判断しました。",
+    "image_file": "page2_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 7,
+    "menu_name": "グリルドチーズサンドモーニング",
+    "confidence": 95,
+    "reason": "画像には「Grilled Cheese Sandwich」と「グリルドチーズサンドセット」の記載があり、メニューリストの「グリルドチーズサンドモーニング」と名称が非常に近い。",
+    "image_file": "page2_img9.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img9.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名「ふわふわチーズと生ハムのミニシーザーサラダ」と完全に一致するため。",
+    "image_file": "page30_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page30_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 81,
+    "menu_name": "海老とハーブ鶏のミニCOBBサラダ",
+    "confidence": 100,
+    "reason": "画像中央のメニュー名「海老とハーブ鶏のミニCOBBサラダ」がメニューリストの81番と完全に一致するため。",
+    "image_file": "page30_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page30_img2.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 82,
+    "menu_name": "オニオングラタンスープ",
+    "confidence": 100,
+    "reason": "画像の中央に「オニオングラタンスープ」というメニュー名が明記されており、メニューリストの82番と完全に一致するため。",
+    "image_file": "page30_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page30_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 113,
+    "menu_name": "おこさまドリンクバー",
+    "confidence": 100,
+    "reason": "画像には「おこさまドリンクバー」がメニュー番号70704、価格150円（税込165円）で明記されており、提供されたメニューリストの113番と完全に一致するため。",
+    "image_file": "page31_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page31_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 85,
+    "reason": "画像には「石窯ブール」が写真と文字で明示されており、メニューリストの中で「石窯ブール」を含む唯一の項目が「クリーミークラムチャウダー&石窯ブール」であるため。画像にはクラムチャウダーは写っていませんが、石窯ブール自体ははっきりと確認できます。",
+    "image_file": "page31_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page31_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 33,
+    "menu_name": "ライス",
+    "confidence": 95,
+    "reason": "画像には「ライス」というメニューが明確に記載されており、メニューリストの33番と完全に一致するため。画像に写っている「石窯ブール」は単品として表示されているが、メニューリストの5番は「クリーミークラムチャウダー&石窯ブール」というセットであり、画像の内容と完全に一致しないため、「ライス」が最も合致すると判断しました。",
+    "image_file": "page31_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page31_img7.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名「ふわふわチーズと生ハムのミニシーザーサラダ」と完全に一致するため。",
+    "image_file": "page32_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page32_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 81,
+    "menu_name": "海老とハーブ鶏のミニCOBBサラダ",
+    "confidence": 100,
+    "reason": "画像中央に「海老とハーブ鶏のミニCOBBサラダ 400円(税込440円)」と記載されており、メニューリストの81番と完全に一致するため。",
+    "image_file": "page32_img5.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page32_img5.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 82,
+    "menu_name": "オニオングラタンスープ",
+    "confidence": 100,
+    "reason": "画像の中央に「オニオングラタンスープ」というメニュー名がはっきりと表示されており、メニューリストの82番と完全に一致するため。",
+    "image_file": "page32_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page32_img6.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 176,
+    "menu_name": "低温で仕上げたしっとりローストポーク 醤油バターソース",
+    "confidence": 100,
+    "reason": "画像内の日本語と英語のメニュー名「低温で仕上げたしっとりローストポーク 醤油バターソース (Low-temperature Cooked Tender Roast Pork Steak)」が、メニューリストの176番と完全に一致しています。",
+    "image_file": "page33_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page33_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 176,
+    "menu_name": "低温で仕上げたしっとりローストポーク 醤油バターソース",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名「低温で仕上げたしっとりローストポーク 醤油バターソース」がメニューリストの176番と完全に一致するため。",
+    "image_file": "page33_img11.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page33_img11.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 185,
+    "menu_name": "D's 山形豚のしゃぶしゃぶ",
+    "confidence": 95,
+    "reason": "画像には薄切りにされた豚肉が野菜の上に盛り付けられ、ドレッシングがかかっているサラダのような料理が写っており、別添えのタレもあります。メニューリストの中で「豚」と「しゃぶしゃぶ」を明記している「D's 山形豚のしゃぶしゃぶ」が最も合致します。豚しゃぶは冷製サラダとして提供されることが一般的です。",
+    "image_file": "page35_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page35_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 80,
+    "menu_name": "ふわふわチーズと生ハムのミニシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名「ふわふわチーズと生ハムのミニシーザーサラダ」と完全に一致する項目がメニューリストに存在するため。",
+    "image_file": "page36_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page36_img2.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 81,
+    "menu_name": "海老とハーブ鶏のミニCOBBサラダ",
+    "confidence": 100,
+    "reason": "画像中央に表示されているメニュー名「海老とハーブ鶏のミニCOBBサラダ」がメニューリストの81番と完全に一致するため。",
+    "image_file": "page36_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page36_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 82,
+    "menu_name": "オニオングラタンスープ",
+    "confidence": 100,
+    "reason": "画像中央に『オニオングラタンスープ』の文字と商品がはっきりと写っており、メニューリストの82番と完全に一致するため。",
+    "image_file": "page36_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page36_img4.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 200,
+    "menu_name": "鶏肉のバジル炒めごはん ~ガパオ・ガイ",
+    "confidence": 100,
+    "reason": "画像に表示されているメニュー名「鶏肉のバジル炒めごはん ~ガパオ・ガイ」と完全に一致するため。",
+    "image_file": "page37_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page37_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 13,
+    "menu_name": "海老とハーブ鶏のスープごはん",
+    "confidence": 100,
+    "reason": "画像に「11708 海老とハーブ鶏 スープごはん」と明記されており、メニューリストの13番と完全に一致するため。",
+    "image_file": "page37_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page37_img3.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 0,
+    "menu_name": "不明",
+    "confidence": 0,
+    "reason": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}",
+    "image_file": "page37_img6.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page37_img6.jpg",
+    "status": "review"
+  },
+  {
+    "menu_number": 33,
+    "menu_name": "ライス",
+    "confidence": 100,
+    "reason": "画像に「ライス 250円(税込275円)」と明記されており、メニューリストの33番「ライス」と完全に一致するため。",
+    "image_file": "page37_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page37_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 0,
+    "menu_name": "不明",
+    "confidence": 0,
+    "reason": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}",
+    "image_file": "page37_img9.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page37_img9.jpg",
+    "status": "review"
+  },
+  {
+    "menu_number": 4,
+    "menu_name": "サニーサイドアップサンド",
+    "confidence": 100,
+    "reason": "画像上部に「サニーサイドアップサンド 600円(税込660円)」と明記されており、その下の注釈にも「※写真はサニーサイドアップサンドプレートです。」と記載されているため、このメニューが画像に最も合致します。",
+    "image_file": "page39_img5.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page39_img5.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 90,
+    "reason": "画像には「石窯ブール」というパンが「ホイップバターつき」で表示されており、メニューリストの中で「石窯ブール」を含む唯一の項目が「クリーミークラムチャウダー&石窯ブール」であるため。",
+    "image_file": "page39_img7.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page39_img7.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 5,
+    "menu_name": "クリーミークラムチャウダー&石窯ブール",
+    "confidence": 95,
+    "reason": "画像の中央に「石窯ブール」と「ホイップバターつき」の記載があり、メニューリストの中で「石窯ブール」を含む唯一の項目が「クリーミークラムチャウダー&石窯ブール」であるため。",
+    "image_file": "page39_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page39_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 86,
+    "menu_name": "アメリカンコンボ",
+    "confidence": 95,
+    "reason": "画像には、オーバーミディアムエッグ、ベーコン、ソーセージ、サラダが盛り付けられた典型的なアメリカンブレックファストが写っており、「アメリカンコンボ」というメニュー名が最も合致すると判断しました。画像内の「Over Medium Eggs」や「ターンオーバー」は卵の調理法を示すもので、メニュー名ではありません。",
+    "image_file": "page3_img2.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page3_img2.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 0,
+    "menu_name": "不明",
+    "confidence": 0,
+    "reason": "429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource has been exhausted (e.g. check quota).', 'status': 'RESOURCE_EXHAUSTED'}}",
+    "image_file": "page3_img3.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page3_img3.jpg",
+    "status": "review"
+  },
+  {
+    "menu_number": 15,
+    "menu_name": "ふわふわチーズと生ハムのシーザーサラダ",
+    "confidence": 100,
+    "reason": "画像内の英語と日本語のメニュー名「Caesar's Salad with Soft Cheese & Prosciutto」および「ふわふわチーズと生ハムのシーザーサラダ」がメニューリストの15番と完全に一致するため。",
+    "image_file": "page3_img4.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page3_img4.jpg",
+    "status": "ok"
+  }
+]
