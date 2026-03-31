@@ -564,6 +564,31 @@ const { apiBaseUrl = '' } = Astro.props;
     color: #9ca3af;
     font-size: 13px;
   }
+
+  /* ========================================
+     メニューカード固有スタイル（注文サポートモード用）
+     ======================================== */
+  .shop-card-list :global(.menu-item-card .menu-price) {
+    font-size: 20px;
+    font-weight: 700;
+    color: #dc2626;
+    margin: 4px 0 8px;
+  }
+
+  .shop-card-list :global(.menu-item-card .menu-details) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .shop-card-list :global(.menu-item-card .menu-detail-tag) {
+    font-size: 11px;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
 </style>
 
 <script>
@@ -1086,6 +1111,51 @@ const { apiBaseUrl = '' } = Astro.props;
     clear() {
       this.container.innerHTML = '';
     }
+
+    // ========================================
+    // メニューカード表示（注文サポートモード用）
+    // ========================================
+
+    displayMenuItems(items: any[]) {
+      console.log('[ShopCardList] displayMenuItems called:', items.length, '品');
+      this.container.innerHTML = '';
+      if (!items || items.length === 0) {
+        this.container.innerHTML = '<div class="empty-state">メニューが見つかりませんでした</div>';
+        return;
+      }
+      items.forEach(item => {
+        const card = this.createMenuCard(item);
+        this.container.appendChild(card);
+      });
+      console.log(`[ShopCardList] ${items.length} menu cards created`);
+    }
+
+    private createMenuCard(item: any): HTMLElement {
+      const card = document.createElement('div');
+      card.className = 'shop-card menu-item-card';
+
+      const imageUrl = item.image_url || '';
+      const imageHtml = imageUrl
+        ? `<div class="hero-image"><img src="${imageUrl}" alt="${item.name}" loading="lazy" /></div>`
+        : '';
+
+      const detailTags: string[] = [];
+      if (item.menu_number) detailTags.push(`<span class="menu-detail-tag">No. ${item.menu_number}</span>`);
+      if (item.drink_bar_price) detailTags.push(`<span class="menu-detail-tag">ドリンクバー付 ${item.drink_bar_price}</span>`);
+      if (item.time_restriction) detailTags.push(`<span class="menu-detail-tag">⏰ ${item.time_restriction}</span>`);
+
+      card.innerHTML = `
+        ${imageHtml}
+        <div class="card-body">
+          <h3 class="shop-name">${item.name}</h3>
+          ${item.price ? `<div class="menu-price">${item.price}</div>` : ''}
+          ${item.description ? `<p class="description">${item.description}</p>` : ''}
+          ${detailTags.length > 0 ? `<div class="menu-details">${detailTags.join('')}</div>` : ''}
+        </div>
+      `;
+
+      return card;
+    }
   }
 
   // グローバルに公開
@@ -1100,6 +1170,13 @@ const { apiBaseUrl = '' } = Astro.props;
       if (event.detail && event.detail.shops) {
         const language = event.detail.language || 'ja';
         manager.displayShops(event.detail.shops, language);
+      }
+    }) as EventListener);
+
+    // メニューカード表示イベント
+    document.addEventListener('displayMenuItems', ((event: CustomEvent) => {
+      if (event.detail && event.detail.items) {
+        manager.displayMenuItems(event.detail.items);
       }
     }) as EventListener);
   });
