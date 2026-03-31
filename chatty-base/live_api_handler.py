@@ -100,9 +100,92 @@ _generate_cached_audio()
 # build_system_instruction() で GCS/ローカルのプロンプトを参照
 # ============================================================
 
+SHOP_DISPLAY_NAMES = {
+    'dennys': 'デニーズ',
+    'kfc': 'KFC',
+}
+
+
+def _get_shop_display_name(shop_id: str) -> str:
+    return SHOP_DISPLAY_NAMES.get(shop_id, shop_id)
+
+
+def _load_menu_markdown(shop_id: str) -> str:
+    """メニューMarkdownを読み込む（GCS優先、ローカルフォールバック）"""
+    try:
+        bucket_name = os.getenv('PROMPTS_BUCKET_NAME')
+        if bucket_name:
+            from google.cloud import storage as gcs_storage
+            client = gcs_storage.Client()
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(f'menu_data/{shop_id}/{shop_id}_menu.md')
+            if blob.exists():
+                content = blob.download_as_text(encoding='utf-8')
+                logger.info(f"[Menu] GCSからメニューMarkdown読み込み成功: {shop_id} ({len(content)}文字)")
+                return content
+    except Exception as e:
+        logger.info(f"[Menu] GCS読み込みスキップ: {e}")
+
+    local_path = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id, f'{shop_id}_menu.md')
+    if os.path.exists(local_path):
+        with open(local_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        logger.info(f"[Menu] ローカルからメニューMarkdown読み込み成功: {shop_id} ({len(content)}文字)")
+        return content
+
+    logger.warning(f"[Menu] メニューMarkdownが見つかりません: {shop_id}")
+    return "（メニューデータが利用できません）"
+
+
+def _search_menu_items(menu_markdown: str, item_names: list) -> list:
+    """メニューMarkdownから指定アイテムを検索してカードデータを返す"""
+    import re
+    results = []
+
+    items = menu_markdown.split('\n---')
+    for item_block in items:
+        lines = item_block.strip().split('\n')
+        title = ''
+        image_url = ''
+        fields = {}
+
+        for line in lines:
+            trimmed = line.strip()
+            title_match = re.match(r'^###\s+(.+)', trimmed)
+            if title_match:
+                title = title_match.group(1)
+                continue
+            img_match = re.match(r'^!\[.*?\]\((.+?)\)', trimmed)
+            if img_match:
+                image_url = img_match.group(1)
+                continue
+            field_match = re.match(r'^\*\*(.+?):\*\*\s*(.+)', trimmed)
+            if field_match:
+                fields[field_match.group(1)] = field_match.group(2)
+
+        if not title:
+            continue
+
+        for name in item_names:
+            if name == title or name in title:
+                results.append({
+                    'name': title,
+                    'image_url': image_url,
+                    'price': fields.get('価格', ''),
+                    'description': fields.get('説明', ''),
+                    'menu_number': fields.get('メニュー番号', ''),
+                    'drink_bar_price': fields.get('ドリンクバー付き', ''),
+                    'set_price': fields.get('セット価格', ''),
+                    'time_restriction': fields.get('販売時間', ''),
+                })
+                break
+
+    return results
+
 
 def build_system_instruction(mode: str, user_profile: dict = None,
-                             system_prompts: dict = None, language: str = 'ja') -> str:
+                             system_prompts: dict = None, language: str = 'ja',
+                             shop_id: str = None) -> str:
     """モードに応じたシステムインストラクションを組み立てる
     （03_prompt_modification_spec.md セクション7.1）
 
@@ -135,7 +218,13 @@ def build_system_instruction(mode: str, user_profile: dict = None,
     if mode == 'concierge':
         # ユーザープロファイルに応じた初期あいさつ指示を構築
         user_context = _build_concierge_user_context(user_profile)
-        return base_prompt.replace('{user_context}', user_context)
+        prompt = base_prompt.replace('{user_context}', user_context)
+
+        # メニューMarkdownを注入（注文サポートモード）
+        menu_markdown = _load_menu_markdown(shop_id or 'dennys')
+        prompt = prompt.replace('{menu_data}', menu_markdown)
+        prompt = prompt.replace('{shop_name}', _get_shop_display_name(shop_id or 'dennys'))
+        return prompt
     elif mode == 'lesson':
         # レッスンモード: 講師名・ユーザー名・user_contextを埋め込む
         teacher_name = (user_profile or {}).get('lesson_teacher_name', 'Lisa')
@@ -240,6 +329,22 @@ SEARCH_SHOPS_DECLARATION = types.FunctionDeclaration(
     )
 )
 
+RECOMMEND_MENU_DECLARATION = types.FunctionDeclaration(
+    name="recommend_menu",
+    description="ユーザーにメニューアイテムを提案する時に呼び出す。提案するメニュー名を配列で渡す。音声での説明と同時にメニューカード（画像・価格付き）がユーザーの画面に表示される。",
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "menu_items": types.Schema(
+                type="ARRAY",
+                items=types.Schema(type="STRING"),
+                description="提案するメニュー名の配列。例: ['和風ハンバーグ', 'おろしハンバーグ']"
+            )
+        },
+        required=["menu_items"]
+    )
+)
+
 UPDATE_USER_PROFILE_DECLARATION = types.FunctionDeclaration(
     name="update_user_profile",
     description="ユーザーが名前を教えてくれた時、または名前の変更を依頼された時に呼び出す。初回の名前登録にも、名前変更にも使用する。",
@@ -302,7 +407,8 @@ class LiveAPISession:
     def __init__(self, session_id: str, mode: str, language: str,
                  system_prompt: str, socketio, client_sid: str,
                  shop_search_callback=None, user_id: str = None,
-                 voice_model: str = '', live_voice: str = ''):
+                 voice_model: str = '', live_voice: str = '',
+                 shop_id: str = ''):
         self.session_id = session_id
         self.mode = mode
         self.language = language
@@ -310,6 +416,7 @@ class LiveAPISession:
         self.socketio = socketio
         self.client_sid = client_sid
         self._shop_search_callback = shop_search_callback  # v5 §5.5: ショップ検索用コールバック
+        self._shop_id = shop_id  # 注文サポートモード: 店舗ID
         self.voice_model = voice_model  # REST TTS用音声モデル名（例: ja-JP-Chirp3-HD-Leda）
         self.live_voice = live_voice    # LiveAPI用音声名（例: Leda）
         self.user_id = user_id  # 長期記憶のプロファイル更新に使用
@@ -399,8 +506,8 @@ class LiveAPISession:
             # lessonモードはショップ検索不要、プロファイル更新のみ
             config["tools"] = [types.Tool(function_declarations=[UPDATE_USER_PROFILE_DECLARATION])]
         else:
-            # conciergeモード等はショップ検索 + プロファイル更新
-            config["tools"] = [types.Tool(function_declarations=[SEARCH_SHOPS_DECLARATION, UPDATE_USER_PROFILE_DECLARATION])]
+            # conciergeモード: メニュー提案 + プロファイル更新
+            config["tools"] = [types.Tool(function_declarations=[RECOMMEND_MENU_DECLARATION, UPDATE_USER_PROFILE_DECLARATION])]
 
         return config
 
@@ -795,6 +902,28 @@ class LiveAPISession:
                         name=fc.name,
                         id=fc.id,
                         response={"result": "検索結果をユーザーに表示しました"}
+                    )]
+                )
+            elif fc.name == "recommend_menu":
+                menu_items = fc.args.get("menu_items", [])
+                logger.info(f"[LiveAPI] recommend_menu呼び出し: {menu_items}")
+
+                # メニューMarkdownから該当アイテムを検索
+                menu_markdown = _load_menu_markdown(self._shop_id or 'dennys')
+                found_items = _search_menu_items(menu_markdown, menu_items)
+                logger.info(f"[LiveAPI] メニュー検索結果: {len(found_items)}品")
+
+                # フロントにメニューカードデータを送信
+                if found_items:
+                    self.socketio.emit('menu_recommend', {
+                        'items': found_items,
+                    }, room=self.client_sid)
+
+                await session.send_tool_response(
+                    function_responses=[types.FunctionResponse(
+                        name=fc.name,
+                        id=fc.id,
+                        response={"result": f"{len(found_items)}品のメニューカードを表示しました"}
                     )]
                 )
             elif fc.name == "update_user_profile":
