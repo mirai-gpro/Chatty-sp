@@ -211,6 +211,7 @@ def _is_menu_available(time_restriction: str) -> bool:
 def _search_menu_items(menu_markdown: str, item_names: list) -> list:
     """メニューMarkdownから指定アイテムを検索してカードデータを返す"""
     results = []
+    seen_menu_numbers = set()
 
     items = menu_markdown.split('\n---')
     for item_block in items:
@@ -236,19 +237,24 @@ def _search_menu_items(menu_markdown: str, item_names: list) -> list:
         if not title:
             continue
 
-        time_restriction = fields.get('販売時間', '')
-        if not _is_menu_available(time_restriction):
-            logger.info(f"[MenuFilter] 販売時間外のためスキップ: {title} ({time_restriction})")
-            continue
-
         for name in item_names:
             if name == title or name in title:
+                time_restriction = fields.get('販売時間', '')
+                if not _is_menu_available(time_restriction):
+                    logger.info(f"[MenuFilter] 販売時間外のためスキップ: {title} ({time_restriction})")
+                    break
+                menu_number = fields.get('メニュー番号', '')
+                if menu_number and menu_number in seen_menu_numbers:
+                    logger.info(f"[MenuFilter] メニュー番号重複のためスキップ: {title} ({menu_number})")
+                    break
+                if menu_number:
+                    seen_menu_numbers.add(menu_number)
                 results.append({
                     'name': title,
                     'image_url': image_url,
                     'price': fields.get('価格', ''),
                     'description': fields.get('説明', ''),
-                    'menu_number': fields.get('メニュー番号', ''),
+                    'menu_number': menu_number,
                     'drink_bar_price': fields.get('ドリンクバー付き', ''),
                     'set_price': fields.get('セット価格', ''),
                     'time_restriction': time_restriction,

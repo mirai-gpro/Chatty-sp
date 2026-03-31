@@ -1,0 +1,686 @@
+[
+  {
+    "menu_number": 6,
+    "menu_name": "カーネルクランチポテト S",
+    "confidence": 95,
+    "reason": "画像には「ポテトS 2倍」と「ポテトS 4.5倍」という表記があり、どちらも「ポテトS」を基準とした商品であるため、リストの中から最も合致する基本メニューとして「カーネルクランチポテト S」を選択しました。",
+    "image_file": "page1_img1.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img1.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 4,
+    "menu_name": "鶏竜田 香味ネギセット",
+    "confidence": 100,
+    "reason": "画像には鶏竜田バーガー、フライドポテト、ドリンクが写っており、これらはセットメニューを構成しています。また、画像左下の緑色のラベルに『鶏竜田 香味ネギ』と明記されているため、このセットが最も合致します。",
+    "image_file": "page1_img100.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img100.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 4,
+    "menu_name": "鶏竜田 香味ネギセット",
+    "confidence": 100,
+    "reason": "画像には『鶏竜田 香味ネギ』と書かれた緑色のラベルがあり、バーガー、ドリンク、フライドポテトが写っているため、セットメニューであると判断しました。",
+    "image_file": "page1_img101.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img101.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 4,
+    "menu_name": "鶏竜田 香味ネギセット",
+    "confidence": 95,
+    "reason": "画像左下の緑色のラベルに『鶏竜田 香味ネギ』と明記されており、写真にはバーガー、ドリンク、ポテトが含まれているため、『セット』が最も合致します。",
+    "image_file": "page1_img102.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img102.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 23,
+    "menu_name": "チキンフィレバーガーよくばりセット",
+    "confidence": 95,
+    "reason": "画像にはチキンフィレバーガー、フライドポテト、ドリンク、そしてオリジナルチキン1ピースが含まれており、下部のテキスト「セット + オリジナルチキン」と上部の「おトクなよくばりセットに！」という記述から、バーガーセットにオリジナルチキンが追加された「よくばりセット」であることが強く示唆されるため、最も合致するメニューは「チキンフィレバーガーよくばりセット」と判断しました。",
+    "image_file": "page1_img103.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img103.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 9,
+    "menu_name": "ポテチキセット",
+    "confidence": 100,
+    "reason": "画像には「ポテチキセット」というメニュー名が明記されており、提供されたメニューリストの9番と完全に一致します。",
+    "image_file": "page1_img106.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img106.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 9,
+    "menu_name": "ポテチキセット",
+    "confidence": 95,
+    "reason": "画像にはフライドポテトとフライドチキン（クリスピーのような形状）が一緒に写っており、「ポテチキセット」がこの組み合わせを最も適切に表すメニュー名であるため。",
+    "image_file": "page1_img107.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img107.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 9,
+    "menu_name": "ポテチキセット",
+    "confidence": 90,
+    "reason": "画像にはフライドポテトとフライドチキン（クリスピータイプ）が一緒に写っており、「ポテチキセット」がポテトとチキンの組み合わせを指すメニューとして最も適切であるため。他のポテチキパックはチキンの個数が画像と一致しない。",
+    "image_file": "page1_img108.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img108.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 9,
+    "menu_name": "ポテチキセット",
+    "confidence": 95,
+    "reason": "KFCのロゴ入りボックスにフライドポテトと骨なしフライドチキン（クリスピーチキン）が入っており、メニューリストの中で「ポテチキセット」がこの組み合わせを最もよく表しているため。",
+    "image_file": "page1_img109.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img109.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 11,
+    "menu_name": "ポテチキ4ピースパック",
+    "confidence": 95,
+    "reason": "画像にはフライドポテトと複数のフライドチキン（骨なしのクリスピーチキンに見える）が1つの箱に入っており、チキンの数は4〜5ピース程度に見えるため、「ポテチキ4ピースパック」が最も合致すると判断しました。",
+    "image_file": "page1_img110.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img110.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 6,
+    "menu_name": "カーネルクランチポテト S",
+    "confidence": 100,
+    "reason": "画像に「カーネルクランチポテト S」と「¥500」の表記があり、メニューリストの項目と完全に一致するため。",
+    "image_file": "page1_img111.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img111.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 6,
+    "menu_name": "カーネルクランチポテト S",
+    "confidence": 100,
+    "reason": "画像に「カーネルクランチポテト S」というメニュー名と価格「¥500」が明記されており、メニューリストの6番と完全に一致するため。",
+    "image_file": "page1_img112.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img112.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 41,
+    "menu_name": "トクトクパック♡ オリジナルチキン 6ピース",
+    "confidence": 98,
+    "reason": "画像には「オリジナルチキン 6ピース」と価格「¥2190」、そして「¥540 おトク！」の表示があり、サイドを3つ選べる旨が記載されています。これは「トクトクパック♡ オリジナルチキン 6ピース」の内容と完全に一致します。",
+    "image_file": "page1_img12.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img12.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 6,
+    "menu_name": "カーネルクランチポテト S",
+    "confidence": 100,
+    "reason": "画像に「カーネルクランチポテト」と明記されており、メニューリストにも同じ名前の項目があるため。サイズは特定できないが、代表としてSサイズを選択した。",
+    "image_file": "page1_img121.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img121.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 8,
+    "menu_name": "カーネルクランチポテト BOX",
+    "confidence": 95,
+    "reason": "画像中央のフライドポテトのバケツが「ポテトS 4.5倍」と表示され、価格が910円であることから、カーネルクランチポテトBOXと完全に一致するため。",
+    "image_file": "page1_img13.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img13.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 35,
+    "menu_name": "カーネルクリスピー",
+    "confidence": 100,
+    "reason": "画像に『カーネルクリスピー ¥290』と明記されており、メニューリストの35番と完全に一致するため。",
+    "image_file": "page1_img14.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img14.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 35,
+    "menu_name": "カーネルクリスピー",
+    "confidence": 100,
+    "reason": "画像の中央に「カーネルクリスピー」というメニュー名と価格がはっきりと表示されており、メニューリストの35番と完全に一致するため。",
+    "image_file": "page1_img15.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img15.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 35,
+    "menu_name": "カーネルクリスピー",
+    "confidence": 100,
+    "reason": "画像の右端に表示されている商品名が「カーネルクリスピー」と明記されており、メニューリストの35番と完全に一致するため。",
+    "image_file": "page1_img17.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img17.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 37,
+    "menu_name": "コールスロー S",
+    "confidence": 100,
+    "reason": "画像には「コールスロー S ¥290」と明記されており、メニューリストの37番「コールスロー S」と完全に一致します。",
+    "image_file": "page1_img18.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img18.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 27,
+    "menu_name": "和風チキンカツバーガーよくばりセット",
+    "confidence": 100,
+    "reason": "画像の中央に「和風チキンカツバーガー よくばりセット ¥1150」と明記されており、メニューリストの27番と完全に一致するため。",
+    "image_file": "page1_img20.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img20.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 30,
+    "menu_name": "オリジナルチキン3ピースよくばりセット",
+    "confidence": 98,
+    "reason": "画像右端に表示されているメニュー名「オリジ...3ピースよくばりセット」が、メニューリストの「オリジナルチキン3ピースよくばりセット」と最も合致するため。",
+    "image_file": "page1_img21.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img21.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 27,
+    "menu_name": "和風チキンカツバーガーよくばりセット",
+    "confidence": 100,
+    "reason": "画像右側に『和風チキンカツバーガーよくばりセット ¥1150』と明記されており、メニューリストの27番と完全に一致するため。",
+    "image_file": "page1_img23.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img23.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 15,
+    "menu_name": "チキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像に「チキンフィレバーガーセット」というメニュー名が明記されており、その写真も表示されているため。",
+    "image_file": "page1_img25.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img25.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 15,
+    "menu_name": "チキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像にはチキンフィレバーガー、フライドポテト、ドリンクが含まれるセットが写っており、バーガーには「元祖」の表記があるため、最も標準的なチキンフィレバーガーセットと判断しました。",
+    "image_file": "page1_img26.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img26.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 15,
+    "menu_name": "チキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像にはチキンフィレバーガー、ポテト、ドリンクが含まれるセットが写っており、「バーガーセット」という文字と「元祖」の表記があるため、最も合致するのは「チキンフィレバーガーセット」と判断しました。",
+    "image_file": "page1_img27.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img27.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 15,
+    "menu_name": "チキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像左側のメニューは、チキンフィレバーガー、フライドポテト、ドリンクのセットであり、下部に「チキンフィレ」の文字が確認できるため、「チキンフィレバーガーセット」に最も合致します。",
+    "image_file": "page1_img28.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img28.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 15,
+    "menu_name": "チキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像左側のメニューは、チキンフィレバーガー、フライドポテト、ドリンクのセットであり、部分的に「チキンフィレ」の文字が見えるため、最も合致すると判断しました。",
+    "image_file": "page1_img29.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img29.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 19,
+    "menu_name": "ダブルチキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像内のメニュー名が「ダブルチキンフィレバーガーセット」と明記されており、提供されたメニューリストの19番と完全に一致するため。",
+    "image_file": "page1_img30.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img30.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 19,
+    "menu_name": "ダブルチキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像に写っているメニューの下部に『ダブルチキンフィレバーガーセット』と明記されており、メニューリストの19番と完全に一致するため。",
+    "image_file": "page1_img31.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img31.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 16,
+    "menu_name": "辛口チキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像に「辛口チキンフィレバーガーセット」のメニュー名が明記されており、その商品が中央に大きく表示されているため。",
+    "image_file": "page1_img32.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img32.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 16,
+    "menu_name": "辛口チキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像には『辛口』の表記があり、チキンバーガー、フライドポテト、ドリンクのセットが写っているため、『辛口チキンフィレバーガーセット』が最も合致します。",
+    "image_file": "page1_img33.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img33.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 16,
+    "menu_name": "辛口チキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像には「辛口」の文字が明記されており、チキンフィレバーガーとフライドポテト、ドリンクのセットが写っているため、最も合致するメニューは「辛口チキンフィレバーガーセット」です。",
+    "image_file": "page1_img34.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img34.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 100,
+    "reason": "画像左側のバーガーに「和風チキンカツ」の文字が確認でき、フライドポテトとドリンクがセットになっているため、メニューリストの「和風チキンカツバーガーセット」と完全に一致します。",
+    "image_file": "page1_img35.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img35.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 95,
+    "reason": "画像左側のバーガーセットは、チキンカツのパティにレタスとソースが挟まっており、「和風チキンカツ」の文字が部分的に確認できます。また、ポテトとドリンクが付属するセットで、価格も880円と表示されており、メニューリストの「和風チキンカツバーガーセット」と完全に一致します。",
+    "image_file": "page1_img36.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img36.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 80,
+    "reason": "画像には「和風チキンカツバーガー」と明記されており、中央のバーガーがそれに該当します。画像には「単品」と「辛口」の表示がありますが、メニューリストには「和風チキンカツバーガー」の単品や辛口の記載がなく、セットメニューのみが提供されています。その中で最も合致するバーガーの種類である「和風チキンカツバーガーセット」を選択しました。",
+    "image_file": "page1_img37.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img37.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 85,
+    "reason": "画像には「和風チキンカツバーガー」という文字が明確に表示されており、メニューリストの20番と一致します。画像には「辛口」の表示と「単品」の価格がありますが、メニューリストには「辛口和風チキンカツバーガー」や「和風チキンカツバーガー」の単品がないため、バーガーの種類が最も合致する20番を選択しました。",
+    "image_file": "page1_img38.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img38.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 17,
+    "menu_name": "チーズチキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像中央に「チーズチキンフィレバーガーセット」のメニュー名と価格が明瞭に表示されており、メニューリストと完全に一致するため。",
+    "image_file": "page1_img39.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img39.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 17,
+    "menu_name": "チーズチキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像にはチーズが挟まったチキンバーガー、フライドポテト、ドリンクが写っており、左下には「チーズ」のアイコンが表示され、上部には「バーガーセット」と記載されているため、メニューリストの中で最も合致する「チーズチキンフィレバーガーセット」を選択しました。",
+    "image_file": "page1_img40.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img40.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 17,
+    "menu_name": "チーズチキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像にはチーズ入りのチキンバーガー、ポテト、ドリンクが写っており、左下の「チーズ」の表記と「セット」の内容が「チーズチキンフィレバーガーセット」に最も合致するため。",
+    "image_file": "page1_img41.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img41.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 17,
+    "menu_name": "チーズチキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像には、チキンフィレ、レタス、チーズ、白いソースが挟まれたバーガーと、ポテト、ドリンクが写っており、これらがセットとして提供されているため、「チーズチキンフィレバーガーセット」が最も合致します。",
+    "image_file": "page1_img42.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img42.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 17,
+    "menu_name": "チーズチキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像のバーガーにはチーズが挟まっており、フライドポテトとドリンクがセットになっているため、メニューリストの中で最も合致します。",
+    "image_file": "page1_img43.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img43.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 17,
+    "menu_name": "チーズチキンフィレバーガーセット",
+    "confidence": 85,
+    "reason": "画像にはチーズが乗ったチキンバーガーが写っており、「チーズ」というラベルと「オリジナルチキン」という文字が確認できます。メニューリストの中で、チーズを含むチキンバーガーとして最も合致するのは「チーズチキンフィレバーガーセット」です。画像は単品ですが、リストにはセットとして提供されています。",
+    "image_file": "page1_img44.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img44.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 17,
+    "menu_name": "チーズチキンフィレバーガーセット",
+    "confidence": 85,
+    "reason": "画像にはチーズが挟まったチキンバーガーが写っており、「チーズ」というラベルも確認できます。メニューリストの中で、チーズを含むチキンバーガーは「チーズチキンフィレバーガーセット」が最も合致します。画像下部の「オリジナルチキン」という表記は、チキンフィレの味付けや種類を指していると考えられます。画像は単品ですが、リストにはセットしか存在しないため、最も近いセットを選びました。",
+    "image_file": "page1_img45.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img45.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 15,
+    "menu_name": "チキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像左上に『チキンフィレバーガーセット』と明記されており、価格も一致しています。",
+    "image_file": "page1_img60.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img60.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 19,
+    "menu_name": "ダブルチキンフィレバーガーセット",
+    "confidence": 98,
+    "reason": "画像には2枚のチキンパティが入ったバーガーとポテト、ドリンクが写っており、「ダブル」の表記があるため、「ダブルチキンフィレバーガーセット」が最も合致します。よくばりセットではない標準的なセットに見えます。",
+    "image_file": "page1_img61.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img61.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 19,
+    "menu_name": "ダブルチキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像には「ダブル」と表示された2枚のチキンフィレが入ったバーガーと、ポテト、ドリンクのセットが写っており、価格も1090円であることから、メニューリストの「ダブルチキンフィレバーガーセット」に最も合致します。",
+    "image_file": "page1_img62.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img62.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 100,
+    "reason": "画像の右側のバーガーセットに「和風」のラベルがあり、見た目も和風チキンカツバーガーの特徴（千切りキャベツ、茶色いソース）と一致するため。",
+    "image_file": "page1_img63.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img63.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 95,
+    "reason": "画像右側のバーガーに「和風」のラベルがあり、チキンカツのような見た目であるため、和風チキンカツバーガーセットと判断しました。",
+    "image_file": "page1_img64.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img64.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 19,
+    "menu_name": "ダブルチキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像には「ダブル」と書かれた2枚のチキンフィレが入ったバーガーが写っており、メニューリストの中で「ダブルチキンフィレバーガー」を含む選択肢が最も合致します。背景にポテトとドリンクの一部が見えるため、「セット」が適切です。",
+    "image_file": "page1_img65.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img65.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 19,
+    "menu_name": "ダブルチキンフィレバーガーセット",
+    "confidence": 95,
+    "reason": "画像には「ダブル」と書かれたラベルがあり、バーガーには2枚のフライドチキンパティが挟まれているため、「ダブルチキンフィレバーガー」が最も合致します。背景にフライドポテトも見えるため、「セット」である可能性が高いです。",
+    "image_file": "page1_img66.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img66.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 100,
+    "reason": "画像の下段中央に「和風チキンカツバーガーセット」の文字と商品写真、価格が明確に表示されているため。",
+    "image_file": "page1_img67.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img67.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 100,
+    "reason": "画像にはバーガー、ポテト、ドリンクのセットが写っており、バーガーには「和風」の文字が明記されています。メニュー名「和風チキンカツバーガーセット」は、この「和風」の表記と、バーガーのチキンカツのような見た目、そしてセットである点に完全に合致します。",
+    "image_file": "page1_img68.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img68.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 95,
+    "reason": "画像には『和風』のラベルが付いたバーガーセットが写っており、バーガーのパティはチキンカツのように見えるため、メニューリストの中で最も合致する『和風チキンカツバーガーセット』を選択しました。",
+    "image_file": "page1_img69.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img69.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 2,
+    "menu_name": "鶏竜田 セット",
+    "confidence": 95,
+    "reason": "画像には鶏竜田バーガーと思われるバーガー、フライドポテト、ドリンクが写っており、これら3点がセットメニューとして提供されているため、「鶏竜田 セット」が最も合致します。バーガーのレタスの形状やチキンパティの見た目も鶏竜田バーガーの特徴と一致します。",
+    "image_file": "page1_img70.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img70.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 2,
+    "menu_name": "鶏竜田 セット",
+    "confidence": 95,
+    "reason": "画像にはハンバーガー、フライドポテト、ドリンクが写っており、これらは「セット」メニューの構成要素です。ハンバーガーの見た目（バンズ、千切りレタス、白いソース）から「鶏竜田バーガー」である可能性が高く、メニューリストの中で最も合致する「鶏竜田 セット」を選択しました。",
+    "image_file": "page1_img71.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img71.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 95,
+    "reason": "画像中央のバーガーに「和風」の表記があり、フライドポテトとドリンクが写っていることから「セット」であることがわかるため、メニューリストの「和風チキンカツバーガーセット」が最も合致します。",
+    "image_file": "page1_img72.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img72.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 20,
+    "menu_name": "和風チキンカツバーガーセット",
+    "confidence": 98,
+    "reason": "画像には「和風」と書かれたチキンカツバーガー、フライドポテト、ドリンクが写っており、価格が850円のセットであることから、「和風チキンカツバーガーセット」が最も合致します。",
+    "image_file": "page1_img73.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img73.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 17,
+    "menu_name": "チーズチキンフィレバーガーセット",
+    "confidence": 100,
+    "reason": "画像中央上部に「チーズチキンフィレバーガーセット」が大きく表示されており、「チーズ」の黄色い帯と価格「¥880」が明記されているため、メニューリストの「17. チーズチキンフィレバーガーセット」と完全に一致します。",
+    "image_file": "page1_img74.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img74.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 21,
+    "menu_name": "オリジナルチキン2ピースセット",
+    "confidence": 95,
+    "reason": "画像にはオリジナルチキン2ピース、ポテト、ドリンクが写っており、「オリジナルチキン2ピースセット」の内容と一致します。",
+    "image_file": "page1_img75.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img75.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 21,
+    "menu_name": "オリジナルチキン2ピースセット",
+    "confidence": 95,
+    "reason": "画像にはオリジナルチキン2ピース、フライドポテト、ドリンクが写っており、これは「オリジナルチキン2ピースセット」の内容と完全に一致します。",
+    "image_file": "page1_img76.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img76.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 21,
+    "menu_name": "オリジナルチキン2ピースセット",
+    "confidence": 95,
+    "reason": "画像にはオリジナルチキン2ピース、フライドポテト、ドリンクが写っており、これは「オリジナルチキン2ピースセット」の内容と完全に一致します。下部に部分的に見える「よくばりセット！」というテキストがありますが、リストにある「よくばりセット」の選択肢は、バーガーが含まれるか、チキンのピース数が3ピースであるため、画像の内容とは合致しません。",
+    "image_file": "page1_img77.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img77.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 21,
+    "menu_name": "オリジナルチキン2ピースセット",
+    "confidence": 95,
+    "reason": "画像にはオリジナルチキン2ピース、フライドポテト、ドリンクが含まれており、これは「オリジナルチキン2ピースセット」の内容と完全に一致します。下部の「よくばりセット！」というテキストは、このセットがそのカテゴリに属することを示す可能性がありますが、メニューリストの中で最も内容に合致する名称は「オリジナルチキン2ピースセット」です。",
+    "image_file": "page1_img78.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img78.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 30,
+    "menu_name": "オリジナルチキン3ピースよくばりセット",
+    "confidence": 90,
+    "reason": "画像中央にオリジナルチキン2ピース、フライドポテト2つ、ドリンク1つが写っており、下部のテキストに「キンも入っている よくばりセット！」と明記されているため、チキンを含む「よくばりセット」であると判断しました。メニューリストの中で最も合致するのは「オリジナルチキン3ピースよくばりセット」です。画像ではチキンが2ピースですが、よくばりセットの構成要素（チキン、複数のサイド、ドリンク）と、下部のテキストが決め手となりました。",
+    "image_file": "page1_img79.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img79.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 46,
+    "menu_name": "ペプシコーラ",
+    "confidence": 100,
+    "reason": "画像には「ドリンク」のセクションがあり、「ペプシコーラ」のロゴと商品名がはっきりと確認できるため。",
+    "image_file": "page1_img8.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img8.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 21,
+    "menu_name": "オリジナルチキン2ピースセット",
+    "confidence": 90,
+    "reason": "画像中央にオリジナルチキン2ピース、フライドポテト、ドリンクが写っており、これは「オリジナルチキン2ピースセット」の内容と完全に一致します。下部の「よくばりセット」というテキストは、プロモーションのキャッチフレーズであり、メニューリストの特定の「よくばりセット」と直接的に結びつくものではないと判断しました。",
+    "image_file": "page1_img80.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img80.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 23,
+    "menu_name": "チキンフィレバーガーよくばりセット",
+    "confidence": 100,
+    "reason": "画像に表示されているメニューのメインタイトルが「チキンフィレバーガーよくばりセット」と完全に一致しています。",
+    "image_file": "page1_img9.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img9.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 6,
+    "menu_name": "カーネルクランチポテト S",
+    "confidence": 98,
+    "reason": "画像に「ポテト S」と明記されており、フライドポテトの写真が写っているため、メニューリストの「カーネルクランチポテト S」が最も合致します。",
+    "image_file": "page1_img90.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img90.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 37,
+    "menu_name": "コールスロー S",
+    "confidence": 100,
+    "reason": "画像には「コールスロー S」というメニュー名と、コールスローのカップがはっきりと写っているため。",
+    "image_file": "page1_img91.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img91.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 34,
+    "menu_name": "ビスケット",
+    "confidence": 95,
+    "reason": "画像の中央に「ビスケット」というメニュー名と、その商品写真がはっきりと写っているため。",
+    "image_file": "page1_img92.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img92.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 35,
+    "menu_name": "カーネルクリスピー",
+    "confidence": 95,
+    "reason": "画像の中央と右側の両方に「クリスピー」と明記されたフライドチキンが写っており、メニューリストの「カーネルクリスピー」に最も合致するため。",
+    "image_file": "page1_img93.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img93.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 36,
+    "menu_name": "チョコパイ",
+    "confidence": 100,
+    "reason": "「チョコパイ」というメニュー名が画像内に複数回（左側のメニューと右側のメニュー）はっきりと表示されており、メニューリストにも合致するため。",
+    "image_file": "page1_img94.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img94.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 2,
+    "menu_name": "鶏竜田 セット",
+    "confidence": 100,
+    "reason": "画像には鶏竜田バーガー、ドリンク、フライドポテトが写っており、左下には「鶏竜田」の文字が見えるため、セットメニューである「鶏竜田 セット」が最も合致します。香味ネギのような具材は見当たりません。",
+    "image_file": "page1_img95.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img95.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 2,
+    "menu_name": "鶏竜田 セット",
+    "confidence": 100,
+    "reason": "画像には「鶏竜田」の文字が見え、ハンバーガー、ドリンク、ポテトが含まれるセットメニューであるため、「鶏竜田 セット」が最も合致します。ハンバーガーの具材に香味ネギは見当たりません。",
+    "image_file": "page1_img96.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img96.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 2,
+    "menu_name": "鶏竜田 セット",
+    "confidence": 95,
+    "reason": "画像には「鶏竜田」という文字があり、メインのバーガーの他にドリンクとポテトが写っているため、「鶏竜田 セット」が最も合致します。バーガーには香味ネギが見当たらないため、「香味ネギ」を含むメニューは除外しました。",
+    "image_file": "page1_img97.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img97.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 2,
+    "menu_name": "鶏竜田 セット",
+    "confidence": 95,
+    "reason": "画像には『鶏竜田』と書かれたバーガー、フライドポテト、ドリンクが写っており、これらは『セット』の内容に合致するため。",
+    "image_file": "page1_img98.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img98.jpg",
+    "status": "ok"
+  },
+  {
+    "menu_number": 4,
+    "menu_name": "鶏竜田 香味ネギセット",
+    "confidence": 100,
+    "reason": "画像には「鶏竜田 香味ネギ」と書かれたバーガー、フライドポテト、ドリンクが写っており、これらは「セット」を構成しているため、メニューリストの中で最も合致するのは「鶏竜田 香味ネギセット」です。",
+    "image_file": "page1_img99.jpg",
+    "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img99.jpg",
+    "status": "ok"
+  }
+]
