@@ -235,13 +235,12 @@ def _search_menu_items(menu_markdown: str, item_names: list) -> list:
         if not title:
             continue
 
-        time_restriction = fields.get('販売時間', '')
-        if not _is_menu_available(time_restriction):
-            logger.info(f"[MenuFilter] 販売時間外のためスキップ: {title} ({time_restriction})")
-            continue
-
         for name in item_names:
             if name == title or name in title:
+                time_restriction = fields.get('販売時間', '')
+                if not _is_menu_available(time_restriction):
+                    logger.info(f"[MenuFilter] 販売時間外のためスキップ: {title} ({time_restriction})")
+                    break
                 results.append({
                     'name': title,
                     'image_url': image_url,
