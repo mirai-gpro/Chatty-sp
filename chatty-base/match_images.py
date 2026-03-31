@@ -139,13 +139,17 @@ def run_matching(shop_id: str, retry_failed: bool = False):
             logger.info("[Match] 失敗画像なし。リトライ不要です。")
             return existing_results
 
-    # 2. Supabase Storageから画像一覧を取得
-    images = list_supabase_images(shop_id)
-
-    # リトライモード: 失敗分だけフィルタ
-    if retry_failed and failed_files:
-        images = [img for img in images if img['file_name'] in failed_files]
-        logger.info(f"[Match] リトライ対象画像: {len(images)}枚")
+    # 2. 画像一覧を取得
+    if retry_failed and existing_results:
+        # リトライモード: 既存jsonからURLを取得（Supabase API不要）
+        images = [
+            {'file_name': r['image_file'], 'url': r['image_url']}
+            for r in existing_results if r['image_file'] in failed_files
+        ]
+        logger.info(f"[Match] 既存jsonからリトライ対象画像: {len(images)}枚")
+    else:
+        # 通常モード: Supabase Storageから取得
+        images = list_supabase_images(shop_id)
 
     # 3. 1枚ずつマッチング
     new_results = []
