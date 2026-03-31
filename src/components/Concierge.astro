@@ -2,6 +2,7 @@
 // Concierge.astro - コンシェルジュモードUI (チャットモードと同様の機能)
 // ★ LAMAvatar コンポーネント追加（仕様書08 セクション6.3）
 import ReservationModal from './ReservationModal.astro';
+import OrderSummaryModal from './OrderSummaryModal.astro';
 import LAMAvatar from './LAMAvatar.astro';
 import AvatarSelector from './AvatarSelector.astro';
 
@@ -87,6 +88,7 @@ const { apiBaseUrl = '' } = Astro.props;
 </div>
 
 <ReservationModal apiBaseUrl={apiBaseUrl} />
+<OrderSummaryModal />
 <AvatarSelector />
 
 <style>
