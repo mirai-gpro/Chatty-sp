@@ -401,6 +401,25 @@ export class CoreController {
       this.isLiveMode = false;
     });
 
+    // ★ メニューカード表示（注文サポートモード）
+    this.socket.on('menu_recommend', (data: any) => {
+      if (!data.items || data.items.length === 0) return;
+      console.log('[Menu] メニューカード受信:', data.items.length, '品');
+
+      document.dispatchEvent(new CustomEvent('displayMenuItems', {
+        detail: { items: data.items, language: this.currentLanguage }
+      }));
+
+      const section = document.getElementById('shopListSection');
+      if (section) section.classList.add('has-shops');
+
+      if (window.innerWidth < 1024) {
+        setTimeout(() => {
+          section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
+    });
+
     // ★ ショップ検索開始（§3.6: 待機アニメーション表示）
     this.socket.on('shop_search_start', () => {
       console.log('[LiveAPI] shop_search_start: 待機アニメーション表示');
@@ -598,7 +617,8 @@ export class CoreController {
         mode: this.currentMode,
         language: this.currentLanguage,
         voice_model: voiceModel,
-        live_voice: liveVoice
+        live_voice: liveVoice,
+        shop_id: this.currentMode === 'concierge' ? 'dennys' : ''
       });
 
       this.isLiveMode = true;
