@@ -17,6 +17,10 @@ import logging
 import struct
 import time
 import httpx
+import re
+from datetime import datetime
+import pytz
+import jpholiday
 from scipy.signal import resample_poly
 import numpy as np
 from google import genai
@@ -138,9 +142,74 @@ def _load_menu_markdown(shop_id: str) -> str:
     return "（メニューデータが利用できません）"
 
 
+def _is_menu_available(time_restriction: str) -> bool:
+    """日本時間の現在時刻でメニューの販売時間を判定する。
+    「開店」「閉店」は時刻不明のため制約なし扱い。
+    複数条件（カンマ区切り）はいずれか1つが該当すれば提供可。
+    """
+    if not time_restriction or time_restriction in ('全時間帯', '終日'):
+        return True
+
+    jst = pytz.timezone('Asia/Tokyo')
+    now = datetime.now(jst)
+    current_time = now.time()
+    weekday = now.weekday()  # 0=月, 6=日
+    is_holiday = jpholiday.is_holiday(now.date())
+    is_weekday = (weekday < 5) and not is_holiday
+
+    def _parse_hhmm(s: str):
+        """'HH:MM' を time オブジェクトに変換。失敗時は None。"""
+        s = s.strip()
+        m = re.match(r'^(\d{1,2}):(\d{2})$', s)
+        if not m:
+            return None
+        from datetime import time as dtime
+        return dtime(int(m.group(1)), int(m.group(2)))
+
+    def _check_single(token: str) -> bool:
+        """単一の販売時間トークンを評価する。"""
+        token = token.strip()
+        # 括弧内の補足（例: (ランチメニュー), (火曜日限定)）を取り出す
+        note_match = re.search(r'\(([^)]+)\)', token)
+        note = note_match.group(1) if note_match else ''
+        token_clean = re.sub(r'\([^)]+\)', '', token).strip()
+
+        # 曜日限定チェック
+        if '火曜日限定' in note and weekday != 1:
+            return False
+        if '水曜日限定' in note and weekday != 2:
+            return False
+
+        # 平日フラグ
+        requires_weekday = token_clean.startswith('平日')
+        if requires_weekday and not is_weekday:
+            return False
+        token_clean = re.sub(r'^平日\s*', '', token_clean)
+
+        # 区切り文字を統一して範囲を分割
+        parts = re.split(r'[-~〜～]', token_clean, maxsplit=1)
+        if len(parts) != 2:
+            return True  # 解釈できない形式は制約なし扱い
+
+        start_str, end_str = parts[0].strip(), parts[1].strip()
+
+        # 「開店」「閉店」は制約なし扱い
+        start_time = None if '開店' in start_str else _parse_hhmm(start_str)
+        end_time = None if '閉店' in end_str else _parse_hhmm(end_str)
+
+        if start_time is not None and current_time < start_time:
+            return False
+        if end_time is not None and current_time >= end_time:
+            return False
+        return True
+
+    # カンマ区切り複合パターン: いずれか1つが True なら提供可
+    tokens = time_restriction.split(',')
+    return any(_check_single(t) for t in tokens)
+
+
 def _search_menu_items(menu_markdown: str, item_names: list) -> list:
     """メニューMarkdownから指定アイテムを検索してカードデータを返す"""
-    import re
     results = []
 
     items = menu_markdown.split('\n---')
@@ -167,6 +236,11 @@ def _search_menu_items(menu_markdown: str, item_names: list) -> list:
         if not title:
             continue
 
+        time_restriction = fields.get('販売時間', '')
+        if not _is_menu_available(time_restriction):
+            logger.info(f"[MenuFilter] 販売時間外のためスキップ: {title} ({time_restriction})")
+            continue
+
         for name in item_names:
             if name == title or name in title:
                 results.append({
@@ -177,7 +251,7 @@ def _search_menu_items(menu_markdown: str, item_names: list) -> list:
                     'menu_number': fields.get('メニュー番号', ''),
                     'drink_bar_price': fields.get('ドリンクバー付き', ''),
                     'set_price': fields.get('セット価格', ''),
-                    'time_restriction': fields.get('販売時間', ''),
+                    'time_restriction': time_restriction,
                 })
                 break
 
