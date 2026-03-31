@@ -107,8 +107,8 @@ def match_image_to_menu(image_url: str, menu_names: list[str], client) -> dict:
         return {"menu_number": 0, "menu_name": "不明", "confidence": 0, "reason": str(e)}
 
 
-def run_matching(shop_id: str):
-    """全画像のマッチングを実行"""
+def run_matching(shop_id: str, retry_failed: bool = False):
+    """全画像のマッチングを実行（retry_failed=Trueで失敗分のみリトライ）"""
     from google import genai
 
     api_key = os.getenv('GEMINI_API_KEY')
@@ -125,26 +125,60 @@ def run_matching(shop_id: str):
         sys.exit(1)
     menu_names = get_menu_names_from_markdown(md_path)
 
+    # 既存結果の読み込み（リトライ用）
+    output_dir = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id)
+    output_path = os.path.join(output_dir, 'image_matches.json')
+    existing_results = []
+    failed_files = set()
+    if retry_failed and os.path.exists(output_path):
+        with open(output_path, 'r', encoding='utf-8') as f:
+            existing_results = json.load(f)
+        failed_files = {r['image_file'] for r in existing_results if r.get('confidence', 0) == 0}
+        logger.info(f"[Match] リトライ対象: {len(failed_files)}枚 ({', '.join(sorted(failed_files))})")
+        if not failed_files:
+            logger.info("[Match] 失敗画像なし。リトライ不要です。")
+            return existing_results
+
     # 2. Supabase Storageから画像一覧を取得
     images = list_supabase_images(shop_id)
 
+    # リトライモード: 失敗分だけフィルタ
+    if retry_failed and failed_files:
+        images = [img for img in images if img['file_name'] in failed_files]
+        logger.info(f"[Match] リトライ対象画像: {len(images)}枚")
+
     # 3. 1枚ずつマッチング
-    results = []
+    new_results = []
     for i, img in enumerate(images):
         logger.info(f"[Match] {i+1}/{len(images)}: {img['file_name']} をマッチング中...")
         match = match_image_to_menu(img['url'], menu_names, client)
         match['image_file'] = img['file_name']
         match['image_url'] = img['url']
         match['status'] = 'ok' if match.get('confidence', 0) >= 80 else 'review'
-        results.append(match)
+        new_results.append(match)
 
         # レート制限対策
-        if (i + 1) % 5 == 0:
-            time.sleep(1)
+        if (i + 1) % 3 == 0:
+            time.sleep(2)
 
-    # 4. 結果を保存
-    output_dir = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id)
-    output_path = os.path.join(output_dir, 'image_matches.json')
+    # 4. 結果をマージ（リトライモード: 失敗分を差し替え）
+    if retry_failed and existing_results:
+        new_by_file = {r['image_file']: r for r in new_results}
+        results = []
+        for r in existing_results:
+            if r['image_file'] in new_by_file:
+                results.append(new_by_file[r['image_file']])
+            else:
+                results.append(r)
+        # 既存になかった新規結果も追加
+        existing_files = {r['image_file'] for r in existing_results}
+        for r in new_results:
+            if r['image_file'] not in existing_files:
+                results.append(r)
+    else:
+        results = new_results
+
+    # 5. 結果を保存
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     logger.info(f"[Match] マッチング結果保存: {output_path}")
@@ -203,15 +237,21 @@ def apply_matches_to_markdown(shop_id: str, results: list[dict]):
 
 def main():
     if len(sys.argv) < 2:
-        print("使い方: python match_images.py <shop_id>")
+        print("使い方: python match_images.py <shop_id> [--retry-failed]")
         print("  例: python match_images.py dennys")
+        print("  例: python match_images.py dennys --retry-failed")
         sys.exit(1)
 
     shop_id = sys.argv[1]
-    logger.info(f"[Match] {shop_id} の画像マッチング開始")
+    retry_failed = '--retry-failed' in sys.argv
+
+    if retry_failed:
+        logger.info(f"[Match] {shop_id} の失敗画像リトライ開始")
+    else:
+        logger.info(f"[Match] {shop_id} の画像マッチング開始")
 
     # マッチング実行
-    results = run_matching(shop_id)
+    results = run_matching(shop_id, retry_failed=retry_failed)
 
     # Markdownに反映
     apply_matches_to_markdown(shop_id, results)
