@@ -1,0 +1,3 @@
+# 開発ツール用依存（Cloud Runにはデプロイしない）
+# extract_menu.py 等のローカルスクリプト用
+pdfplumber==0.11.6
