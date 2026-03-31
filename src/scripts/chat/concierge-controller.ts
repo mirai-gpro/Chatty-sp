@@ -40,6 +40,19 @@ export class ConciergeController extends CoreController {
       });
     }
 
+    // ショップ切り替えプルダウン
+    const shopSelect = query('#shopSelect') as HTMLSelectElement;
+    if (shopSelect) {
+      const savedShop = localStorage.getItem('selectedShop_concierge') || 'dennys';
+      shopSelect.value = savedShop;
+      shopSelect.addEventListener('change', () => {
+        localStorage.setItem('selectedShop_concierge', shopSelect.value);
+        this.terminateLiveSession();
+        this.els.chatArea.innerHTML = '';
+        this.initializeSession();
+      });
+    }
+
     // ★ LAMAvatar連携初期化（仕様書08 セクション7.1）
     this.linkLamAvatar();
   }
