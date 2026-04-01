@@ -135,7 +135,7 @@ def match_image_to_menu(image_url: str, menu_names: list[str], client) -> dict:
 
     try:
         response = client.models.generate_content(
-            model='gemini-2.0-flash-lite',
+            model='gemini-2.0-flash',
             contents=[
                 types.Part.from_uri(file_uri=image_url, mime_type='image/jpeg'),
                 prompt,
