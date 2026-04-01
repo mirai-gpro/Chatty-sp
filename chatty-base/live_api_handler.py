@@ -322,7 +322,9 @@ def build_system_instruction(mode: str, user_profile: dict = None,
 
         # メニューMarkdownを注入（注文サポートモード）
         menu_markdown = _load_menu_markdown(shop_id or 'dennys')
-        prompt = prompt.replace('{menu_data}', menu_markdown)
+        # 選択肢JSONはバックエンド専用 → LLMプロンプトからは除去（トークン節約）
+        menu_for_prompt = re.sub(r'\*\*選択肢:\*\*.*$', '', menu_markdown, flags=re.MULTILINE)
+        prompt = prompt.replace('{menu_data}', menu_for_prompt)
         prompt = prompt.replace('{shop_name}', _get_shop_display_name(shop_id or 'dennys'))
         return prompt
     elif mode == 'lesson':
