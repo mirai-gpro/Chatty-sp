@@ -1078,15 +1078,6 @@ class LiveAPISession:
 
                 # セットメニューの選択肢がある場合 → モーダル表示を要求
                 if choices:
-                    # 選択肢内の各アイテムの画像URLをmd内サイドメニューから取得
-                    for category in choices:
-                        for opt in category.get('options', []):
-                            opt_found = _search_menu_items(menu_markdown, [opt['name']])
-                            if opt_found:
-                                opt['image_url'] = opt_found[0].get('image_url', '')
-                            else:
-                                opt['image_url'] = ''
-
                     self._pending_set_order = {
                         'item_name': item_name,
                         'base_price': price,
