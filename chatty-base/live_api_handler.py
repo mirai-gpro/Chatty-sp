@@ -11,6 +11,7 @@ stt_stream.py の GeminiLiveApp をWebアプリ向けに改変
 
 import asyncio
 import base64
+import json
 import os
 import logging
 import struct
@@ -248,7 +249,15 @@ def _search_menu_items(menu_markdown: str, item_names: list) -> list:
                     break
                 if menu_number:
                     seen_menu_numbers.add(menu_number)
-                results.append({
+                # 選択肢JSONをパース
+                choices_raw = fields.get('選択肢', '')
+                choices = None
+                if choices_raw:
+                    try:
+                        choices = json.loads(choices_raw)
+                    except json.JSONDecodeError:
+                        logger.warning(f"[Menu] 選択肢JSONパース失敗: {title}")
+                item = {
                     'name': title,
                     'image_url': image_url,
                     'price': fields.get('価格', ''),
@@ -257,7 +266,10 @@ def _search_menu_items(menu_markdown: str, item_names: list) -> list:
                     'drink_bar_price': fields.get('ドリンクバー付き', ''),
                     'set_price': fields.get('セット価格', ''),
                     'time_restriction': time_restriction,
-                })
+                }
+                if choices:
+                    item['choices'] = choices
+                results.append(item)
                 break
 
     return results
@@ -1055,39 +1067,78 @@ class LiveAPISession:
                 price = fc.args.get("price", 0)
                 logger.info(f"[LiveAPI] add_to_order: {item_name} x{quantity} ¥{price}")
 
-                # メニューMarkdownから画像URLを取得
+                # メニューMarkdownから画像URL・選択肢を取得
                 image_url = ""
+                choices = None
                 menu_markdown = _load_menu_markdown(self._shop_id or 'dennys')
                 found = _search_menu_items(menu_markdown, [item_name])
                 if found:
                     image_url = found[0].get('image_url', '')
+                    choices = found[0].get('choices')
 
-                # 既存アイテムがあれば数量加算、なければ追加
-                existing = next((o for o in self._current_order if o['name'] == item_name), None)
-                if existing:
-                    existing['quantity'] += quantity
-                else:
-                    self._current_order.append({
-                        'name': item_name,
-                        'price': price,
+                # セットメニューの選択肢がある場合 → モーダル表示を要求
+                if choices:
+                    # 選択肢内の各アイテムの画像URLをmd内サイドメニューから取得
+                    for category in choices:
+                        for opt in category.get('options', []):
+                            opt_found = _search_menu_items(menu_markdown, [opt['name']])
+                            if opt_found:
+                                opt['image_url'] = opt_found[0].get('image_url', '')
+                            else:
+                                opt['image_url'] = ''
+
+                    self._pending_set_order = {
+                        'item_name': item_name,
+                        'base_price': price,
                         'quantity': quantity,
                         'image_url': image_url,
-                    })
+                        'fc_name': fc.name,
+                        'fc_id': fc.id,
+                    }
+                    self.socketio.emit('set_option_required', {
+                        'item_name': item_name,
+                        'base_price': price,
+                        'quantity': quantity,
+                        'image_url': image_url,
+                        'choices': choices,
+                    }, room=self.client_sid)
+                    logger.info(f"[LiveAPI] セット選択肢モーダル表示: {item_name} ({len(choices)}カテゴリ)")
 
-                # フロントに更新を通知
-                total = sum(o['price'] * o['quantity'] for o in self._current_order)
-                self.socketio.emit('order_updated', {
-                    'items': self._current_order,
-                    'total_price': total,
-                }, room=self.client_sid)
+                    # LLMへの応答はユーザー選択完了後に送る
+                    await session.send_tool_response(
+                        function_responses=[types.FunctionResponse(
+                            name=fc.name,
+                            id=fc.id,
+                            response={"result": f"{item_name}のサイド・ドリンクの選択画面を表示しました。ユーザーが選択中です。"}
+                        )]
+                    )
+                else:
+                    # 選択肢なし → 従来通り即追加
+                    existing = next((o for o in self._current_order if o['name'] == item_name), None)
+                    if existing:
+                        existing['quantity'] += quantity
+                    else:
+                        self._current_order.append({
+                            'name': item_name,
+                            'price': price,
+                            'quantity': quantity,
+                            'image_url': image_url,
+                        })
 
-                await session.send_tool_response(
-                    function_responses=[types.FunctionResponse(
-                        name=fc.name,
-                        id=fc.id,
-                        response={"result": f"{item_name}を{quantity}個追加しました。合計{total}円"}
-                    )]
-                )
+                    # フロントに更新を通知
+                    total = sum(o['price'] * o['quantity'] for o in self._current_order)
+                    self.socketio.emit('order_updated', {
+                        'items': self._current_order,
+                        'total_price': total,
+                    }, room=self.client_sid)
+
+                    await session.send_tool_response(
+                        function_responses=[types.FunctionResponse(
+                            name=fc.name,
+                            id=fc.id,
+                            response={"result": f"{item_name}を{quantity}個追加しました。合計{total}円"}
+                        )]
+                    )
             elif fc.name == "show_order_summary":
                 logger.info(f"[LiveAPI] show_order_summary: {len(self._current_order)}品")
 

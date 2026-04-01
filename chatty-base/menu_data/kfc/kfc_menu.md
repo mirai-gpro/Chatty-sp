@@ -26,6 +26,7 @@
 **価格:** ¥950
 **説明:** 鶏竜田バーガーとサイドメニューのセット。
 **販売期間:** 期間限定
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -43,6 +44,7 @@
 **価格:** ¥1000
 **説明:** 鶏竜田 香味ネギバーガーとサイドメニューのセット。
 **販売期間:** 期間限定
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -138,6 +140,7 @@
 **説明:** チキンフィレバーガーのセット
 **単品価格:** ¥440
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -147,6 +150,7 @@
 **説明:** 辛口チキンフィレバーガーのセット
 **単品価格:** ¥470
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -156,6 +160,7 @@
 **説明:** チーズチキンフィレバーガーのセット
 **単品価格:** ¥470
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -165,6 +170,7 @@
 **説明:** ペッパーマヨツイスターのセット
 **単品価格:** ¥380
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -174,6 +180,7 @@
 **説明:** 元祖ダブルチキンフィレバーガーのセット
 **単品価格:** ¥680
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -183,6 +190,7 @@
 **説明:** 和風チキンカツバーガーのセット
 **単品価格:** ¥440
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -191,6 +199,7 @@
 **価格:** ¥1030
 **説明:** オリジナルチキン2ピースのセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -200,6 +209,7 @@
 **説明:** てりやきツイスターのセット
 **単品価格:** ¥380
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -208,6 +218,7 @@
 **価格:** ¥1150
 **説明:** チキンフィレバーガーのよくばりセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -216,6 +227,7 @@
 **価格:** ¥1180
 **説明:** 辛口チキンフィレバーガーのよくばりセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -224,6 +236,7 @@
 **価格:** ¥1180
 **説明:** チーズチキンフィレバーガーのよくばりセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -232,6 +245,7 @@
 **価格:** ¥1390
 **説明:** ダブルチキンフィレバーガーのよくばりセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -240,6 +254,7 @@
 **価格:** ¥1150
 **説明:** 和風チキンカツバーガーのよくばりセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -248,6 +263,7 @@
 **価格:** ¥1090
 **説明:** てりやきツイスターのよくばりセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -256,6 +272,7 @@
 **価格:** ¥1090
 **説明:** ペッパーマヨツイスターのよくばりセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -264,6 +281,7 @@
 **価格:** ¥1330
 **説明:** オリジナルチキン3ピースのよくばりセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -349,6 +367,7 @@
 **価格:** ¥1030
 **説明:** オリジナルチキン2ピースのセット。
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -357,6 +376,7 @@
 **価格:** ¥1330
 **説明:** ペッパーマヨツイスターとオリジナルチキン3ピースが入ったよくばりセット。
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}, {"name": "カーネルクリスピー", "price_diff": 0}, {"name": "ナゲット5ピース", "price_diff": 190}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true}, {"name": "メロンソーダM", "price_diff": 0}, {"name": "レモネードM", "price_diff": 0}, {"name": "ウーロン茶M", "price_diff": 0}, {"name": "挽きたてリッチコーヒー", "price_diff": 0}, {"name": "ペプシコーラL", "price_diff": 50}]}]
 
 ---
 
@@ -454,6 +474,7 @@
 **価格:** ¥590
 **説明:** ナゲットのセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラS", "price_diff": 0, "default": true}, {"name": "なっちゃんすっきりオレンジS", "price_diff": 0}, {"name": "メロンソーダS", "price_diff": 0}]}]
 
 ---
 
@@ -462,6 +483,7 @@
 **価格:** ¥590
 **説明:** オリジナルチキンのセット
 **販売期間:** 常時
+**選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true}, {"name": "コールスローS", "price_diff": 0}, {"name": "ビスケット", "price_diff": 0}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラS", "price_diff": 0, "default": true}, {"name": "なっちゃんすっきりオレンジS", "price_diff": 0}, {"name": "メロンソーダS", "price_diff": 0}]}]
 
 ---
 

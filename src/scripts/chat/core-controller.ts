@@ -466,6 +466,110 @@ export class CoreController {
       overlay?.addEventListener('click', bgClickHandler);
     });
 
+    // ★ セットメニュー選択モーダル表示
+    this.socket.on('set_option_required', (data: any) => {
+      console.log('[Order] セット選択肢モーダル表示:', data.item_name);
+      const overlay = document.getElementById('setOptionModalOverlay');
+      const body = document.getElementById('setModalBody');
+      const title = document.getElementById('setModalTitle');
+      const totalEl = document.getElementById('setModalTotal');
+      const confirmBtn = document.getElementById('setModalConfirm');
+      const closeBtn = document.getElementById('setModalClose');
+
+      if (!overlay || !body || !title || !totalEl || !confirmBtn) return;
+
+      const basePrice = data.base_price || 0;
+      const choices: any[] = data.choices || [];
+      const selections: Record<string, any> = {};
+      let currentTotal = basePrice;
+
+      title.textContent = data.item_name;
+
+      // デフォルト選択を設定
+      choices.forEach((cat: any) => {
+        const defaultOpt = cat.options.find((o: any) => o.default) || cat.options[0];
+        selections[cat.category] = defaultOpt;
+      });
+
+      const updateTotal = () => {
+        currentTotal = basePrice;
+        Object.values(selections).forEach((opt: any) => {
+          currentTotal += opt.price_diff || 0;
+        });
+        totalEl.textContent = `¥${currentTotal.toLocaleString()}`;
+      };
+
+      const renderChoices = () => {
+        body.innerHTML = choices.map((cat: any) => {
+          const optionsHtml = cat.options.map((opt: any) => {
+            const isSelected = selections[cat.category]?.name === opt.name;
+            const imgHtml = opt.image_url
+              ? `<img class="set-option-img" src="${opt.image_url}" alt="${opt.name}" />`
+              : `<div class="set-option-img"></div>`;
+            const diffHtml = opt.price_diff > 0
+              ? `<div class="set-option-diff">+¥${opt.price_diff}</div>`
+              : '';
+            return `<div class="set-option-card${isSelected ? ' selected' : ''}" data-category="${cat.category}" data-name="${opt.name}" data-diff="${opt.price_diff || 0}">${imgHtml}<div class="set-option-name">${opt.name}</div>${diffHtml}</div>`;
+          }).join('');
+          return `<div class="set-category"><div class="set-category-label">${cat.category}を選んでください</div><div class="set-options-grid">${optionsHtml}</div></div>`;
+        }).join('');
+
+        // カード選択イベント
+        body.querySelectorAll('.set-option-card').forEach((card: Element) => {
+          card.addEventListener('click', () => {
+            const category = (card as HTMLElement).dataset.category || '';
+            const name = (card as HTMLElement).dataset.name || '';
+            const diff = parseInt((card as HTMLElement).dataset.diff || '0');
+            const cat = choices.find((c: any) => c.category === category);
+            if (cat) {
+              const opt = cat.options.find((o: any) => o.name === name);
+              if (opt) {
+                selections[category] = opt;
+                updateTotal();
+                renderChoices();
+              }
+            }
+          });
+        });
+      };
+
+      updateTotal();
+      renderChoices();
+      overlay.classList.remove('hidden');
+
+      // 決定ボタン
+      const confirmHandler = () => {
+        const selectionList = Object.entries(selections).map(([category, opt]: [string, any]) => ({
+          category,
+          name: opt.name,
+          price_diff: opt.price_diff || 0,
+        }));
+        this.socket.emit('set_option_selected', {
+          item_name: data.item_name,
+          selections: selectionList,
+          total_price: currentTotal,
+          quantity: data.quantity || 1,
+        });
+        overlay.classList.add('hidden');
+        cleanup();
+      };
+      const closeHandler = () => {
+        overlay.classList.add('hidden');
+        cleanup();
+      };
+      const bgClickHandler = (e: Event) => {
+        if (e.target === overlay) closeHandler();
+      };
+      const cleanup = () => {
+        confirmBtn.removeEventListener('click', confirmHandler);
+        closeBtn?.removeEventListener('click', closeHandler);
+        overlay.removeEventListener('click', bgClickHandler);
+      };
+      confirmBtn.addEventListener('click', confirmHandler);
+      closeBtn?.addEventListener('click', closeHandler);
+      overlay.addEventListener('click', bgClickHandler);
+    });
+
     // ★ ショップ検索開始（§3.6: 待機アニメーション表示）
     this.socket.on('shop_search_start', () => {
       console.log('[LiveAPI] shop_search_start: 待機アニメーション表示');

@@ -3,6 +3,7 @@
 // ★ LAMAvatar コンポーネント追加（仕様書08 セクション6.3）
 import ReservationModal from './ReservationModal.astro';
 import OrderSummaryModal from './OrderSummaryModal.astro';
+import SetOptionModal from './SetOptionModal.astro';
 import LAMAvatar from './LAMAvatar.astro';
 import AvatarSelector from './AvatarSelector.astro';
 
@@ -96,6 +97,7 @@ const { apiBaseUrl = '' } = Astro.props;
 
 <ReservationModal apiBaseUrl={apiBaseUrl} />
 <OrderSummaryModal />
+<SetOptionModal />
 <AvatarSelector />
 
 <style>
