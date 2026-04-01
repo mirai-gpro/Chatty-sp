@@ -28,6 +28,7 @@ export class CoreController {
   protected currentAISpeech = "";
   protected currentMode: 'chat' | 'concierge' | 'lesson' = 'chat';
   protected showTranscriptInInput = true;
+  protected _lastOrderData: any = null;
 
   // ★ LiveAPI状態変数（仕様書02 セクション4.4.2）
   protected isLiveMode = false;
@@ -423,48 +424,38 @@ export class CoreController {
     // ★ 注文更新通知（注文サポートモード）
     this.socket.on('order_updated', (data: any) => {
       console.log('[Order] 注文更新:', data.items?.length, '品, 合計', data.total_price);
+      this._lastOrderData = data;
+      const orderBtn = document.getElementById('orderBtnFloat');
+      const badge = document.getElementById('orderBadge');
+      const itemCount = data.items?.length || 0;
+      if (orderBtn) {
+        if (itemCount > 0) {
+          orderBtn.classList.remove('hidden');
+          if (badge) {
+            badge.textContent = String(itemCount);
+            badge.classList.remove('hidden');
+          }
+        } else {
+          orderBtn.classList.add('hidden');
+        }
+      }
     });
 
     // ★ 注文一覧モーダル表示（注文サポートモード）
     this.socket.on('show_order_summary', (data: any) => {
-      console.log('[Order] 注文一覧表示:', data.items?.length, '品');
-      const overlay = document.getElementById('orderModalOverlay');
-      const body = document.getElementById('orderModalBody');
-      const totalEl = document.getElementById('orderTotalPrice');
-      const closeBtn = document.getElementById('orderModalClose');
-
-      if (!overlay || !body || !totalEl) return;
-
-      const items = data.items || [];
-      const totalPrice = data.total_price || 0;
-
-      if (items.length === 0) {
-        body.innerHTML = '<p class="order-empty">まだ注文がありません</p>';
-      } else {
-        body.innerHTML = items.map((item: any) => {
-          const subtotal = item.price * item.quantity;
-          const imgHtml = item.image_url
-            ? `<div class="order-item-image"><img src="${item.image_url}" alt="${item.name}" /></div>`
-            : `<div class="order-item-image"></div>`;
-          return `<div class="order-item">${imgHtml}<div class="order-item-info"><div class="order-item-name">${item.name}</div><div class="order-item-qty">×${item.quantity}</div></div><div class="order-item-subtotal">¥${subtotal.toLocaleString()}</div></div>`;
-        }).join('');
-      }
-
-      totalEl.textContent = `¥${totalPrice.toLocaleString()}`;
-      overlay.classList.remove('hidden');
-
-      // 閉じるボタン
-      const closeHandler = () => {
-        overlay.classList.add('hidden');
-        closeBtn?.removeEventListener('click', closeHandler);
-        overlay?.removeEventListener('click', bgClickHandler);
-      };
-      const bgClickHandler = (e: Event) => {
-        if (e.target === overlay) closeHandler();
-      };
-      closeBtn?.addEventListener('click', closeHandler);
-      overlay?.addEventListener('click', bgClickHandler);
+      this._lastOrderData = data;
+      this.showOrderSummaryModal(data);
     });
+
+    // ★ 注文一覧ボタンクリック
+    const orderBtn = document.getElementById('orderBtnFloat');
+    if (orderBtn) {
+      orderBtn.addEventListener('click', () => {
+        if (this._lastOrderData) {
+          this.showOrderSummaryModal(this._lastOrderData);
+        }
+      });
+    }
 
     // ★ セットメニュー選択モーダル表示
     this.socket.on('set_option_required', (data: any) => {
@@ -779,6 +770,48 @@ export class CoreController {
       console.error('[LiveAPI] startLiveModeエラー:', error);
       throw error;
     }
+  }
+
+  protected showOrderSummaryModal(data: any): void {
+    console.log('[Order] 注文一覧表示:', data.items?.length, '品');
+    const overlay = document.getElementById('orderModalOverlay');
+    const body = document.getElementById('orderModalBody');
+    const totalEl = document.getElementById('orderTotalPrice');
+    const closeBtn = document.getElementById('orderModalClose');
+
+    if (!overlay || !body || !totalEl) return;
+
+    const items = data.items || [];
+    const totalPrice = data.total_price || 0;
+
+    if (items.length === 0) {
+      body.innerHTML = '<p class="order-empty">まだ注文がありません</p>';
+    } else {
+      body.innerHTML = items.map((item: any) => {
+        const subtotal = item.price * item.quantity;
+        const imgHtml = item.image_url
+          ? `<div class="order-item-image"><img src="${item.image_url}" alt="${item.name}" /></div>`
+          : `<div class="order-item-image"></div>`;
+        const optionsHtml = item.options
+          ? `<div class="order-item-qty">${item.options}</div>`
+          : '';
+        return `<div class="order-item">${imgHtml}<div class="order-item-info"><div class="order-item-name">${item.name}</div><div class="order-item-qty">×${item.quantity}</div>${optionsHtml}</div><div class="order-item-subtotal">¥${subtotal.toLocaleString()}</div></div>`;
+      }).join('');
+    }
+
+    totalEl.textContent = `¥${totalPrice.toLocaleString()}`;
+    overlay.classList.remove('hidden');
+
+    const closeHandler = () => {
+      overlay.classList.add('hidden');
+      closeBtn?.removeEventListener('click', closeHandler);
+      overlay?.removeEventListener('click', bgClickHandler);
+    };
+    const bgClickHandler = (e: Event) => {
+      if (e.target === overlay) closeHandler();
+    };
+    closeBtn?.addEventListener('click', closeHandler);
+    overlay?.addEventListener('click', bgClickHandler);
   }
 
   protected terminateLiveSession(): void {
