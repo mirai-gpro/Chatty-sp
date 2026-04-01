@@ -199,7 +199,7 @@ def extract_menu_markdown(pdf_path: str, shop_id: str, image_urls: dict) -> str:
         for attempt in range(max_retries):
             try:
                 response = client.models.generate_content(
-                    model='gemini-2.5-flash',
+                    model='gemini-1.5-flash',
                     contents=[pdf_part, prompt],
                     config=types.GenerateContentConfig(temperature=0.1),
                 )
