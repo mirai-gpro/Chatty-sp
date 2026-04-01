@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """
-Supabase Storageの画像をGeminiに見せてメニュー名とマッチングする
+ローカル画像をSupabase Storageにアップロードし、Geminiでメニュー名とマッチングする
 
 使い方:
-  python match_images.py dennys
+  python upload_and_match_images.py kfc
+  python upload_and_match_images.py kfc --match-only   (アップロード済みの場合)
 
 環境変数:
   GEMINI_API_KEY: Gemini APIキー
   SUPABASE_URL: Supabase URL
   SUPABASE_SERVICE_KEY: Supabase Service Role Key
 
+入力:
+  menu_data/{shop_id}/images/  — ローカル画像フォルダ
+  menu_data/{shop_id}/{shop_id}_menu.md — メニューMarkdown
+
 出力:
-  menu_data/{shop_id}/image_matches.json  — マッチング結果
-  menu_data/{shop_id}/{shop_id}_menu.md   — 画像URL差し替え済みMarkdown
+  menu_data/{shop_id}/image_matches.json — マッチング結果（手動修正用）
 """
 
 import sys
@@ -38,47 +42,88 @@ def get_menu_names_from_markdown(md_path: str) -> list[str]:
 
     names = []
     for match in re.finditer(r'^###\s+(.+)', content, re.MULTILINE):
-        names.append(match.group(1).strip())
+        name = match.group(1).strip()
+        if name not in names:
+            names.append(name)
 
-    logger.info(f"[Match] Markdownからメニュー名 {len(names)}品 抽出")
+    logger.info(f"[Upload] Markdownからメニュー名 {len(names)}品 抽出（重複除去済み）")
     return names
 
 
-def list_supabase_images(shop_id: str) -> list[str]:
-    """Supabase Storageからshop_idフォルダ内の画像URLリストを取得"""
+def upload_images_to_supabase(shop_id: str) -> list[dict]:
+    """ローカル画像をSupabase Storageにアップロード"""
     from supabase import create_client
 
     url = os.getenv('SUPABASE_URL')
     key = os.getenv('SUPABASE_SERVICE_KEY')
     if not url or not key:
-        logger.error("[Match] SUPABASE_URL/KEY未設定")
+        logger.error("[Upload] SUPABASE_URL/KEY未設定")
         sys.exit(1)
 
     supabase = create_client(url, key)
-    result = supabase.storage.from_('menu').list(shop_id)
+    images_dir = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id, 'images')
 
-    image_urls = []
-    for item in result:
-        name = item.get('name', '')
-        if name.endswith('.jpg') or name.endswith('.png'):
-            public_url = f"{url}/storage/v1/object/public/menu/{shop_id}/{name}"
-            image_urls.append({
-                'file_name': name,
+    if not os.path.isdir(images_dir):
+        logger.error(f"[Upload] 画像フォルダが見つかりません: {images_dir}")
+        sys.exit(1)
+
+    image_files = sorted([
+        f for f in os.listdir(images_dir)
+        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp'))
+    ])
+    logger.info(f"[Upload] ローカル画像: {len(image_files)}枚")
+
+    uploaded = []
+    for i, filename in enumerate(image_files):
+        filepath = os.path.join(images_dir, filename)
+        # 拡張子をjpgに統一
+        base_name = os.path.splitext(filename)[0]
+        storage_path = f"{shop_id}/hp_{base_name}.jpg"
+
+        with open(filepath, 'rb') as f:
+            img_bytes = f.read()
+
+        # 画像をJPEGに変換（webp等の場合）
+        if not filename.lower().endswith(('.jpg', '.jpeg')):
+            try:
+                from PIL import Image
+                import io
+                img = Image.open(io.BytesIO(img_bytes))
+                if img.mode == 'RGBA':
+                    img = img.convert('RGB')
+                buf = io.BytesIO()
+                img.save(buf, format='JPEG', quality=90)
+                img_bytes = buf.getvalue()
+            except Exception as e:
+                logger.warning(f"[Upload] 変換失敗 {filename}: {e}")
+
+        try:
+            supabase.storage.from_('menu').upload(
+                storage_path,
+                img_bytes,
+                file_options={"content-type": "image/jpeg", "upsert": "true"}
+            )
+            public_url = f"{url}/storage/v1/object/public/menu/{storage_path}"
+            uploaded.append({
+                'file_name': f"hp_{base_name}.jpg",
+                'original_name': filename,
                 'url': public_url,
             })
+            logger.info(f"[Upload] {i+1}/{len(image_files)}: {filename} → {storage_path}")
+        except Exception as e:
+            logger.warning(f"[Upload] アップロード失敗 {filename}: {e}")
 
-    logger.info(f"[Match] Supabase Storageから画像 {len(image_urls)}枚 取得")
-    return image_urls
+    logger.info(f"[Upload] アップロード完了: {len(uploaded)}/{len(image_files)}枚")
+    return uploaded
 
 
 def match_image_to_menu(image_url: str, menu_names: list[str], client) -> dict:
     """1枚の画像をGeminiに見せてメニュー名とマッチング"""
     from google.genai import types
 
-    # メニュー名リストを番号付きで構成
     menu_list = '\n'.join([f"{i+1}. {name}" for i, name in enumerate(menu_names)])
 
-    prompt = f"""この画像は飲食店のメニュー写真です。
+    prompt = f"""この画像はファストフード店のメニュー写真です。
 以下のメニューリストの中から、この画像に最も合致するメニューを1つだけ選んでください。
 
 【メニューリスト】
@@ -107,8 +152,8 @@ def match_image_to_menu(image_url: str, menu_names: list[str], client) -> dict:
         return {"menu_number": 0, "menu_name": "不明", "confidence": 0, "reason": str(e)}
 
 
-def run_matching(shop_id: str, retry_failed: bool = False):
-    """全画像のマッチングを実行（retry_failed=Trueで失敗分のみリトライ）"""
+def run_upload_and_match(shop_id: str, match_only: bool = False):
+    """アップロード＋マッチングを実行"""
     from google import genai
 
     api_key = os.getenv('GEMINI_API_KEY')
@@ -125,142 +170,114 @@ def run_matching(shop_id: str, retry_failed: bool = False):
         sys.exit(1)
     menu_names = get_menu_names_from_markdown(md_path)
 
-    # 既存結果の読み込み（リトライ用）
+    # 2. 画像アップロード or 既存結果から取得
     output_dir = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id)
     output_path = os.path.join(output_dir, 'image_matches.json')
-    existing_results = []
-    failed_files = set()
-    if retry_failed and os.path.exists(output_path):
-        with open(output_path, 'r', encoding='utf-8') as f:
-            existing_results = json.load(f)
-        failed_files = {r['image_file'] for r in existing_results if r.get('confidence', 0) == 0}
-        logger.info(f"[Match] リトライ対象: {len(failed_files)}枚 ({', '.join(sorted(failed_files))})")
-        if not failed_files:
-            logger.info("[Match] 失敗画像なし。リトライ不要です。")
-            return existing_results
 
-    # 2. 画像一覧を取得
-    if retry_failed and existing_results:
-        # リトライモード: 既存jsonからURLを取得（Supabase API不要）
+    if match_only and os.path.exists(output_path):
+        # 既存jsonからhp_画像のみ取得
+        with open(output_path, 'r', encoding='utf-8') as f:
+            existing = json.load(f)
         images = [
             {'file_name': r['image_file'], 'url': r['image_url']}
-            for r in existing_results if r['image_file'] in failed_files
+            for r in existing if r['image_file'].startswith('hp_')
         ]
-        logger.info(f"[Match] 既存jsonからリトライ対象画像: {len(images)}枚")
+        logger.info(f"[Match] 既存jsonからHP画像: {len(images)}枚")
+        if not images:
+            logger.info("[Match] HP画像が見つかりません。--match-onlyなしで再実行してください。")
+            return
     else:
-        # 通常モード: Supabase Storageから取得
-        images = list_supabase_images(shop_id)
+        images = upload_images_to_supabase(shop_id)
 
     # 3. 1枚ずつマッチング
-    new_results = []
+    results = []
     for i, img in enumerate(images):
         logger.info(f"[Match] {i+1}/{len(images)}: {img['file_name']} をマッチング中...")
         match = match_image_to_menu(img['url'], menu_names, client)
         match['image_file'] = img['file_name']
         match['image_url'] = img['url']
-        match['status'] = 'ok' if match.get('confidence', 0) >= 80 else 'review'
-        new_results.append(match)
+        match['original_name'] = img.get('original_name', img['file_name'])
+        match['status'] = 'ok' if match.get('confidence', 0) >= 70 else 'review'
+        results.append(match)
 
         # レート制限対策
         if (i + 1) % 3 == 0:
             time.sleep(2)
 
-    # 4. 結果をマージ（リトライモード: 失敗分を差し替え）
-    if retry_failed and existing_results:
-        new_by_file = {r['image_file']: r for r in new_results}
-        results = []
-        for r in existing_results:
-            if r['image_file'] in new_by_file:
-                results.append(new_by_file[r['image_file']])
-            else:
-                results.append(r)
-        # 既存になかった新規結果も追加
-        existing_files = {r['image_file'] for r in existing_results}
-        for r in new_results:
-            if r['image_file'] not in existing_files:
-                results.append(r)
-    else:
-        results = new_results
-
-    # 5. 結果を保存
+    # 4. 結果を保存
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     logger.info(f"[Match] マッチング結果保存: {output_path}")
 
-    # サマリー
+    # 5. サマリー
     ok_count = sum(1 for r in results if r['status'] == 'ok')
     review_count = sum(1 for r in results if r['status'] == 'review')
     logger.info(f"[Match] 完了: {len(results)}枚中 OK={ok_count}, 要レビュー={review_count}")
+
+    # 6. マッチング結果をMarkdownに反映
+    apply_matches_to_markdown(shop_id, results)
 
     return results
 
 
 def apply_matches_to_markdown(shop_id: str, results: list[dict]):
-    """マッチング結果をMarkdownの画像URLに反映"""
+    """マッチング結果をMarkdownの画像URLに反映（confidence >= 70のみ）"""
     md_path = os.path.join(os.path.dirname(__file__), 'menu_data', shop_id, f'{shop_id}_menu.md')
     with open(md_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # メニュー名→正しい画像URLのマッピングを構築（confidence >= 70のみ）
+    # メニュー名→正しい画像URLのマッピングを構築
     name_to_url = {}
     for r in results:
         if r.get('confidence', 0) >= 70 and r.get('menu_name'):
-            name_to_url[r['menu_name']] = r['image_url']
+            # 同名メニューは高い confidence を優先
+            existing = name_to_url.get(r['menu_name'])
+            if not existing or r['confidence'] > existing['confidence']:
+                name_to_url[r['menu_name']] = r
 
     # Markdownの各メニューアイテムの画像URLを差し替え
     lines = content.split('\n')
     new_lines = []
     current_menu_name = None
+    replaced_count = 0
 
     for line in lines:
-        # ### メニュー名 を検出
         title_match = re.match(r'^###\s+(.+)', line)
         if title_match:
             current_menu_name = title_match.group(1).strip()
             new_lines.append(line)
             continue
 
-        # ![alt](url) を検出して差し替え
         img_match = re.match(r'^!\[(.+?)\]\((.+?)\)', line)
         if img_match and current_menu_name and current_menu_name in name_to_url:
-            correct_url = name_to_url[current_menu_name]
+            correct_url = name_to_url[current_menu_name]['image_url']
             new_lines.append(f'![{current_menu_name}]({correct_url})')
+            replaced_count += 1
             continue
 
         new_lines.append(line)
 
     new_content = '\n'.join(new_lines)
 
-    # 保存
     with open(md_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
 
-    replaced = sum(1 for name in name_to_url)
-    logger.info(f"[Match] Markdown画像URL差し替え完了: {replaced}品")
+    logger.info(f"[Match] Markdown画像URL差し替え完了: {replaced_count}品")
 
 
 def main():
     if len(sys.argv) < 2:
-        print("使い方: python match_images.py <shop_id> [--retry-failed]")
-        print("  例: python match_images.py dennys")
-        print("  例: python match_images.py dennys --retry-failed")
+        print("使い方: python upload_and_match_images.py <shop_id> [--match-only]")
+        print("  例: python upload_and_match_images.py kfc")
+        print("  例: python upload_and_match_images.py kfc --match-only")
         sys.exit(1)
 
     shop_id = sys.argv[1]
-    retry_failed = '--retry-failed' in sys.argv
+    match_only = '--match-only' in sys.argv
 
-    if retry_failed:
-        logger.info(f"[Match] {shop_id} の失敗画像リトライ開始")
-    else:
-        logger.info(f"[Match] {shop_id} の画像マッチング開始")
-
-    # マッチング実行
-    results = run_matching(shop_id, retry_failed=retry_failed)
-
-    # Markdownに反映
-    apply_matches_to_markdown(shop_id, results)
-
-    logger.info(f"[Match] 完了！ image_matches.json を確認してください")
+    logger.info(f"[Upload] {shop_id} のHP画像アップロード＋マッチング開始")
+    run_upload_and_match(shop_id, match_only=match_only)
+    logger.info(f"[Upload] 完了！ image_matches.json を確認して手動修正してください")
 
 
 if __name__ == '__main__':
