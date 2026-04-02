@@ -1,0 +1,195 @@
+---
+// SetOptionModal.astro - セットメニュー選択モーダル（サイド・ドリンク選択用）
+---
+
+<div class="set-modal-overlay hidden" id="setOptionModalOverlay">
+  <div class="set-modal">
+    <div class="set-modal-header">
+      <div class="set-modal-title-row">
+        <h2 id="setModalTitle">セット選択</h2>
+        <button class="set-modal-close" id="setModalClose">&times;</button>
+      </div>
+      <div class="set-modal-price-row">
+        <span>合計</span>
+        <span class="set-modal-total" id="setModalTotal">¥0</span>
+      </div>
+    </div>
+    <div class="set-modal-body" id="setModalBody">
+    </div>
+    <div class="set-modal-footer">
+      <button class="set-modal-confirm" id="setModalConfirm">決定</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .set-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.3s;
+  }
+  .set-modal-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .set-modal {
+    background: white;
+    border-radius: 20px;
+    width: 92%;
+    max-width: 520px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(1);
+    transition: transform 0.3s;
+  }
+  .set-modal-overlay.hidden .set-modal {
+    transform: scale(0.9);
+  }
+
+  .set-modal-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .set-modal-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .set-modal-header h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+  }
+  .set-modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .set-modal-close:hover {
+    color: #1f2937;
+  }
+  .set-modal-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 14px;
+    color: #6b7280;
+  }
+  .set-modal-total {
+    font-size: 22px;
+    font-weight: 700;
+    color: #dc2626;
+  }
+
+  .set-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+  }
+
+  :global(.set-category) {
+    margin-bottom: 16px;
+  }
+  :global(.set-category-label) {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6b7280;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  :global(.set-options-grid) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  :global(.set-option-card) {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  :global(.set-option-card:hover) {
+    border-color: #0891b2;
+    background: #f0fdfa;
+  }
+  :global(.set-option-card.selected) {
+    border-color: #0891b2;
+    background: #ecfeff;
+  }
+  :global(.set-option-card.selected::after) {
+    content: '\2713';
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    color: #0891b2;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  :global(.set-option-img) {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    margin: 0 auto 4px;
+    display: block;
+    background: #f3f4f6;
+  }
+  :global(.set-option-name) {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.3;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  :global(.set-option-diff) {
+    font-size: 11px;
+    font-weight: 700;
+    color: #dc2626;
+    margin-top: 2px;
+  }
+
+  .set-modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid #e5e7eb;
+  }
+  .set-modal-confirm {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: #0891b2;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .set-modal-confirm:hover {
+    background: #0e7490;
+  }
+</style>

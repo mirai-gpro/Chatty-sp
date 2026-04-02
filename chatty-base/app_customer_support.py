@@ -1027,6 +1027,52 @@ def handle_live_text_input(data):
     live_session.enqueue_text(text)
 
 
+@socketio.on('set_option_selected')
+def handle_set_option_selected(data):
+    """セットメニューの選択肢をユーザーが決定した時"""
+    client_sid = request.sid
+    live_session = active_live_sessions.get(client_sid)
+    if not live_session or not live_session.is_running:
+        return
+
+    item_name = data.get('item_name', '')
+    selections = data.get('selections', [])  # [{"category": "サイド", "name": "ポテトS"}, ...]
+    total_price = data.get('total_price', 0)
+    quantity = data.get('quantity', 1)
+
+    logger.info(f"[Order] セット選択完了: {item_name} ¥{total_price} - {selections}")
+
+    # 注文リストに追加
+    image_url = ''
+    pending = getattr(live_session, '_pending_set_order', None)
+    if pending:
+        image_url = pending.get('image_url', '')
+
+    # 選択内容をメニュー名に付記
+    selection_text = ', '.join([f"{s['name']}" for s in selections])
+    order_item = {
+        'name': item_name,
+        'price': total_price,
+        'quantity': quantity,
+        'image_url': image_url,
+        'options': selection_text,
+    }
+
+    existing = next((o for o in live_session._current_order if o['name'] == item_name), None)
+    if existing:
+        existing['quantity'] += quantity
+        existing['price'] = total_price
+        existing['options'] = selection_text
+    else:
+        live_session._current_order.append(order_item)
+
+    total = sum(o['price'] * o['quantity'] for o in live_session._current_order)
+    emit('order_updated', {
+        'items': live_session._current_order,
+        'total_price': total,
+    })
+
+
 # ========================================
 # WebSocket Streaming STT
 # ========================================

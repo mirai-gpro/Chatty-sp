@@ -28,6 +28,7 @@ export class CoreController {
   protected currentAISpeech = "";
   protected currentMode: 'chat' | 'concierge' | 'lesson' = 'chat';
   protected showTranscriptInInput = true;
+  protected _lastOrderData: any = null;
 
   // ★ LiveAPI状態変数（仕様書02 セクション4.4.2）
   protected isLiveMode = false;
@@ -423,47 +424,141 @@ export class CoreController {
     // ★ 注文更新通知（注文サポートモード）
     this.socket.on('order_updated', (data: any) => {
       console.log('[Order] 注文更新:', data.items?.length, '品, 合計', data.total_price);
+      this._lastOrderData = data;
+      const orderBtn = document.getElementById('orderBtnFloat');
+      const badge = document.getElementById('orderBadge');
+      const itemCount = data.items?.length || 0;
+      if (orderBtn) {
+        if (itemCount > 0) {
+          orderBtn.classList.remove('hidden');
+          if (badge) {
+            badge.textContent = String(itemCount);
+            badge.classList.remove('hidden');
+          }
+        } else {
+          orderBtn.classList.add('hidden');
+        }
+      }
     });
 
     // ★ 注文一覧モーダル表示（注文サポートモード）
     this.socket.on('show_order_summary', (data: any) => {
-      console.log('[Order] 注文一覧表示:', data.items?.length, '品');
-      const overlay = document.getElementById('orderModalOverlay');
-      const body = document.getElementById('orderModalBody');
-      const totalEl = document.getElementById('orderTotalPrice');
-      const closeBtn = document.getElementById('orderModalClose');
+      this._lastOrderData = data;
+      this.showOrderSummaryModal(data);
+    });
 
-      if (!overlay || !body || !totalEl) return;
+    // ★ 注文一覧ボタンクリック
+    const orderBtn = document.getElementById('orderBtnFloat');
+    if (orderBtn) {
+      orderBtn.addEventListener('click', () => {
+        if (this._lastOrderData) {
+          this.showOrderSummaryModal(this._lastOrderData);
+        }
+      });
+    }
 
-      const items = data.items || [];
-      const totalPrice = data.total_price || 0;
+    // ★ セットメニュー選択モーダル表示
+    this.socket.on('set_option_required', (data: any) => {
+      console.log('[Order] セット選択肢モーダル表示:', data.item_name);
+      const overlay = document.getElementById('setOptionModalOverlay');
+      const body = document.getElementById('setModalBody');
+      const title = document.getElementById('setModalTitle');
+      const totalEl = document.getElementById('setModalTotal');
+      const confirmBtn = document.getElementById('setModalConfirm');
+      const closeBtn = document.getElementById('setModalClose');
 
-      if (items.length === 0) {
-        body.innerHTML = '<p class="order-empty">まだ注文がありません</p>';
-      } else {
-        body.innerHTML = items.map((item: any) => {
-          const subtotal = item.price * item.quantity;
-          const imgHtml = item.image_url
-            ? `<div class="order-item-image"><img src="${item.image_url}" alt="${item.name}" /></div>`
-            : `<div class="order-item-image"></div>`;
-          return `<div class="order-item">${imgHtml}<div class="order-item-info"><div class="order-item-name">${item.name}</div><div class="order-item-qty">×${item.quantity}</div></div><div class="order-item-subtotal">¥${subtotal.toLocaleString()}</div></div>`;
+      if (!overlay || !body || !title || !totalEl || !confirmBtn) return;
+
+      const basePrice = data.base_price || 0;
+      const choices: any[] = data.choices || [];
+      const selections: Record<string, any> = {};
+      let currentTotal = basePrice;
+
+      title.textContent = data.item_name;
+
+      // デフォルト選択を設定
+      choices.forEach((cat: any) => {
+        const defaultOpt = cat.options.find((o: any) => o.default) || cat.options[0];
+        selections[cat.category] = defaultOpt;
+      });
+
+      const updateTotal = () => {
+        currentTotal = basePrice;
+        Object.values(selections).forEach((opt: any) => {
+          currentTotal += opt.price_diff || 0;
+        });
+        totalEl.textContent = `¥${currentTotal.toLocaleString()}`;
+      };
+
+      const renderChoices = () => {
+        body.innerHTML = choices.map((cat: any) => {
+          const optionsHtml = cat.options.map((opt: any) => {
+            const isSelected = selections[cat.category]?.name === opt.name;
+            const imgHtml = opt.image_url
+              ? `<img class="set-option-img" src="${opt.image_url}" alt="${opt.name}" />`
+              : `<div class="set-option-img"></div>`;
+            const diffHtml = opt.price_diff > 0
+              ? `<div class="set-option-diff">+¥${opt.price_diff}</div>`
+              : '';
+            return `<div class="set-option-card${isSelected ? ' selected' : ''}" data-category="${cat.category}" data-name="${opt.name}" data-diff="${opt.price_diff || 0}">${imgHtml}<div class="set-option-name">${opt.name}</div>${diffHtml}</div>`;
+          }).join('');
+          return `<div class="set-category"><div class="set-category-label">${cat.category}を選んでください</div><div class="set-options-grid">${optionsHtml}</div></div>`;
         }).join('');
-      }
 
-      totalEl.textContent = `¥${totalPrice.toLocaleString()}`;
+        // カード選択イベント
+        body.querySelectorAll('.set-option-card').forEach((card: Element) => {
+          card.addEventListener('click', () => {
+            const category = (card as HTMLElement).dataset.category || '';
+            const name = (card as HTMLElement).dataset.name || '';
+            const diff = parseInt((card as HTMLElement).dataset.diff || '0');
+            const cat = choices.find((c: any) => c.category === category);
+            if (cat) {
+              const opt = cat.options.find((o: any) => o.name === name);
+              if (opt) {
+                selections[category] = opt;
+                updateTotal();
+                renderChoices();
+              }
+            }
+          });
+        });
+      };
+
+      updateTotal();
+      renderChoices();
       overlay.classList.remove('hidden');
 
-      // 閉じるボタン
+      // 決定ボタン
+      const confirmHandler = () => {
+        const selectionList = Object.entries(selections).map(([category, opt]: [string, any]) => ({
+          category,
+          name: opt.name,
+          price_diff: opt.price_diff || 0,
+        }));
+        this.socket.emit('set_option_selected', {
+          item_name: data.item_name,
+          selections: selectionList,
+          total_price: currentTotal,
+          quantity: data.quantity || 1,
+        });
+        overlay.classList.add('hidden');
+        cleanup();
+      };
       const closeHandler = () => {
         overlay.classList.add('hidden');
-        closeBtn?.removeEventListener('click', closeHandler);
-        overlay?.removeEventListener('click', bgClickHandler);
+        cleanup();
       };
       const bgClickHandler = (e: Event) => {
         if (e.target === overlay) closeHandler();
       };
+      const cleanup = () => {
+        confirmBtn.removeEventListener('click', confirmHandler);
+        closeBtn?.removeEventListener('click', closeHandler);
+        overlay.removeEventListener('click', bgClickHandler);
+      };
+      confirmBtn.addEventListener('click', confirmHandler);
       closeBtn?.addEventListener('click', closeHandler);
-      overlay?.addEventListener('click', bgClickHandler);
+      overlay.addEventListener('click', bgClickHandler);
     });
 
     // ★ ショップ検索開始（§3.6: 待機アニメーション表示）
@@ -675,6 +770,48 @@ export class CoreController {
       console.error('[LiveAPI] startLiveModeエラー:', error);
       throw error;
     }
+  }
+
+  protected showOrderSummaryModal(data: any): void {
+    console.log('[Order] 注文一覧表示:', data.items?.length, '品');
+    const overlay = document.getElementById('orderModalOverlay');
+    const body = document.getElementById('orderModalBody');
+    const totalEl = document.getElementById('orderTotalPrice');
+    const closeBtn = document.getElementById('orderModalClose');
+
+    if (!overlay || !body || !totalEl) return;
+
+    const items = data.items || [];
+    const totalPrice = data.total_price || 0;
+
+    if (items.length === 0) {
+      body.innerHTML = '<p class="order-empty">まだ注文がありません</p>';
+    } else {
+      body.innerHTML = items.map((item: any) => {
+        const subtotal = item.price * item.quantity;
+        const imgHtml = item.image_url
+          ? `<div class="order-item-image"><img src="${item.image_url}" alt="${item.name}" /></div>`
+          : `<div class="order-item-image"></div>`;
+        const optionsHtml = item.options
+          ? `<div class="order-item-qty">${item.options}</div>`
+          : '';
+        return `<div class="order-item">${imgHtml}<div class="order-item-info"><div class="order-item-name">${item.name}</div><div class="order-item-qty">×${item.quantity}</div>${optionsHtml}</div><div class="order-item-subtotal">¥${subtotal.toLocaleString()}</div></div>`;
+      }).join('');
+    }
+
+    totalEl.textContent = `¥${totalPrice.toLocaleString()}`;
+    overlay.classList.remove('hidden');
+
+    const closeHandler = () => {
+      overlay.classList.add('hidden');
+      closeBtn?.removeEventListener('click', closeHandler);
+      overlay?.removeEventListener('click', bgClickHandler);
+    };
+    const bgClickHandler = (e: Event) => {
+      if (e.target === overlay) closeHandler();
+    };
+    closeBtn?.addEventListener('click', closeHandler);
+    overlay?.addEventListener('click', bgClickHandler);
   }
 
   protected terminateLiveSession(): void {
