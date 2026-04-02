@@ -12,36 +12,36 @@
 
 ---
 
-### 鶏竜田バーガー
-![鶏竜田バーガー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_5.jpg)
+### 鶏竜田（とりたつた）バーガー
+![鶏竜田（とりたつた）バーガー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_5.jpg)
 **価格:** ¥540
-**説明:** 復活した鶏竜田バーガー。
+**説明:** 復活した鶏竜田（とりたつた）バーガー。
 **販売期間:** 期間限定
 **おすすめ:** ★
 
 ---
 
-### 鶏竜田 セット
-![鶏竜田 セット](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_6.jpg)
+### 鶏竜田（とりたつた） セット
+![鶏竜田（とりたつた） セット](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_6.jpg)
 **価格:** ¥950
-**説明:** 鶏竜田バーガーとサイドメニューのセット。
+**説明:** 鶏竜田（とりたつた）バーガーとサイドメニューのセット。
 **販売期間:** 期間限定
 **選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_16.jpg"}, {"name": "コールスローS", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_23.jpg"}, {"name": "ビスケット", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_21.jpg"}, {"name": "カーネルクリスピー", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_19.jpg"}, {"name": "ナゲット5ピース", "price_diff": 190, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_22.jpg"}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_26.jpg"}, {"name": "メロンソーダM", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img61.jpg"}, {"name": "レモネードM", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img62.jpg"}, {"name": "ウーロン茶M", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img66.jpg"}, {"name": "挽きたてリッチコーヒー", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img68.jpg"}, {"name": "ペプシコーラL", "price_diff": 50, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_26.jpg"}]}]
 ---
 
-### 鶏竜田 香味ネギバーガー
-![鶏竜田 香味ネギバーガー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_8.jpg)
+### 鶏竜田（とりたつた） 香味ネギバーガー
+![鶏竜田（とりたつた） 香味ネギバーガー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_8.jpg)
 **価格:** ¥590
-**説明:** 新登場の鶏竜田 香味ネギバーガー。
+**説明:** 新登場の鶏竜田（とりたつた） 香味ネギバーガー。
 **販売期間:** 期間限定
 **おすすめ:** ★
 
 ---
 
-### 鶏竜田 香味ネギセット
-![鶏竜田 香味ネギセット](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_9.jpg)
+### 鶏竜田（とりたつた） 香味ネギセット
+![鶏竜田（とりたつた） 香味ネギセット](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_9.jpg)
 **価格:** ¥1000
-**説明:** 鶏竜田 香味ネギバーガーとサイドメニューのセット。
+**説明:** 鶏竜田（とりたつた） 香味ネギバーガーとサイドメニューのセット。
 **販売期間:** 期間限定
 **選択肢:** [{"category": "サイド", "options": [{"name": "カーネルクランチポテトS", "price_diff": 0, "default": true, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_campaign_16.jpg"}, {"name": "コールスローS", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_23.jpg"}, {"name": "ビスケット", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_21.jpg"}, {"name": "カーネルクリスピー", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_19.jpg"}, {"name": "ナゲット5ピース", "price_diff": 190, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_22.jpg"}]}, {"category": "ドリンク", "options": [{"name": "ペプシコーラM", "price_diff": 0, "default": true, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_26.jpg"}, {"name": "メロンソーダM", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img61.jpg"}, {"name": "レモネードM", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img62.jpg"}, {"name": "ウーロン茶M", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img66.jpg"}, {"name": "挽きたてリッチコーヒー", "price_diff": 0, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/page1_img68.jpg"}, {"name": "ペプシコーラL", "price_diff": 50, "image_url": "https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/kfc/hp_burger_26.jpg"}]}]
 ---
