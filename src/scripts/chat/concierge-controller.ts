@@ -18,6 +18,7 @@ export class ConciergeController extends CoreController {
 
     // コンシェルジュモードに設定
     this.currentMode = 'concierge';
+    this.showTranscriptInInput = false;
     this.init();
   }
 
@@ -39,6 +40,19 @@ export class ConciergeController extends CoreController {
       });
     }
 
+    // ショップ切り替えプルダウン
+    const shopSelect = query('#shopSelect') as HTMLSelectElement;
+    if (shopSelect) {
+      const savedShop = localStorage.getItem('selectedShop_concierge') || 'dennys';
+      shopSelect.value = savedShop;
+      shopSelect.addEventListener('change', () => {
+        localStorage.setItem('selectedShop_concierge', shopSelect.value);
+        this.terminateLiveSession();
+        this.els.chatArea.innerHTML = '';
+        this.initializeSession();
+      });
+    }
+
     // ★ LAMAvatar連携初期化（仕様書08 セクション7.1）
     this.linkLamAvatar();
   }
@@ -51,6 +65,12 @@ export class ConciergeController extends CoreController {
       try {
         await controller.initialize(this.liveAudioManager);
         console.log('[ConciergeController] LAMAvatar連携完了');
+
+        // ★ 案B: アバター準備完了をサーバーに通知 → greeting発火を許可
+        if (this.socket && this.socket.connected) {
+          this.socket.emit('greeting_trigger');
+          console.log('[ConciergeController] greeting_trigger送信');
+        }
       } catch (e) {
         console.error('[ConciergeController] LAMAvatar連携エラー:', e);
       }
@@ -124,8 +144,6 @@ export class ConciergeController extends CoreController {
       if (is_final) {
         this.handleStreamingSTTComplete(text);
         this.currentAISpeech = "";
-      } else {
-        this.els.userInput.value = text;
       }
     });
   }
@@ -398,7 +416,7 @@ export class ConciergeController extends CoreController {
         return;
     }
 
-    this.els.userInput.value = transcript;
+    if (this.showTranscriptInInput) this.els.userInput.value = transcript;
     this.addMessage('user', transcript);
     
     // 短すぎる入力チェック
@@ -460,22 +478,19 @@ export class ConciergeController extends CoreController {
 
   // ========================================
   // 🎯 コンシェルジュモード専用: メッセージ送信処理
+  // （LiveAPIセッション経由でテキスト送信 — lessonモード同様）
   // ========================================
   protected async sendMessage() {
-    let firstAckPromise: Promise<void> | null = null; 
     this.unlockAudioParams();
     const message = this.els.userInput.value.trim();
     if (!message || this.isProcessing) return;
-    
-    const currentSessionId = this.sessionId;
-    const isTextInput = !this.isFromVoiceInput;
-    
-    this.isProcessing = true; 
+
+    this.isProcessing = true;
     this.els.sendBtn.disabled = true;
-    this.els.micBtn.disabled = true; 
+    this.els.micBtn.disabled = true;
     this.els.userInput.disabled = true;
 
-    // ✅ テキスト入力時も「はい」だけに簡略化
+    // テキスト入力時の処理
     if (!this.isFromVoiceInput) {
       this.addMessage('user', message);
       const textLength = message.trim().replace(/\s+/g, '').length;
@@ -486,205 +501,22 @@ export class ConciergeController extends CoreController {
            this.resetInputState();
            return;
       }
-      
+
       this.els.userInput.value = '';
-      
-      // ✅ 修正: 即答を「はい」だけに
-      const ackText = this.t('ackYes');
-      this.currentAISpeech = ackText;
-      this.addMessage('assistant', ackText);
-      
-      if (this.isTTSEnabled && !isTextInput) {
-        try {
-          const preGeneratedAudio = this.preGeneratedAcks.get(ackText);
-          if (preGeneratedAudio && this.isUserInteracted) {
-            firstAckPromise = new Promise<void>((resolve) => {
-              this.lastAISpeech = this.normalizeText(ackText);
-              this.ttsPlayer.src = `data:audio/mp3;base64,${preGeneratedAudio}`;
-              this.ttsPlayer.onended = () => resolve();
-              this.ttsPlayer.play().catch(_e => resolve());
-            });
-          } else { 
-            firstAckPromise = this.speakTextGCP(ackText, false); 
-          }
-        } catch (_e) {}
-      }   
-      if (firstAckPromise) await firstAckPromise;
-      
-      // ✅ 修正: オウム返しパターンを削除
-      // (generateFallbackResponse, additionalResponse の呼び出しを削除)
     }
 
     this.isFromVoiceInput = false;
-    
-    // ✅ 待機アニメーションは6.5秒後に表示(LLM送信直前にタイマースタート)
-    if (this.waitOverlayTimer) clearTimeout(this.waitOverlayTimer);
-    let responseReceived = false;
-    
-    // タイマーセットをtry直前に移動(即答処理の後)
-    this.waitOverlayTimer = window.setTimeout(() => { 
-      if (!responseReceived) {
-        this.showWaitOverlay(); 
-      }
-    }, 6500);
 
-    try {
-      const response = await fetch(`${this.apiBase}/api/chat`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ 
-          session_id: currentSessionId, 
-          message: message, 
-          stage: this.currentStage, 
-          language: this.currentLanguage,
-          mode: this.currentMode
-        }) 
+    // LiveAPIセッション経由でテキスト送信
+    if (this.isLiveMode && this.socket?.connected) {
+      this.socket.emit('live_text_input', {
+        session_id: this.sessionId,
+        text: message
       });
-      const data = await response.json();
-      
-      // ✅ レスポンス到着フラグを立てる
-      responseReceived = true;
-      
-      if (this.sessionId !== currentSessionId) return;
-      
-      // ✅ タイマーをクリアしてアニメーションを非表示
-      if (this.waitOverlayTimer) {
-        clearTimeout(this.waitOverlayTimer);
-        this.waitOverlayTimer = null;
-      }
-      this.hideWaitOverlay();
-      this.currentAISpeech = data.response;
-      this.addMessage('assistant', data.response, data.summary);
-      
-      if (!isTextInput && this.isTTSEnabled) {
-        this.stopCurrentAudio();
-      }
-      
-      if (data.shops && data.shops.length > 0) {
-        this.currentShops = data.shops;
-        this.els.reservationBtn.classList.add('visible');
-        this.els.userInput.value = '';
-        document.dispatchEvent(new CustomEvent('displayShops', { 
-          detail: { shops: data.shops, language: this.currentLanguage } 
-        }));
-        
-        const section = document.getElementById('shopListSection');
-        if (section) section.classList.add('has-shops');
-        if (window.innerWidth < 1024) {
-          setTimeout(() => {
-            const shopSection = document.getElementById('shopListSection');
-            if (shopSection) shopSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-           }, 300);
-        }
-        
-        (async () => {
-          try {
-            this.isAISpeaking = true;
-            if (this.isRecording) { this.stopStreamingSTT(); }
-
-            // ── レスポンス解析 & TTS合成を即座に並行開始 ──
-            const lines = data.response.split('\n\n');
-            let introText = "";
-            let shopLines = lines;
-            if (lines[0].includes('ご希望に合うお店') && lines[0].includes('ご紹介します')) {
-              introText = lines[0];
-              shopLines = lines.slice(1);
-            }
-
-            const shopLangConfig = this.LANGUAGE_CODE_MAP[this.currentLanguage];
-            const ttsEnabled = this.isTTSEnabled && this.isUserInteracted && !isTextInput;
-
-            // ★ 各店舗のTTS合成を個別に並行開始（イントロ再生を待たない）
-            const shopAudioPromises: Promise<string | null>[] = [];
-            if (shopLines.length > 0 && ttsEnabled) {
-              for (const shopLine of shopLines) {
-                const cleanText = this.stripMarkdown(shopLine);
-                if (!cleanText) continue;
-                shopAudioPromises.push(
-                  fetch(`${this.apiBase}/api/tts/synthesize`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      text: cleanText, language_code: shopLangConfig.tts, voice_name: shopLangConfig.voice
-                    })
-                  })
-                  .then(r => r.json())
-                  .then(result => result.success ? `data:audio/mp3;base64,${result.audio}` : null)
-                  .catch(() => null)
-                );
-              }
-            }
-
-            // ── イントロ再生（TTS合成は裏で進行中） ──
-            await this.speakTextGCP(this.t('ttsIntro'), true, false, isTextInput);
-
-            if (introText && ttsEnabled) {
-              const preGeneratedIntro = this.preGeneratedAcks.get(introText);
-              if (preGeneratedIntro) {
-                await new Promise<void>((resolve) => {
-                  this.lastAISpeech = this.normalizeText(introText);
-                  this.ttsPlayer.src = `data:audio/mp3;base64,${preGeneratedIntro}`;
-                  this.ttsPlayer.onended = () => resolve();
-                  this.ttsPlayer.play();
-                });
-              } else {
-                await this.speakTextGCP(introText, false, false, isTextInput);
-              }
-            }
-
-            // ── 各店舗を順番に再生（音声準備でき次第） ──
-            for (let i = 0; i < shopAudioPromises.length; i++) {
-              const audio = await shopAudioPromises[i];
-              if (!audio) continue;
-
-              const shopText = this.stripMarkdown(shopLines[i]);
-              this.lastAISpeech = this.normalizeText(shopText);
-
-              if (i > 0) await new Promise(r => setTimeout(r, 300));
-
-              this.ttsPlayer.src = audio;
-              await new Promise<void>((resolve) => {
-                this.ttsPlayer.onended = () => {
-                  this.els.voiceStatus.innerHTML = this.t('voiceStatusStopped');
-                  this.els.voiceStatus.className = 'voice-status stopped';
-                  resolve();
-                };
-                this.els.voiceStatus.innerHTML = this.t('voiceStatusSpeaking');
-                this.els.voiceStatus.className = 'voice-status speaking';
-                this.ttsPlayer.play();
-              });
-            }
-
-            this.isAISpeaking = false;
-          } catch (_e) { this.isAISpeaking = false; }
-        })();
-      } else {
-        if (data.response) {
-          const extractedShops = this.extractShopsFromResponse(data.response);
-          if (extractedShops.length > 0) {
-            this.currentShops = extractedShops;
-            this.els.reservationBtn.classList.add('visible');
-            document.dispatchEvent(new CustomEvent('displayShops', {
-              detail: { shops: extractedShops, language: this.currentLanguage }
-            }));
-            const section = document.getElementById('shopListSection');
-            if (section) section.classList.add('has-shops');
-            // ★並行処理フローを適用
-            this.speakResponseInChunks(data.response, isTextInput);
-          } else {
-            // ★並行処理フローを適用
-            this.speakResponseInChunks(data.response, isTextInput);
-          }
-        }
-      }
-    } catch (error) { 
-      console.error('送信エラー:', error);
-      this.hideWaitOverlay(); 
-      this.showError('メッセージの送信に失敗しました。'); 
-    } finally { 
-      this.resetInputState();
-      this.els.userInput.blur();
     }
+
+    // 応答はLiveAPIリスナー（ai_transcript, live_audio, turn_complete）で処理
+    this.resetInputState();
   }
 
 }

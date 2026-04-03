@@ -10,12 +10,17 @@ stt_stream.py の GeminiLiveApp をWebアプリ向けに改変
 """
 
 import asyncio
+import threading
 import base64
 import os
 import logging
 import struct
 import time
 import httpx
+import re
+from datetime import datetime
+import pytz
+import jpholiday
 from scipy.signal import resample_poly
 import numpy as np
 from google import genai
@@ -25,7 +30,7 @@ from google.cloud import texttospeech
 logger = logging.getLogger(__name__)
 
 # A2E (Audio2Expression) サービス設定
-A2E_SERVICE_URL = os.getenv("A2E_SERVICE_URL", "https://audio2exp-service-417509577941.us-central1.run.app")
+A2E_SERVICE_URL = os.getenv("A2E_SERVICE_URL", "https://audio2exp-service-281169010109.us-central1.run.app")
 # プロトコルが省略された場合に自動補完
 if A2E_SERVICE_URL and not A2E_SERVICE_URL.startswith("http"):
     A2E_SERVICE_URL = f"https://{A2E_SERVICE_URL}"
@@ -137,10 +142,76 @@ def _load_menu_markdown(shop_id: str) -> str:
     return "（メニューデータが利用できません）"
 
 
+def _is_menu_available(time_restriction: str) -> bool:
+    """日本時間の現在時刻でメニューの販売時間を判定する。
+    「開店」「閉店」は時刻不明のため制約なし扱い。
+    複数条件（カンマ区切り）はいずれか1つが該当すれば提供可。
+    """
+    if not time_restriction or time_restriction in ('全時間帯', '終日'):
+        return True
+
+    jst = pytz.timezone('Asia/Tokyo')
+    now = datetime.now(jst)
+    current_time = now.time()
+    weekday = now.weekday()  # 0=月, 6=日
+    is_holiday = jpholiday.is_holiday(now.date())
+    is_weekday = (weekday < 5) and not is_holiday
+
+    def _parse_hhmm(s: str):
+        """'HH:MM' を time オブジェクトに変換。失敗時は None。"""
+        s = s.strip()
+        m = re.match(r'^(\d{1,2}):(\d{2})$', s)
+        if not m:
+            return None
+        from datetime import time as dtime
+        return dtime(int(m.group(1)), int(m.group(2)))
+
+    def _check_single(token: str) -> bool:
+        """単一の販売時間トークンを評価する。"""
+        token = token.strip()
+        # 括弧内の補足（例: (ランチメニュー), (火曜日限定)）を取り出す
+        note_match = re.search(r'\(([^)]+)\)', token)
+        note = note_match.group(1) if note_match else ''
+        token_clean = re.sub(r'\([^)]+\)', '', token).strip()
+
+        # 曜日限定チェック
+        if '火曜日限定' in note and weekday != 1:
+            return False
+        if '水曜日限定' in note and weekday != 2:
+            return False
+
+        # 平日フラグ
+        requires_weekday = token_clean.startswith('平日')
+        if requires_weekday and not is_weekday:
+            return False
+        token_clean = re.sub(r'^平日\s*', '', token_clean)
+
+        # 区切り文字を統一して範囲を分割
+        parts = re.split(r'[-~〜～]', token_clean, maxsplit=1)
+        if len(parts) != 2:
+            return True  # 解釈できない形式は制約なし扱い
+
+        start_str, end_str = parts[0].strip(), parts[1].strip()
+
+        # 「開店」「閉店」は制約なし扱い
+        start_time = None if '開店' in start_str else _parse_hhmm(start_str)
+        end_time = None if '閉店' in end_str else _parse_hhmm(end_str)
+
+        if start_time is not None and current_time < start_time:
+            return False
+        if end_time is not None and current_time >= end_time:
+            return False
+        return True
+
+    # カンマ区切り複合パターン: いずれか1つが True なら提供可
+    tokens = time_restriction.split(',')
+    return any(_check_single(t) for t in tokens)
+
+
 def _search_menu_items(menu_markdown: str, item_names: list) -> list:
     """メニューMarkdownから指定アイテムを検索してカードデータを返す"""
-    import re
     results = []
+    seen_menu_numbers = set()
 
     items = menu_markdown.split('\n---')
     for item_block in items:
@@ -168,15 +239,25 @@ def _search_menu_items(menu_markdown: str, item_names: list) -> list:
 
         for name in item_names:
             if name == title or name in title:
+                time_restriction = fields.get('販売時間', '')
+                if not _is_menu_available(time_restriction):
+                    logger.info(f"[MenuFilter] 販売時間外のためスキップ: {title} ({time_restriction})")
+                    break
+                menu_number = fields.get('メニュー番号', '')
+                if menu_number and menu_number in seen_menu_numbers:
+                    logger.info(f"[MenuFilter] メニュー番号重複のためスキップ: {title} ({menu_number})")
+                    break
+                if menu_number:
+                    seen_menu_numbers.add(menu_number)
                 results.append({
                     'name': title,
                     'image_url': image_url,
                     'price': fields.get('価格', ''),
                     'description': fields.get('説明', ''),
-                    'menu_number': fields.get('メニュー番号', ''),
+                    'menu_number': menu_number,
                     'drink_bar_price': fields.get('ドリンクバー付き', ''),
                     'set_price': fields.get('セット価格', ''),
-                    'time_restriction': fields.get('販売時間', ''),
+                    'time_restriction': time_restriction,
                 })
                 break
 
@@ -219,6 +300,14 @@ def build_system_instruction(mode: str, user_profile: dict = None,
         # ユーザープロファイルに応じた初期あいさつ指示を構築
         user_context = _build_concierge_user_context(user_profile)
         prompt = base_prompt.replace('{user_context}', user_context)
+
+        # 日本時間を注入（販売時間フィルタリング用）
+        jst = pytz.timezone('Asia/Tokyo')
+        now = datetime.now(jst)
+        weekday_names = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日']
+        holiday_label = '（祝日）' if jpholiday.is_holiday(now.date()) else ''
+        current_dt = f"{now.strftime('%Y-%m-%d %H:%M')} {weekday_names[now.weekday()]}{holiday_label}"
+        prompt = prompt.replace('{current_datetime}', current_dt)
 
         # メニューMarkdownを注入（注文サポートモード）
         menu_markdown = _load_menu_markdown(shop_id or 'dennys')
@@ -484,6 +573,9 @@ class LiveAPISession:
         self._a2e_send_queue: asyncio.Queue = asyncio.Queue()
         self._a2e_worker_task: asyncio.Task | None = None
 
+        # ★ 案B: アバター準備完了待ちイベント（threading.Event: Flask threadからset()される）
+        self._greeting_trigger_event: threading.Event = threading.Event()
+
         # 非同期キュー
         self.audio_queue_to_gemini = None
         self.text_queue = None  # テキスト入力用キュー
@@ -573,6 +665,11 @@ class LiveAPISession:
             logger.info(f"[LiveAPI] voice_model設定あり（REST TTS用）: {self.voice_model}")
         return config
 
+    def on_greeting_trigger(self):
+        """フロントエンドのアバター準備完了通知を受信"""
+        self._greeting_trigger_event.set()
+        logger.info("[LiveAPI] greeting_trigger受信: アバター準備完了")
+
     def enqueue_audio(self, pcm_bytes: bytes):
         """ブラウザから受信したPCMデータをキューに追加"""
         if self.audio_queue_to_gemini and self.is_running:
@@ -623,8 +720,18 @@ class LiveAPISession:
                     ) as session:
 
                         if self.session_count == 1:
-                            # 初回接続: ダミーメッセージで初期あいさつを発火
+                            # 初回接続: live_readyを先に送信し、アバター準備完了を待ってからgreeting発火
                             self._is_initial_greeting_phase = True
+                            self.socketio.emit('live_ready', {}, room=self.client_sid)
+                            logger.info("[LiveAPI] live_ready送信 → greeting_trigger待機")
+
+                            # ★ 案B: アバター準備完了を待つ（最大30秒、threading.Event）
+                            triggered = await asyncio.get_event_loop().run_in_executor(
+                                None, self._greeting_trigger_event.wait, 30.0
+                            )
+                            if not triggered:
+                                logger.warning("[LiveAPI] greeting_trigger タイムアウト（30秒）、greeting発火します")
+
                             trigger_msgs = self.INITIAL_GREETING_TRIGGERS
                             mode_msgs = trigger_msgs.get(self.mode, trigger_msgs['chat'])
                             dummy_text = mode_msgs.get(self.language, mode_msgs['ja'])

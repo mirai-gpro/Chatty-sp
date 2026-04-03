@@ -664,7 +664,7 @@ export class CoreController {
         language: this.currentLanguage,
         voice_model: voiceModel,
         live_voice: liveVoice,
-        shop_id: this.currentMode === 'concierge' ? 'dennys' : ''
+        shop_id: this.currentMode === 'concierge' ? (localStorage.getItem('selectedShop_concierge') || 'dennys') : ''
       });
 
       this.isLiveMode = true;

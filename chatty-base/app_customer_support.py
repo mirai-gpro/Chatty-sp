@@ -970,6 +970,15 @@ def handle_live_start(data):
         emit('greeting_done', {})
 
 
+@socketio.on('greeting_trigger')
+def handle_greeting_trigger():
+    """フロントエンドのアバター準備完了通知 → greeting発火を許可"""
+    client_sid = request.sid
+    live_session = active_live_sessions.get(client_sid)
+    if live_session:
+        live_session.on_greeting_trigger()
+
+
 @socketio.on('live_audio_in')
 def handle_live_audio_in(data):
     """ブラウザ → LiveAPI 音声データ"""

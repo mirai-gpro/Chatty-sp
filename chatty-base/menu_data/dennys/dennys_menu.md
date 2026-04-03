@@ -4,7 +4,7 @@
 ## モーニングメニュー
 
 ### Select MORNING
-![Select MORNING](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img0.jpg)
+![Select MORNING](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page25_img6.jpg)
 **価格:** ¥748
 **説明:** メインメニュー、セットメニュー1品、ドリンクバーのセット。
 **販売時間:** 開店-11:00
@@ -22,7 +22,7 @@
 ---
 
 ### ライトモーニング
-![ライトモーニング](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page4_img2.jpg)
+![ライトモーニング](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page29_img2.jpg)
 **価格:** ¥539
 **メニュー番号:** 01716
 **説明:** 定番セットよりかる~く食べたい! トースト or ごはん・みそ汁。トーストはホイップバター・ジャムつき。
@@ -42,7 +42,7 @@
 ---
 
 ### クリーミークラムチャウダー&石窯ブール
-![クリーミークラムチャウダー&石窯ブール](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page39_img8.jpg)
+![クリーミークラムチャウダー&石窯ブール](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img3.jpg)
 **価格:** ¥990
 **メニュー番号:** 01724
 **説明:** あさりや4種の野菜を煮込んだクリーミーな仕立て。
@@ -52,7 +52,7 @@
 ---
 
 ### トーストモーニング
-![トーストモーニング](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img8.jpg)
+![トーストモーニング](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page31_img2.jpg)
 **価格:** ¥363
 **メニュー番号:** 01720
 **説明:** ホイップバター・ジャムつき。
@@ -129,7 +129,7 @@
 ---
 
 ### モーニング限定ドリンクバー
-![モーニング限定ドリンクバー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page7_img28.jpg)
+![モーニング限定ドリンクバー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page31_img3.jpg)
 **価格:** ¥385
 **メニュー番号:** 70703
 **説明:** ドリンクバーご注文のお客様限定 +40円(税込43円)で持ち帰り専用カップ1杯分お持ち帰りできます。
@@ -300,7 +300,7 @@
 ---
 
 ### ライス
-![ライス](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page37_img8.jpg)
+![ライス](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img4.jpg)
 **価格:** ¥275
 **メニュー番号:** 43801
 **説明:** (No specific description beyond the name)
@@ -327,7 +327,7 @@
 ---
 
 ### サントリー・ザ・プレミアム・モルツ 生ビール
-![サントリー・ザ・プレミアム・モルツ 生ビール](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img4.jpg)
+![サントリー・ザ・プレミアム・モルツ 生ビール](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img7.jpg)
 **価格:** ¥715
 **メニュー番号:** 80901
 **説明:** (No specific description beyond the name)
@@ -700,7 +700,7 @@
 ---
 
 ### ライス
-![ライス](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page37_img8.jpg)
+![ライス](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page2_img4.jpg)
 **価格:** ¥275
 **メニュー番号:** 43801
 **説明:** -
@@ -727,7 +727,7 @@
 ---
 
 ### ふわふわチーズと生ハムのミニシーザーサラダ
-![ふわふわチーズと生ハムのミニシーザーサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page36_img2.jpg)
+![ふわふわチーズと生ハムのミニシーザーサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page30_img1.jpg)
 **価格:** ¥440
 **メニュー番号:** 40802
 **説明:** 4種チーズのシーザードレッシング
@@ -736,7 +736,7 @@
 ---
 
 ### 海老とハーブ鶏のミニCOBBサラダ
-![海老とハーブ鶏のミニCOBBサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page36_img3.jpg)
+![海老とハーブ鶏のミニCOBBサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page30_img2.jpg)
 **価格:** ¥440
 **メニュー番号:** 40803
 **説明:** コブサラダドレッシング
@@ -745,7 +745,7 @@
 ---
 
 ### オニオングラタンスープ
-![オニオングラタンスープ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page36_img4.jpg)
+![オニオングラタンスープ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page30_img3.jpg)
 **価格:** ¥649
 **メニュー番号:** 41911
 **説明:** 淡路産たまねぎ使用
@@ -900,7 +900,7 @@
 ---
 
 ### サントリー・ザ・プレミアム・モルツ 生ビール
-![サントリー・ザ・プレミアム・モルツ 生ビール](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img4.jpg)
+![サントリー・ザ・プレミアム・モルツ 生ビール](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img7.jpg)
 **価格:** ¥715
 **メニュー番号:** 80901
 **説明:** Draft beer.
@@ -1010,7 +1010,7 @@
 ---
 
 ### ドリンクバー (セット)
-![ドリンクバー (セット)](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page18_img8.jpg)
+![ドリンクバー (セット)](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page29_img4.jpg)
 **価格:** ¥462
 **メニュー番号:** 70702
 **説明:** ドリンクバーのセット価格。
@@ -1019,7 +1019,7 @@
 ---
 
 ### ドリンクバー (単品)
-![ドリンクバー (単品)](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page29_img4.jpg)
+![ドリンクバー (単品)](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page15_img6.jpg)
 **価格:** ¥605
 **メニュー番号:** 70701
 **説明:** ドリンクバーの単品価格。
@@ -1028,7 +1028,7 @@
 ---
 
 ### おこさまドリンクバー
-![おこさまドリンクバー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page31_img4.jpg)
+![おこさまドリンクバー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page13_img8.jpg)
 **価格:** ¥165
 **メニュー番号:** 70704
 **説明:** 小学生まで限定。3才以下無料。
@@ -1102,7 +1102,7 @@
 ---
 
 ### ケールのグリーンサラダ
-![ケールのグリーンサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page25_img3.jpg)
+![ケールのグリーンサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page10_img2.jpg)
 **価格:** ¥550
 **メニュー番号:** 40746
 **説明:** にんじんドレッシング。
@@ -1111,7 +1111,7 @@
 ---
 
 ### ふわふわチーズと生ハムのミニシーザーサラダ
-![ふわふわチーズと生ハムのミニシーザーサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page36_img2.jpg)
+![ふわふわチーズと生ハムのミニシーザーサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page30_img1.jpg)
 **価格:** ¥440
 **メニュー番号:** 40802
 **説明:** 4種チーズのシーザードレッシング。
@@ -1120,7 +1120,7 @@
 ---
 
 ### 海老とハーブ鶏のミニCOBBサラダ
-![海老とハーブ鶏のミニCOBBサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page36_img3.jpg)
+![海老とハーブ鶏のミニCOBBサラダ](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page30_img2.jpg)
 **価格:** ¥440
 **メニュー番号:** 40803
 **説明:** コブサラダドレッシング。
@@ -1239,7 +1239,7 @@
 ---
 
 ### 海老とアボカド たらこソース
-![海老とアボカド たらこソース](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page19_img2.jpg)
+![海老とアボカド たらこソース](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page26_img1.jpg)
 **価格:** ¥1,639
 **メニュー番号:** 32839
 **説明:** バター香るたらこソースと、海老&アボカドが相性抜群のスパゲッティ。
@@ -1275,7 +1275,7 @@
 ---
 
 ### 海老とアボカド たらこソース
-![海老とアボカド たらこソース](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page26_img0.jpg)
+![海老とアボカド たらこソース](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page26_img1.jpg)
 **価格:** ¥1,298
 **メニュー番号:** 10704
 **説明:** バター香るたらこソースと、海老&アボカドが相性抜群のスパゲッティ。
@@ -2172,7 +2172,7 @@
 ---
 
 ### おこさまドリンクバー
-![おこさまドリンクバー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page31_img4.jpg)
+![おこさまドリンクバー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page13_img8.jpg)
 **価格:** ¥165
 **メニュー番号:** 70704
 **説明:** 小学生まで限定。3才以下無料。
@@ -2261,7 +2261,7 @@
 ---
 
 ### おこさまドリンクバー
-![おこさまドリンクバー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page31_img4.jpg)
+![おこさまドリンクバー](https://bisguyfngvlpcgagrdmr.supabase.co/storage/v1/object/public/menu/dennys/page13_img8.jpg)
 **価格:** ¥165
 **メニュー番号:** 70704
 **説明:** 小学生までのおこさまに限ります。3才以下のおこさまは無料です。パッケージ及び、内容が変更になる場合があります。
