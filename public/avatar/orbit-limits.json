@@ -1,0 +1,15 @@
+{
+  "_comment": "OrbitControls 可動域制限 - 全アバター共通設定。コード側で typeof === 'number' フィルタにより _ から始まるコメントフィールドは無視されます。値を変更すれば再ビルド不要で反映されます。",
+  "_minPolarDeg": "垂直回転の上限（見上げ側）。値が小さいほど真上から見下ろせる。67度＝やや見上げ位置で停止し頭頂が見えない",
+  "minPolarDeg": 67,
+  "_maxPolarDeg": "垂直回転の下限（見下ろし側）。107度＝やや下から見上げる位置で停止し顎下が見えすぎない",
+  "maxPolarDeg": 107,
+  "_minAzimuthDeg": "水平回転の左限。-60度＝左横顔まで（後頭部に回り込めない）",
+  "minAzimuthDeg": -60,
+  "_maxAzimuthDeg": "水平回転の右限。+60度＝右横顔まで",
+  "maxAzimuthDeg": 60,
+  "_minDistance": "ズームイン下限。これより近づけない",
+  "minDistance": 0.25,
+  "_maxDistance": "ズームアウト上限。これより遠ざかれない",
+  "maxDistance": 0.8
+}
