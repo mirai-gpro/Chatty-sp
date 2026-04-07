@@ -16,6 +16,7 @@ export interface AvatarDef {
   voiceModel: string; // REST TTS用音声モデル名（例: ja-JP-Chirp3-HD-Leda）
   liveVoice?: string; // LiveAPI用音声名（例: Leda）
   camera?: CameraParams; // カメラパラメータ
+  teacherName?: string; // AI講師名（プロンプト内 {teacher_name} に展開）
 }
 
 /** デフォルトのアバター一覧（JSONロード失敗時のフォールバック） */
@@ -64,6 +65,27 @@ export function setSelectedAvatar(mode: string, avatar: AvatarDef): void {
   localStorage.setItem(`selectedLiveVoice_${mode}`, avatar.liveVoice || '');
   if (avatar.camera) {
     localStorage.setItem(`selectedCamera_${mode}`, JSON.stringify(avatar.camera));
+  }
+  localStorage.setItem(`selectedTeacherName_${mode}`, avatar.teacherName || avatar.name);
+}
+
+/**
+ * localStorageが空の場合、avatar-config.jsonからデフォルト値を初期化する。
+ * 新規ユーザーの初回起動で、ハードコードされたデフォルト値ではなく
+ * avatar-config.jsonの正しい値（カメラ・音声・講師名）が使われるようにする。
+ */
+export async function ensureDefaultAvatarInStorage(mode: string): Promise<void> {
+  if (typeof localStorage === 'undefined') return;
+  if (localStorage.getItem(`${STORAGE_KEY}_${mode}`)) return; // 既に設定済み
+  try {
+    const avatars = await loadAvatarConfig();
+    const defaultId = MODE_DEFAULT_AVATAR[mode] || 'meruru';
+    const avatar = getAvatarById(avatars, defaultId) || avatars[0];
+    if (avatar) {
+      setSelectedAvatar(mode, avatar);
+    }
+  } catch (e) {
+    console.warn('[AvatarConfig] ensureDefaultAvatarInStorage失敗', e);
   }
 }
 

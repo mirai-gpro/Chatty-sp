@@ -14,6 +14,7 @@
 
 import * as GaussianSplats3D from 'gaussian-splat-renderer-for-lam';
 import type { ExpressionFrame } from './live-audio-manager';
+import { ensureDefaultAvatarInStorage } from '../../config/avatar-config';
 
 export interface LAMConfig {
     containerElement: HTMLDivElement;   // レンダラーを埋め込むdiv要素
@@ -59,6 +60,10 @@ export class LAMWebSocketManager {
      */
     async initialize(config: LAMConfig): Promise<void> {
         try {
+            // 新規ユーザー対策: localStorageが空ならavatar-config.jsonから初期化
+            const initMode = window.location.pathname.includes('concierge') ? 'concierge' : 'lesson';
+            await ensureDefaultAvatarInStorage(initMode);
+
             this.renderer = await GaussianSplats3D.GaussianSplatRenderer.getInstance(
                 config.containerElement,
                 config.modelUrl,
