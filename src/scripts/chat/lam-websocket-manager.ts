@@ -105,6 +105,37 @@ export class LAMWebSocketManager {
                 console.log('[LAMWebSocketManager] カメラ位置調整: y=', camera.position.y, 'z=', camera.position.z, 'target.y=', controls?.target?.y);
             }
 
+            // OrbitControls 可動域制限を orbit-limits.json から読み込み適用
+            try {
+                const resp = await fetch('/avatar/orbit-limits.json');
+                if (resp.ok) {
+                    const limits = await resp.json();
+                    const controls = this.renderer.viewer?.controls;
+                    if (controls) {
+                        const apply = (key: 'minPolarAngle' | 'maxPolarAngle' | 'minAzimuthAngle' | 'maxAzimuthAngle' | 'minDistance' | 'maxDistance') => {
+                            const v = limits[key];
+                            if (typeof v === 'number') {
+                                (controls as any)[key] = v;
+                            }
+                        };
+                        apply('minPolarAngle');
+                        apply('maxPolarAngle');
+                        apply('minAzimuthAngle');
+                        apply('maxAzimuthAngle');
+                        apply('minDistance');
+                        apply('maxDistance');
+                        controls.update();
+                        console.log('[LAMWebSocketManager] OrbitControls制限適用:', {
+                            polar: [(controls as any).minPolarAngle, (controls as any).maxPolarAngle],
+                            azimuth: [(controls as any).minAzimuthAngle, (controls as any).maxAzimuthAngle],
+                            distance: [(controls as any).minDistance, (controls as any).maxDistance],
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn('[LAMWebSocketManager] orbit-limits.json読み込み失敗、制限なしで継続', e);
+            }
+
             this.isModelLoaded = true;
             console.log('[LAMWebSocketManager] モデルロード完了');
         } catch (error) {
