@@ -9,6 +9,16 @@
     "liveVoice": "Leda",
     "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
   },
+    {
+    "id": "yui",
+    "name": "YUI",
+    "teacherName": "Yui",
+    "modelUrl": "/avatar/yui2.zip",
+    "thumbnail": "/avatar/thumbs/yui.png",
+    "voiceModel": "ja-JP-Chirp3-HD-Leda",
+    "liveVoice": "Leda",
+    "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
+  },
   {
     "id": "elf",
     "name": "エルフ",
@@ -17,7 +27,17 @@
     "thumbnail": "/avatar/thumbs/elf.png",
     "voiceModel": "ja-JP-Chirp3-HD-Leda",
     "liveVoice": "Leda",
-    "camera": { "posY": 1.73, "posZ": 0.4, "targetY": 1.68 }
+    "camera": { "posY": 1.73, "posZ": 0.4, "targetY": 1.70 }
+  },
+  {
+    "id": "lisa",
+    "name": "リサ",
+    "teacherName": "Lisa",
+    "modelUrl": "/avatar/lisa.zip",
+    "thumbnail": "/avatar/thumbs/lisa.png",
+    "voiceModel": "ja-JP-Chirp3-HD-Despina",
+    "liveVoice": "Despina",
+    "camera": { "posY": 1.73, "posZ": 0.43, "targetY": 1.68 }
   },
   {
     "id": "mizuki",
@@ -32,7 +52,7 @@
   {
     "id": "nao",
     "name": "ナオ",
-    "teacherName": "Noa",
+    "teacherName": "Nao",
     "modelUrl": "/avatar/nao.zip",
     "thumbnail": "/avatar/thumbs/nao.png",
     "voiceModel": "ja-JP-Chirp3-HD-Despina",
@@ -49,10 +69,30 @@
     "liveVoice": "Enceladus",
     "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
   },
+      {
+    "id": "fumiya",
+    "name": "フミヤ",
+    "teacherName": "fumiya",
+    "modelUrl": "/avatar/fumiya.zip",
+    "thumbnail": "/avatar/thumbs/fumiya.png",
+    "voiceModel": "ja-JP-Chirp3-HD-Enceladus",
+    "liveVoice": "Enceladus",
+    "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
+  },
+  {
+    "id": "nicolas",
+    "name": "ニコラス",
+    "teacherName": "Nico",
+    "modelUrl": "/avatar/nicolas.zip",
+    "thumbnail": "/avatar/thumbs/nicolas.png",
+    "voiceModel": "ja-JP-Chirp3-HD-Enceladus",
+    "liveVoice": "Enceladus",
+    "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
+  },
   {
     "id": "okabe",
     "name": "オカベ",
-    "teacherName": "Masa Okabe",
+    "teacherName": "Okabe",
     "modelUrl": "/avatar/okabe.zip",
     "thumbnail": "/avatar/thumbs/okabe.png",
     "voiceModel": "ja-JP-Chirp3-HD-Algieba",
