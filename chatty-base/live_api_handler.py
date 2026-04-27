@@ -628,17 +628,17 @@ class LiveAPISession:
             },
         }
 
-        # モードに応じたfunction calling定義 + Google Search
+        # モードに応じたfunction calling定義 + Google Search（公式Live API例に合わせdict形式）
         if self.mode == 'lesson':
             config["tools"] = [
-                types.Tool(google_search=types.GoogleSearch()),
-                types.Tool(function_declarations=[UPDATE_USER_PROFILE_DECLARATION]),
+                {"google_search": {}},
+                {"function_declarations": [UPDATE_USER_PROFILE_DECLARATION]},
             ]
         else:
             # conciergeモード: メニュー提案 + プロファイル更新
             config["tools"] = [
-                types.Tool(google_search=types.GoogleSearch()),
-                types.Tool(function_declarations=[RECOMMEND_MENU_DECLARATION, ADD_TO_ORDER_DECLARATION, SHOW_ORDER_SUMMARY_DECLARATION, UPDATE_USER_PROFILE_DECLARATION]),
+                {"google_search": {}},
+                {"function_declarations": [RECOMMEND_MENU_DECLARATION, ADD_TO_ORDER_DECLARATION, SHOW_ORDER_SUMMARY_DECLARATION, UPDATE_USER_PROFILE_DECLARATION]},
             ]
 
         return config
