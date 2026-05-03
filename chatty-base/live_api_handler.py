@@ -486,6 +486,29 @@ UPDATE_USER_PROFILE_DECLARATION = types.FunctionDeclaration(
 )
 
 
+# ※ Live API 3.1 では google_search ツールが正常動作しないため、
+#    REST API (gemini-2.5-flash) を Function Calling 経由で呼び出して代替する
+GOOGLE_SEARCH_DECLARATION = types.FunctionDeclaration(
+    name="google_search",
+    description=(
+        "Web検索で最新情報・事実情報を取得する。会話で議論されているトピック、"
+        "最近のニュース、固有名詞や専門用語の確認、リアルタイム情報や"
+        "学習データ外の情報が必要なときに呼び出す。"
+        "結果テキストが返るので、要点を簡潔にまとめて読み上げること。"
+    ),
+    parameters=types.Schema(
+        type="OBJECT",
+        properties={
+            "query": types.Schema(
+                type="STRING",
+                description="検索クエリ。会話の文脈に沿った具体的な検索語句。例: 'Anthropic Claude 4.7 リリース日'"
+            )
+        },
+        required=["query"]
+    )
+)
+
+
 # ============================================================
 # LiveAPISession クラス
 # ============================================================
@@ -630,11 +653,19 @@ class LiveAPISession:
 
         # モードに応じたfunction calling定義
         if self.mode == 'lesson':
-            # lessonモードはショップ検索不要、プロファイル更新のみ
-            config["tools"] = [types.Tool(function_declarations=[UPDATE_USER_PROFILE_DECLARATION])]
+            config["tools"] = [types.Tool(function_declarations=[
+                UPDATE_USER_PROFILE_DECLARATION,
+                GOOGLE_SEARCH_DECLARATION,
+            ])]
         else:
             # conciergeモード: メニュー提案 + プロファイル更新
-            config["tools"] = [types.Tool(function_declarations=[RECOMMEND_MENU_DECLARATION, ADD_TO_ORDER_DECLARATION, SHOW_ORDER_SUMMARY_DECLARATION, UPDATE_USER_PROFILE_DECLARATION])]
+            config["tools"] = [types.Tool(function_declarations=[
+                RECOMMEND_MENU_DECLARATION,
+                ADD_TO_ORDER_DECLARATION,
+                SHOW_ORDER_SUMMARY_DECLARATION,
+                UPDATE_USER_PROFILE_DECLARATION,
+                GOOGLE_SEARCH_DECLARATION,
+            ])]
 
         return config
 
@@ -1135,8 +1166,48 @@ class LiveAPISession:
                         response={"result": "プロファイルを更新しました"}
                     )]
                 )
+            elif fc.name == "google_search":
+                # Live API 3.1 の google_search 不具合回避: REST API (gemini-2.5-flash) で代替
+                query = fc.args.get("query", "")
+                logger.info(f"[LiveAPI] google_search呼び出し: '{query}'")
+                result_text = await self._handle_google_search(query)
+                await session.send_tool_response(
+                    function_responses=[types.FunctionResponse(
+                        name=fc.name,
+                        id=fc.id,
+                        response={"result": result_text}
+                    )]
+                )
             else:
                 logger.warning(f"[LiveAPI] 未知のfunction call: {fc.name}")
+
+    async def _handle_google_search(self, query: str) -> str:
+        """
+        gemini-2.5-flash + google_search tool を REST API 経由で呼び出し、検索結果テキストを返す。
+        Live API 3.1 では google_search ツールが正常動作しない問題への代替実装。
+        """
+        if not query:
+            return "検索クエリが空でした。"
+        try:
+            loop = asyncio.get_event_loop()
+
+            def _call_search():
+                config = types.GenerateContentConfig(
+                    tools=[types.Tool(google_search=types.GoogleSearch())],
+                )
+                response = self.client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=query,
+                    config=config,
+                )
+                return response.text or ""
+
+            result_text = await loop.run_in_executor(None, _call_search)
+            logger.info(f"[GoogleSearch] '{query}' → 結果 {len(result_text)}文字取得")
+            return result_text
+        except Exception as e:
+            logger.error(f"[GoogleSearch] エラー: {e}", exc_info=True)
+            return f"検索中にエラーが発生しました: {str(e)}"
 
     async def _handle_shop_search(self, user_request: str):
         """
