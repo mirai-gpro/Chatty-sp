@@ -14,6 +14,7 @@
 
 import * as GaussianSplats3D from 'gaussian-splat-renderer-for-lam';
 import type { ExpressionFrame } from './live-audio-manager';
+import { ensureDefaultAvatarInStorage } from '../../config/avatar-config';
 
 export interface LAMConfig {
     containerElement: HTMLDivElement;   // レンダラーを埋め込むdiv要素
@@ -59,6 +60,10 @@ export class LAMWebSocketManager {
      */
     async initialize(config: LAMConfig): Promise<void> {
         try {
+            // ★ 新規ユーザー対応: モードのデフォルトアバター情報をlocalStorageに確実に設定
+            const mode = window.location.pathname.includes('concierge') ? 'concierge' : 'lesson';
+            await ensureDefaultAvatarInStorage(mode);
+
             this.renderer = await GaussianSplats3D.GaussianSplatRenderer.getInstance(
                 config.containerElement,
                 config.modelUrl,
@@ -72,7 +77,6 @@ export class LAMWebSocketManager {
 
             // カメラ位置を調整してアバターの顔サイズ・位置を制御
             // avatar-config.json のcameraパラメータをlocalStorageから読み込み
-            const mode = window.location.pathname.includes('concierge') ? 'concierge' : 'lesson';
             let camParams = { posY: 1.73, posZ: 0.4, targetY: 1.62 }; // デフォルト
             try {
                 const storedCamera = localStorage.getItem(`selectedCamera_${mode}`);
@@ -93,6 +97,53 @@ export class LAMWebSocketManager {
                 const controls = this.renderer.viewer.controls;
                 if (controls) {
                     controls.target.set(0, camParams.targetY, 0);
+
+                    // ★ カーソル操作の可動域制限（orbit-limits.jsonから読み込み）
+                    try {
+                        const resp = await fetch('/avatar/orbit-limits.json');
+                        if (resp.ok) {
+                            const limits = await resp.json();
+                            if (typeof limits.minPolarAngle === 'number') controls.minPolarAngle = limits.minPolarAngle;
+                            if (typeof limits.maxPolarAngle === 'number') controls.maxPolarAngle = limits.maxPolarAngle;
+                            if (typeof limits.minAzimuthAngle === 'number') controls.minAzimuthAngle = limits.minAzimuthAngle;
+                            if (typeof limits.maxAzimuthAngle === 'number') controls.maxAzimuthAngle = limits.maxAzimuthAngle;
+                            if (typeof limits.minDistance === 'number') controls.minDistance = limits.minDistance;
+                            if (typeof limits.maxDistance === 'number') controls.maxDistance = limits.maxDistance;
+                            console.log('[LAMWebSocketManager] orbit-limits適用:', limits);
+                        }
+                    } catch (e) {
+                        console.warn('[LAMWebSocketManager] orbit-limits.json読み込み失敗、制限なし', e);
+                    }
+
+                    // 初期カメラ角度を6°下向きに補正（カーソルで下にドラッグしたのと同等）
+                    // 症状: アバターの視線がカメラ上方を向き、おでこ～頭頂部の面積が小さい
+                    // 仕組み: 内蔵OrbitControls に setPolarAngle は無いため、camera.position を
+                    //         target まわりに球面座標で回転させる。次フレームの update() が
+                    //         position から spherical を再計算するので結果が維持される。
+                    // 方向: ドラッグ下=phi減少=カメラが上側に回る=額が大きく見える
+                    //       → 現 phi から 6° 引く
+                    {
+                        const tx = controls.target.x, ty = controls.target.y, tz = controls.target.z;
+                        const dx = camera.position.x - tx;
+                        const dy = camera.position.y - ty;
+                        const dz = camera.position.z - tz;
+                        const radius = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                        const horiz = Math.sqrt(dx * dx + dz * dz);
+                        const currentPhi = Math.atan2(horiz, dy);       // polar angle (0=真上, π/2=水平, π=真下)
+                        const currentTheta = Math.atan2(dx, dz);        // azimuth
+                        const newPhi = currentPhi - (6 * Math.PI / 180);
+                        // 球面座標 → 直交座標
+                        const sinPhi = Math.sin(newPhi);
+                        const newDx = radius * sinPhi * Math.sin(currentTheta);
+                        const newDy = radius * Math.cos(newPhi);
+                        const newDz = radius * sinPhi * Math.cos(currentTheta);
+                        camera.position.set(tx + newDx, ty + newDy, tz + newDz);
+                        console.log('[LAMWebSocketManager] 初期phi調整:',
+                                    `${(currentPhi * 180 / Math.PI).toFixed(1)}° → ${(newPhi * 180 / Math.PI).toFixed(1)}°`,
+                                    'radius=', radius.toFixed(3),
+                                    'newPos=', camera.position.x.toFixed(3), camera.position.y.toFixed(3), camera.position.z.toFixed(3));
+                    }
+
                     controls.update();
                 }
 

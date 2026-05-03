@@ -757,6 +757,7 @@ def handle_live_start(data):
     voice_model = data.get('voice_model', '')
     live_voice = data.get('live_voice', '')
     shop_id = data.get('shop_id', '')
+    teacher_name = data.get('teacher_name', '')
 
     # 既存のLiveAPIセッションがあれば停止
     if client_sid in active_live_sessions:
@@ -780,10 +781,14 @@ def handle_live_start(data):
                     'is_first_visit': is_first_visit,
                     'preferred_name': profile.get('preferred_name', ''),
                     'name_honorific': profile.get('name_honorific', ''),
+                    'lesson_teacher_name': teacher_name or profile.get('lesson_teacher_name', 'Lisa'),
                 }
                 logger.info(f"[LiveAPI] ユーザープロファイル取得: first_visit={is_first_visit}, name={profile.get('preferred_name', '')}")
         except Exception as e:
             logger.warning(f"[LiveAPI] プロファイル取得エラー: {e}")
+
+    if user_profile is None and teacher_name:
+        user_profile = {'lesson_teacher_name': teacher_name}
 
     system_prompt = build_system_instruction(mode, user_profile=user_profile,
                                                system_prompts=SYSTEM_PROMPTS, language=language,
