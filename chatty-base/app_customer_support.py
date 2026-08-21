@@ -759,18 +759,8 @@ def handle_live_start(data):
     shop_id = data.get('shop_id', '')
 
     # 既存のLiveAPIセッションがあれば停止
-    #
-    # ★ live_start は意図的に 2 回発火する (1回目 initializeSession、
-    #   2回目 toggleRecording でのマイク取得)。このとき挨拶を担当するのは
-    #   1個目のセッションだが、active_live_sessions は 2個目に差し替わるため、
-    #   greeting_trigger が 1個目に届かず 30 秒のタイムアウト待ちになっていた
-    #   (実測 13/13 で live_ready → あいさつ発火が 30.00 秒)。
-    #   old_session.stop() は Event.wait(30.0) を中断しないので、
-    #   Event オブジェクトを引き継いで両者で共有する。
-    inherited_greeting_event = None
     if client_sid in active_live_sessions:
         old_session = active_live_sessions[client_sid]
-        inherited_greeting_event = getattr(old_session, '_greeting_trigger_event', None)
         old_session.stop()
         del active_live_sessions[client_sid]
 
@@ -952,14 +942,6 @@ def handle_live_start(data):
         live_session.session_count = 1  # 初回扱いにしない
     else:
         greeted_client_sids.add(client_sid)
-
-    # ★ 挨拶担当は 1個目のセッションに残るため、greeting_trigger を
-    #   受け取る Event を共有する。これで greeting_trigger が
-    #   2個目に届いても 1個目の待機が解除される。
-    if inherited_greeting_event is not None:
-        live_session._greeting_trigger_event = inherited_greeting_event
-        logger.info(f"[LiveAPI] greeting_trigger Event を引き継ぎ: "
-                    f"sid={client_sid} ev={id(inherited_greeting_event)}")
 
     active_live_sessions[client_sid] = live_session
 
