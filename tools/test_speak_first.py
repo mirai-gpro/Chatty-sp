@@ -104,6 +104,40 @@ PROMPT_IMPERATIVE = (
     "【禁止】ユーザーの発話を待つこと。"
 )
 
+# --- T5 系: ダミー問い掛けあり + 固定文なし + プロンプトで「名前を呼んで挨拶」 ---
+# ①が確定（ダミーは必須）したため、ダミーは送る。
+# 固定の挨拶文は与えず、文言はLLMに委ねる（公式推奨）。
+# 公式: "Include information about the user to have Live API personalize that greeting."
+
+TEST_USER_NAME = "田中さん"
+
+# T5 / T5b リピーター（名前あり）
+PROMPT_NAMED_RETURNING = (
+    "あなたは、ユーザー一人ひとりに合わせてパーソナライズされた、優秀で気の利くAIアシスタントです。\n"
+    "1回の発話は50文字以内で簡潔に話してください。\n\n"
+    "## ユーザー情報\n"
+    f"名前: {TEST_USER_NAME}\n"
+    "来訪: 2回目以降（リピーター）\n\n"
+    "## 最初のやりとり\n"
+    f"ユーザーから最初の問い掛けがあったら、まず「{TEST_USER_NAME}」と名前を呼んで挨拶し、"
+    "そのうえで会話を始めてください。\n"
+    f"名前を呼ぶことで、あなたが{TEST_USER_NAME}を覚えていることが伝わります。\n"
+    "挨拶の文言は指定しません。あなた自身が状況に合わせて考えてください。"
+)
+
+# T5c 新規ユーザー（名前なし → 名前を尋ねる）
+PROMPT_NAMED_FIRSTVISIT = (
+    "あなたは、ユーザー一人ひとりに合わせてパーソナライズされた、優秀で気の利くAIアシスタントです。\n"
+    "1回の発話は50文字以内で簡潔に話してください。\n\n"
+    "## ユーザー情報\n"
+    "名前: 未登録（初めての来訪）\n\n"
+    "## 最初のやりとり\n"
+    "ユーザーから最初の問い掛けがあったら、まず簡単に自己紹介して挨拶し、"
+    "続けて何とお呼びすればよいか名前を尋ねてください。\n"
+    "名前を聞くのは、次回から名前で呼びかけてパーソナライズするためです。\n"
+    "挨拶の文言は指定しません。あなた自身が状況に合わせて考えてください。"
+)
+
 CASES = {
     "T1":  dict(prompt=PROMPT_NO_GREETING,   send=None,             desc="何も送らない / 挨拶指示なし"),
     "T2":  dict(prompt=PROMPT_WITH_GREETING, send=None,             desc="何も送らない / 挨拶指示あり（公式推奨の形）"),
@@ -112,6 +146,12 @@ CASES = {
     "T2c": dict(prompt=PROMPT_IMPERATIVE,    send=None,             desc="何も送らない / 強い命令形のみ【対照群】"),
     "T3":  dict(prompt=PROMPT_NO_GREETING,   send="client_content", desc="ダミー発話 send_client_content（現行方式）"),
     "T4":  dict(prompt=PROMPT_NO_GREETING,   send="realtime_input", desc="ダミー発話 send_realtime_input（移行ガイド準拠）"),
+    "T5":  dict(prompt=PROMPT_NAMED_RETURNING,  send="client_content",  expect=["田中"],
+                desc="ダミーあり / 固定文なし / 名前で挨拶（リピーター）★"),
+    "T5b": dict(prompt=PROMPT_NAMED_RETURNING,  send="realtime_input",  expect=["田中"],
+                desc="同上・送信方式を realtime_input に変更"),
+    "T5c": dict(prompt=PROMPT_NAMED_FIRSTVISIT, send="client_content",  expect=["名前", "お呼び", "何と"],
+                desc="ダミーあり / 固定文なし / 名前を尋ねる（新規）★"),
 }
 
 
@@ -172,6 +212,8 @@ async def run_case(client, model: str, case_id: str, level: str, wait_sec: float
         "turn_complete_s": None,
         "audio_bytes": 0,
         "transcript": "",
+        "expect": case.get("expect") or [],
+        "expect_hit": None,
         "error": "",
     }
 
@@ -245,6 +287,8 @@ async def run_case(client, model: str, case_id: str, level: str, wait_sec: float
         result["error"] = f"{type(e).__name__}: {e}"
         print(f"[{label}] エラー: {result['error']}")
 
+    if result["expect"]:
+        result["expect_hit"] = any(k in result["transcript"] for k in result["expect"])
     result["audio_bytes"] = len(pcm)
     if pcm:
         out = OUT_DIR / f"{case_id}_{level}.wav"
@@ -260,7 +304,7 @@ def print_summary(model: str, results: list):
     print("\n" + "=" * 100)
     print(f"結果サマリ  model = {model}")
     print("=" * 100)
-    hdr = f"{'条件':<10}{'config':<10}{'接続':<6}{'初回音声':<10}{'音声量':<12}{'turn_cmp':<10}{'エラー'}"
+    hdr = f"{'条件':<10}{'config':<10}{'接続':<6}{'初回音声':<10}{'音声量':<12}{'turn_cmp':<10}{'期待語':<10}{'エラー'}"
     print(hdr)
     print("-" * 100)
     for r in results:
@@ -269,7 +313,8 @@ def print_summary(model: str, results: list):
         tc = f"{r['turn_complete_s']:.2f}s" if r["turn_complete_s"] is not None else "-"
         conn = "OK" if r["connected"] else "NG"
         err = (r["error"][:40] + "…") if len(r["error"]) > 40 else r["error"]
-        print(f"{r['case']:<10}{r['level']:<10}{conn:<6}{fa:<10}{spoke:<12}{tc:<10}{err}")
+        exp = "-" if r["expect_hit"] is None else ("○" if r["expect_hit"] else "×")
+        print(f"{r['case']:<10}{r['level']:<10}{conn:<6}{fa:<10}{spoke:<12}{tc:<10}{exp:<10}{err}")
     print("-" * 100)
 
     print("\n【判定】")
@@ -289,6 +334,21 @@ def print_summary(model: str, results: list):
         else:
             print(f"  [{lvl}] T2系すべて沈黙（{', '.join(r['case'] for r in rows)}）")
             print(f"  [{lvl}]   → 文言の問題ではなく、機構としてユーザー入力が必要")
+
+    t5fam = ["T5", "T5b", "T5c"]
+    t5rows = [r for r in results if r["case"] in t5fam]
+    if t5rows:
+        print("\n【T5系: 固定文なしで名前を呼べたか】")
+        for c in t5fam:
+            rows = [r for r in t5rows if r["case"] == c]
+            if not rows:
+                continue
+            hit = sum(1 for r in rows if r["expect_hit"])
+            spoke = sum(1 for r in rows if r["audio_bytes"] > 0)
+            print(f"  {c}: 発話 {spoke}/{len(rows)} 回、期待語ヒット {hit}/{len(rows)} 回  （期待語: {rows[0]['expect']}）")
+            for r in rows:
+                mark = "○" if r["expect_hit"] else "×"
+                print(f"       [{r['level']}] {mark} 「{r['transcript']}」")
 
     for lvl in ("minimal", "prod"):
         t3 = next((r for r in results if r["case"] == "T3" and r["level"] == lvl), None)
@@ -314,6 +374,7 @@ async def main():
     ap.add_argument("--only", default=None, help="カンマ区切り可: T2a,T2b,T2c")
     ap.add_argument("--config", default="both", choices=["minimal", "prod", "both"])
     ap.add_argument("--wait", type=float, default=20.0, help="各条件の待機秒数（既定20）")
+    ap.add_argument("--repeat", type=int, default=1, help="各条件の実行回数（既定1）。ばらつき確認用")
     args = ap.parse_args()
 
     api_key = os.getenv("GEMINI_API_KEY")
@@ -334,13 +395,15 @@ async def main():
     print(f"条件   : {', '.join(cases)}")
     print(f"config : {', '.join(levels)}")
     print(f"待機   : {args.wait:.0f} 秒/条件")
-    print(f"合計   : {len(cases)*len(levels)} セッション（各セッションは新規接続）")
+    print(f"繰返し : {args.repeat} 回/条件")
+    print(f"合計   : {len(cases)*len(levels)*args.repeat} セッション（各セッションは新規接続）")
 
     results = []
     for lvl in levels:
         for c in cases:
-            results.append(await run_case(client, args.model, c, lvl, args.wait))
-            await asyncio.sleep(1.0)   # セッション間の間隔
+            for _ in range(args.repeat):
+                results.append(await run_case(client, args.model, c, lvl, args.wait))
+                await asyncio.sleep(1.0)   # セッション間の間隔
 
     print_summary(args.model, results)
 
