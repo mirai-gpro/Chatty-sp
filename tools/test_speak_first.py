@@ -111,31 +111,42 @@ PROMPT_IMPERATIVE = (
 
 TEST_USER_NAME = "田中さん"
 
-# T5 / T5b リピーター（名前あり）
-PROMPT_NAMED_RETURNING = (
+# T5 / T5b 名前あり → 名前を呼んで挨拶（文言はLLMに委ねる）
+PROMPT_NAMED = (
     "あなたは、ユーザー一人ひとりに合わせてパーソナライズされた、優秀で気の利くAIアシスタントです。\n"
     "1回の発話は50文字以内で簡潔に話してください。\n\n"
     "## ユーザー情報\n"
-    f"名前: {TEST_USER_NAME}\n"
-    "来訪: 2回目以降（リピーター）\n\n"
+    f"名前: {TEST_USER_NAME}\n\n"
     "## 最初のやりとり\n"
-    f"ユーザーから最初の問い掛けがあったら、まず「{TEST_USER_NAME}」と名前を呼んで挨拶し、"
-    "そのうえで会話を始めてください。\n"
+    f"ユーザーから最初の問い掛けがあったら、「{TEST_USER_NAME}」と名前を呼んで挨拶してください。\n"
     f"名前を呼ぶことで、あなたが{TEST_USER_NAME}を覚えていることが伝わります。\n"
     "挨拶の文言は指定しません。あなた自身が状況に合わせて考えてください。"
 )
 
-# T5c 新規ユーザー（名前なし → 名前を尋ねる）
-PROMPT_NAMED_FIRSTVISIT = (
+# T5c 名前なし → 名前を尋ねる（文言はLLMに委ねる）
+PROMPT_UNNAMED_FREE = (
     "あなたは、ユーザー一人ひとりに合わせてパーソナライズされた、優秀で気の利くAIアシスタントです。\n"
     "1回の発話は50文字以内で簡潔に話してください。\n\n"
     "## ユーザー情報\n"
-    "名前: 未登録（初めての来訪）\n\n"
+    "名前: 未設定\n\n"
     "## 最初のやりとり\n"
-    "ユーザーから最初の問い掛けがあったら、まず簡単に自己紹介して挨拶し、"
-    "続けて何とお呼びすればよいか名前を尋ねてください。\n"
+    "ユーザーから最初の問い掛けがあったら、初対面の挨拶をして、"
+    "何とお呼びすればよいか名前を尋ねてください。\n"
     "名前を聞くのは、次回から名前で呼びかけてパーソナライズするためです。\n"
     "挨拶の文言は指定しません。あなた自身が状況に合わせて考えてください。"
+)
+
+# T5d 名前なし → 文言を指定する（固定文パターン。T5c との比較用）
+GREETING_UNNAMED_FIXED = "初めまして。あなたのお名前を教えて頂けますか？"
+PROMPT_UNNAMED_FIXED = (
+    "あなたは、ユーザー一人ひとりに合わせてパーソナライズされた、優秀で気の利くAIアシスタントです。\n"
+    "1回の発話は50文字以内で簡潔に話してください。\n\n"
+    "## ユーザー情報\n"
+    "名前: 未設定\n\n"
+    "## 最初のやりとり\n"
+    "ユーザーから最初の問い掛けがあったら、次のとおり発話してください。\n"
+    f"「{GREETING_UNNAMED_FIXED}」\n"
+    "名前を聞くのは、次回から名前で呼びかけてパーソナライズするためです。"
 )
 
 CASES = {
@@ -146,12 +157,14 @@ CASES = {
     "T2c": dict(prompt=PROMPT_IMPERATIVE,    send=None,             desc="何も送らない / 強い命令形のみ【対照群】"),
     "T3":  dict(prompt=PROMPT_NO_GREETING,   send="client_content", desc="ダミー発話 send_client_content（現行方式）"),
     "T4":  dict(prompt=PROMPT_NO_GREETING,   send="realtime_input", desc="ダミー発話 send_realtime_input（移行ガイド準拠）"),
-    "T5":  dict(prompt=PROMPT_NAMED_RETURNING,  send="client_content",  expect=["田中"],
-                desc="ダミーあり / 固定文なし / 名前で挨拶（リピーター）★"),
-    "T5b": dict(prompt=PROMPT_NAMED_RETURNING,  send="realtime_input",  expect=["田中"],
+    "T5":  dict(prompt=PROMPT_NAMED,         send="client_content",  expect=["田中"],
+                desc="名前あり → 名前を呼んで挨拶（文言はLLM）★"),
+    "T5b": dict(prompt=PROMPT_NAMED,         send="realtime_input",  expect=["田中"],
                 desc="同上・送信方式を realtime_input に変更"),
-    "T5c": dict(prompt=PROMPT_NAMED_FIRSTVISIT, send="client_content",  expect=["名前", "お呼び", "何と"],
-                desc="ダミーあり / 固定文なし / 名前を尋ねる（新規）★"),
+    "T5c": dict(prompt=PROMPT_UNNAMED_FREE,  send="client_content",  expect=["名前", "お呼び", "何と"],
+                desc="名前なし → 名前を尋ねる（文言はLLM）★"),
+    "T5d": dict(prompt=PROMPT_UNNAMED_FIXED, send="client_content",  expect=["初めまして"],
+                desc="名前なし → 文言を指定（固定文。T5cとの比較）"),
 }
 
 
@@ -335,10 +348,10 @@ def print_summary(model: str, results: list):
             print(f"  [{lvl}] T2系すべて沈黙（{', '.join(r['case'] for r in rows)}）")
             print(f"  [{lvl}]   → 文言の問題ではなく、機構としてユーザー入力が必要")
 
-    t5fam = ["T5", "T5b", "T5c"]
+    t5fam = ["T5", "T5b", "T5c", "T5d"]
     t5rows = [r for r in results if r["case"] in t5fam]
     if t5rows:
-        print("\n【T5系: 固定文なしで名前を呼べたか】")
+        print("\n【T5系: 名前の有無で挙動が分かれるか / 文言をLLMに委ねられるか】")
         for c in t5fam:
             rows = [r for r in t5rows if r["case"] == c]
             if not rows:
