@@ -658,12 +658,14 @@ export class CoreController {
       // サーバーにLiveAPIセッション開始を通知
       const voiceModel = localStorage.getItem(`selectedVoiceModel_${this.currentMode}`) || '';
       const liveVoice = localStorage.getItem(`selectedLiveVoice_${this.currentMode}`) || '';
+      const teacherName = localStorage.getItem(`selectedTeacherName_${this.currentMode}`) || '';
       this.socket.emit('live_start', {
         session_id: this.sessionId,
         mode: this.currentMode,
         language: this.currentLanguage,
         voice_model: voiceModel,
         live_voice: liveVoice,
+        teacher_name: teacherName,
         shop_id: this.currentMode === 'concierge' ? (localStorage.getItem('selectedShop_concierge') || 'dennys') : ''
       });
 
