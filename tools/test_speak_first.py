@@ -71,12 +71,49 @@ PROMPT_WITH_GREETING = (
     "あなたから先に日本語で短く挨拶して会話を始めてください。"
 )
 
+# --- T2 系: 「なぜ自分から話すのか」を理解させる方向の変形 ---
+
+# T2a 役割＋理由＋ユーザー情報（公式の "Include information about the user" も満たす）
+PROMPT_ROLE_REASON = (
+    "あなたは、ユーザー一人ひとりに合わせてパーソナライズされた、優秀で気の利くAIアシスタントです。\n"
+    "あなたが担当するユーザーの名前は「田中さん」です。\n\n"
+    "優秀なアシスタントは、担当するユーザーが目の前に来たことに気づいたら、"
+    "相手から話しかけられるのを待ちません。自分から名前を呼んで迎えます。"
+    "それがあなたの価値であり、田中さんがあなたを選んでいる理由です。\n\n"
+    "いま、田中さんとのセッションが始まりました。まさにその瞬間です。\n"
+    "あなたから「田中さん」と名前を呼んで、短く挨拶してください。\n"
+    "1回の発話は50文字以内で簡潔に話してください。"
+)
+
+# T2b 状況設定（接客の場面として理解させる。命令ではなく場面）
+PROMPT_SITUATION = (
+    "あなたは飲食店の接客スタッフです。"
+    "いま、お客様が来店して、あなたの目の前に立ちました。\n\n"
+    "接客スタッフは、お客様から声をかけられるまで黙って待つことはありません。"
+    "お客様が来店したその瞬間に、スタッフの側から「いらっしゃいませ」と声をかけます。"
+    "それが接客の基本であり、黙っていることは失礼にあたります。\n\n"
+    "いま、まさにその瞬間です。あなたから声をかけてください。\n"
+    "1回の発話は50文字以内で簡潔に話してください。"
+)
+
+# T2c 対照群: 理由づけなしの強い命令形（「禁止」「必須」のみ）
+PROMPT_IMPERATIVE = (
+    "あなたは日本語で応答する音声アシスタントです。"
+    "1回の発話は50文字以内で簡潔に話してください。\n\n"
+    "【必須】セッション開始直後に、必ずあなたから先に挨拶を発話すること。\n"
+    "【禁止】ユーザーの発話を待つこと。"
+)
+
 CASES = {
-    "T1": dict(prompt=PROMPT_NO_GREETING,   send=None,               desc="何も送らない / 挨拶指示なし"),
-    "T2": dict(prompt=PROMPT_WITH_GREETING, send=None,               desc="何も送らない / 挨拶指示あり ★最重要"),
-    "T3": dict(prompt=PROMPT_NO_GREETING,   send="client_content",   desc="ダミー発話 send_client_content（現行方式）"),
-    "T4": dict(prompt=PROMPT_NO_GREETING,   send="realtime_input",   desc="ダミー発話 send_realtime_input（移行ガイド準拠）"),
+    "T1":  dict(prompt=PROMPT_NO_GREETING,   send=None,             desc="何も送らない / 挨拶指示なし"),
+    "T2":  dict(prompt=PROMPT_WITH_GREETING, send=None,             desc="何も送らない / 挨拶指示あり（公式推奨の形）"),
+    "T2a": dict(prompt=PROMPT_ROLE_REASON,   send=None,             desc="何も送らない / 役割＋理由＋ユーザー名 ★"),
+    "T2b": dict(prompt=PROMPT_SITUATION,     send=None,             desc="何も送らない / 状況設定（接客の場面） ★"),
+    "T2c": dict(prompt=PROMPT_IMPERATIVE,    send=None,             desc="何も送らない / 強い命令形のみ【対照群】"),
+    "T3":  dict(prompt=PROMPT_NO_GREETING,   send="client_content", desc="ダミー発話 send_client_content（現行方式）"),
+    "T4":  dict(prompt=PROMPT_NO_GREETING,   send="realtime_input", desc="ダミー発話 send_realtime_input（移行ガイド準拠）"),
 }
+
 
 
 def build_config(level: str, system_instruction: str) -> dict:
@@ -236,16 +273,22 @@ def print_summary(model: str, results: list):
     print("-" * 100)
 
     print("\n【判定】")
+    t2fam = ["T2", "T2a", "T2b", "T2c"]
     for lvl in ("minimal", "prod"):
-        t2 = next((r for r in results if r["case"] == "T2" and r["level"] == lvl), None)
-        if t2 is None:
+        rows = [r for r in results if r["case"] in t2fam and r["level"] == lvl]
+        if not rows:
             continue
-        if t2["audio_bytes"] > 0:
-            print(f"  [{lvl}] T2 で喋った → **ダミー問い掛けは不要にできる可能性が高い**")
-        elif t2["error"]:
-            print(f"  [{lvl}] T2 でエラー → {t2['error']}")
+        spoke = [r["case"] for r in rows if r["audio_bytes"] > 0]
+        silent = [r["case"] for r in rows if r["audio_bytes"] == 0 and not r["error"]]
+        if spoke:
+            print(f"  [{lvl}] ★ 喋った条件: {', '.join(spoke)} / 沈黙: {', '.join(silent) or 'なし'}")
+            if "T2c" in silent and any(c in spoke for c in ("T2a", "T2b")):
+                print(f"  [{lvl}]   → 命令形(T2c)は沈黙、理由づけ(T2a/T2b)は発話。**理由づけが効いている**")
+            if "T2c" in spoke:
+                print(f"  [{lvl}]   → 命令形(T2c)でも喋った。理由づけ以外の要因も関与")
         else:
-            print(f"  [{lvl}] T2 で沈黙 → ダミー問い掛けは依然として必要")
+            print(f"  [{lvl}] T2系すべて沈黙（{', '.join(r['case'] for r in rows)}）")
+            print(f"  [{lvl}]   → 文言の問題ではなく、機構としてユーザー入力が必要")
 
     for lvl in ("minimal", "prod"):
         t3 = next((r for r in results if r["case"] == "T3" and r["level"] == lvl), None)
@@ -268,7 +311,7 @@ def print_summary(model: str, results: list):
 async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=DEFAULT_MODEL, help=f"既定: {DEFAULT_MODEL}")
-    ap.add_argument("--only", default=None, help="T1/T2/T3/T4 のいずれか")
+    ap.add_argument("--only", default=None, help="カンマ区切り可: T2a,T2b,T2c")
     ap.add_argument("--config", default="both", choices=["minimal", "prod", "both"])
     ap.add_argument("--wait", type=float, default=20.0, help="各条件の待機秒数（既定20）")
     args = ap.parse_args()
@@ -280,10 +323,10 @@ async def main():
 
     client = genai.Client(api_key=api_key)
 
-    cases = [args.only] if args.only else list(CASES.keys())
+    cases = [c.strip() for c in args.only.split(',')] if args.only else list(CASES.keys())
     for c in cases:
         if c not in CASES:
-            print(f"ERROR: 不明な条件 {c}（T1/T2/T3/T4）")
+            print(f"ERROR: 不明な条件 {c}（指定可: {', '.join(CASES)}）")
             sys.exit(1)
     levels = ["minimal", "prod"] if args.config == "both" else [args.config]
 
