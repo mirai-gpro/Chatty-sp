@@ -260,7 +260,13 @@ export class CoreController {
       timeout: 10000
     });
 
-    this.socket.on('connect', () => { });
+    this.socket.on('connect', () => {
+      // 計測: Socket.IO の transport が polling のままか WebSocket に上がったかを記録
+      const eng = (this.socket as any).io?.engine;
+      console.log(`[Socket] connect transport=${eng?.transport?.name} sid=${this.socket.id}`);
+      eng?.on('upgrade', (t: any) => console.log(`[Socket] upgrade → ${t?.name}`));
+      eng?.on('upgradeError', (e: any) => console.warn('[Socket] upgradeError', e));
+    });
 
     // 既存リスナー（STTフォールバック用に残す）
     this.socket.on('transcript', (data: any) => {
@@ -295,6 +301,8 @@ export class CoreController {
     });
 
     this.socket.on('live_audio', (data: any) => {
+      // 計測: 到着したか / ガードで弾かれたかを切り分ける
+      console.log(`[Socket] live_audio arrived bytes=${data?.data?.length} isLiveMode=${this.isLiveMode} isTTS=${this.isTTSEnabled}`);
       if (!this.isLiveMode) return;
       if (!this.isTTSEnabled) return;
       this.liveAudioManager.onAiResponseStarted();
