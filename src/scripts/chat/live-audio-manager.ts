@@ -68,6 +68,7 @@ export class LiveAudioManager {
     private _a2eDebugCounter: number = 0;              // デバッグログ間引き用
     private _shouldResetStartTime: boolean = false;    // ★ live_expression chunk=0 受信時にtrue
     private _gaps: number[] = [];                      // 計測: チャンク間に空いた無音(ms)
+    private _skipNextGap: boolean = false;             // 計測: ターン境界の1件目は集計から除外
 
     // ========================================
     // セッション開始時に1度だけ呼ぶ
@@ -224,8 +225,15 @@ export class LiveAudioManager {
         // 計測: チャンク到着が nextPlayTime に間に合わないと、その差分が無音になる
         if (this.nextPlayTime > 0) {
             const gap = (startTime - this.nextPlayTime) * 1000;
-            this._gaps.push(gap);
-            if (gap > 20) console.warn(`[Sync] GAP ${gap.toFixed(0)}ms at t=${now.toFixed(3)}`);
+            if (this._skipNextGap) {
+                // ターン境界: 前ターン終了から次ターン開始までの待ち時間であり、
+                // 音声の途切れではない。集計から除外する
+                this._skipNextGap = false;
+                console.log(`[Sync] turn境界 ${gap.toFixed(0)}ms（GAP集計から除外）`);
+            } else {
+                this._gaps.push(gap);
+                if (gap > 20) console.warn(`[Sync] GAP ${gap.toFixed(0)}ms at t=${now.toFixed(3)}`);
+            }
         }
 
         source.start(startTime);
@@ -392,6 +400,9 @@ export class LiveAudioManager {
             );
             this._gaps = [];
         }
+        // nextPlayTime は前ターンの終了時刻を保持したままなので、次ターンの1件目は
+        // 「ターン間の待ち時間」になる。動作を変えずに集計だけ除外する
+        this._skipNextGap = true;
 
         // ★ ターン終了時: 最終フレームのjawOpen関連を0にリセット（口閉じ遅延対策）
         // A2Eの最終フレームが0.008〜0.013で止まることがあり、口が閉じきらない
