@@ -945,16 +945,10 @@ class LiveAPISession:
 
                     # 2. ターン完了
                     if hasattr(sc, 'turn_complete') and sc.turn_complete:
-                        # ★ 初期あいさつ: A2E先行方式で一括処理
-                        if self._is_initial_greeting_phase and self._greeting_pcm_buffer:
-                            greeting_pcm = bytes(self._greeting_pcm_buffer)
-                            self._greeting_pcm_buffer = bytearray()
-                            logger.info(f"[A2E] 初期あいさつA2E先行送信: {len(greeting_pcm)} bytes")
-                            await self._send_a2e_ahead(greeting_pcm)
-                        else:
-                            # 通常ターン: 残存バッファを強制フラッシュ（最終チャンク）
-                            await self._flush_a2e_buffer(force=True, is_final=True)
-                            await self._a2e_send_queue.join()  # 全チャンク送信完了を待つ
+                        # A2E経路は初期あいさつ／通常ターンで共通（ストリーミング方式に一本化）
+                        # 残存バッファを強制フラッシュ（最終チャンク）
+                        await self._flush_a2e_buffer(force=True, is_final=True)
+                        await self._a2e_send_queue.join()  # 全チャンク送信完了を待つ
                         self._a2e_chunk_index = 0  # 次ターン用にリセット
                         self._process_turn_complete()
                         self.socketio.emit('turn_complete', {},
@@ -1017,11 +1011,8 @@ class LiveAPISession:
                                                        {'data': audio_b64},
                                                        room=self.client_sid)
                                     # ★ A2E: PCMバッファ蓄積（仕様書08 セクション3.2）
-                                    if self._is_initial_greeting_phase:
-                                        # 初期あいさつ: A2E先行方式用に別バッファに蓄積
-                                        self._greeting_pcm_buffer.extend(part.inline_data.data)
-                                    else:
-                                        self._buffer_for_a2e(part.inline_data.data)
+                                    # 初期あいさつも通常ターンも同一のストリーミング経路
+                                    self._buffer_for_a2e(part.inline_data.data)
 
     async def _handle_tool_call(self, tool_call, session):
         """
