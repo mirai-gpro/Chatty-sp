@@ -67,6 +67,7 @@ export class LiveAudioManager {
     public expressionNames: string[] = [];             // ARKit ブレンドシェイプ名
     private _a2eDebugCounter: number = 0;              // デバッグログ間引き用
     private _shouldResetStartTime: boolean = false;    // ★ live_expression chunk=0 受信時にtrue
+    private _gaps: number[] = [];                      // 計測: チャンク間に空いた無音(ms)
 
     // ========================================
     // セッション開始時に1度だけ呼ぶ
@@ -219,6 +220,14 @@ export class LiveAudioManager {
         const now = this.audioContext.currentTime;
         // 少なくとも now + 0.005s 後に再生開始（スケジューリングマージン）
         const startTime = Math.max(now + 0.005, this.nextPlayTime);
+
+        // 計測: チャンク到着が nextPlayTime に間に合わないと、その差分が無音になる
+        if (this.nextPlayTime > 0) {
+            const gap = (startTime - this.nextPlayTime) * 1000;
+            this._gaps.push(gap);
+            if (gap > 20) console.warn(`[Sync] GAP ${gap.toFixed(0)}ms at t=${now.toFixed(3)}`);
+        }
+
         source.start(startTime);
         this.nextPlayTime = startTime + buffer.duration;
 
@@ -369,6 +378,20 @@ export class LiveAudioManager {
 
     onAiResponseEnded(): void {
         this.isAiSpeaking = false;
+
+        // 計測: このターンで発生した無音の分布を1行で出力
+        if (this._gaps.length > 0) {
+            const g = this._gaps;
+            const max = Math.max(...g);
+            const avg = g.reduce((a, b) => a + b, 0) / g.length;
+            const over10 = g.filter(v => v > 10).length;
+            const total = g.reduce((a, b) => a + b, 0);
+            console.log(
+                `[Sync] GAP dist n=${g.length} max=${max.toFixed(0)}ms avg=${avg.toFixed(1)}ms ` +
+                `over10ms=${over10} total=${total.toFixed(0)}ms`
+            );
+            this._gaps = [];
+        }
 
         // ★ ターン終了時: 最終フレームのjawOpen関連を0にリセット（口閉じ遅延対策）
         // A2Eの最終フレームが0.008〜0.013で止まることがあり、口が閉じきらない
