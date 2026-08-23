@@ -27,3 +27,6 @@ pnpm-debug.log*
 .idea/
 
 .vercel
+
+# 実証スクリプトの出力（音声・ログ）
+speak_first_results/
