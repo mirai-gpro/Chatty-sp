@@ -312,8 +312,10 @@ export class CoreController {
 
     // ★ A2E expressionデータ受信（仕様書08 セクション5.1）
     this.socket.on('live_expression', (data: any) => {
+      // 計測: ガードの前に出す（live_audio と同じ位置にそろえる）
+      // 「届いていない」と「届いたがガードで落ちた」を切り分けるため
+      console.log(`[A2E] live_expression受信: chunk=${data.chunk_index}, frames=${data.expressions?.length}, names=${data.expression_names?.length}, fps=${data.frame_rate}, isLiveMode=${this.isLiveMode}`);
       if (!this.isLiveMode) return;
-      console.log(`[A2E] live_expression受信: chunk=${data.chunk_index}, frames=${data.expressions?.length}, names=${data.expression_names?.length}, fps=${data.frame_rate}`);
       this.liveAudioManager.onExpressionReceived(data);
 
       // ★ A2Eのブレンドシェイプ名順序をLAMレンダラーに反映（名前インデックス同期）
