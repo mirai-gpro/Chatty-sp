@@ -699,7 +699,15 @@ class LiveAPISession:
     def on_greeting_trigger(self):
         """フロントエンドのアバター準備完了通知を受信"""
         self._greeting_trigger_event.set()
-        logger.info("[LiveAPI] greeting_trigger受信: アバター準備完了")
+        # ★ 診断ログ (挙動は変えない):
+        #   greeting_trigger は 1〜3.6 秒で届いているのに、あいさつ発火が
+        #   毎回きっかり 30.00 秒 (実測 13/13) になっている。
+        #   set() する側と wait() する側が同じ Event オブジェクトなのかを
+        #   id() で突き合わせるための出力。
+        logger.info(
+            "[LiveAPI] greeting_trigger受信: アバター準備完了 "
+            f"sid={self.client_sid} ev={id(self._greeting_trigger_event)} "
+            f"thread={threading.current_thread().name}")
 
     def enqueue_audio(self, pcm_bytes: bytes):
         """ブラウザから受信したPCMデータをキューに追加"""
@@ -754,12 +762,27 @@ class LiveAPISession:
                             # 初回接続: live_readyを先に送信し、アバター準備完了を待ってからgreeting発火
                             self._is_initial_greeting_phase = True
                             self.socketio.emit('live_ready', {}, room=self.client_sid)
-                            logger.info("[LiveAPI] live_ready送信 → greeting_trigger待機")
+                            # ★ 診断ログ (挙動は変えない): set() 側と同じ ev= が出るか
+                            logger.info(
+                                "[LiveAPI] live_ready送信 → greeting_trigger待機 "
+                                f"sid={self.client_sid} ev={id(self._greeting_trigger_event)} "
+                                f"is_set={self._greeting_trigger_event.is_set()} "
+                                f"thread={threading.current_thread().name}")
 
                             # ★ 案B: アバター準備完了を待つ（最大30秒、threading.Event）
+                            _t_wait = time.time()
                             triggered = await asyncio.get_event_loop().run_in_executor(
                                 None, self._greeting_trigger_event.wait, 30.0
                             )
+                            # ★ 診断ログ (挙動は変えない):
+                            #   triggered=False かつ is_set=True なら、set() は届いたのに
+                            #   wait() が起きなかったことになる (機構の問題)。
+                            #   is_set=False なら set() が別オブジェクトに当たっている。
+                            logger.info(
+                                f"[LiveAPI] greeting_trigger待機終了 triggered={triggered} "
+                                f"経過={time.time() - _t_wait:.2f}s "
+                                f"is_set={self._greeting_trigger_event.is_set()} "
+                                f"sid={self.client_sid} ev={id(self._greeting_trigger_event)}")
                             if not triggered:
                                 logger.warning("[LiveAPI] greeting_trigger タイムアウト（30秒）、greeting発火します")
 
