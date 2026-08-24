@@ -57,6 +57,27 @@ export class ConciergeController extends CoreController {
     this.linkLamAvatar();
   }
 
+  // ★ 案B: アバター準備完了をサーバーに通知 → greeting発火を許可
+  //   サーバの on_greeting_trigger() は Event.set() のみで冪等。多重送信は無害。
+  //   reason を必ず残す: catch経路から送ると失敗が不可視になるため、
+  //   どの経路から送ったかをログに残して失敗を可視のまま保つ。
+  private sendGreetingTrigger(reason: 'ready' | 'error' | 'no-controller'): void {
+    if (!this.socket) {
+      console.warn(`[ConciergeController] greeting_trigger送信不可: socket未初期化 reason=${reason}`);
+      return;
+    }
+    const send = () => {
+      this.socket.emit('greeting_trigger');
+      console.log(`[ConciergeController] greeting_trigger送信 reason=${reason}`);
+    };
+    if (this.socket.connected) {
+      send();
+    } else {
+      console.warn(`[ConciergeController] socket未接続、connect後に送信予約 reason=${reason}`);
+      this.socket.once('connect', send);
+    }
+  }
+
   // ★ LAMAvatarにLiveAudioManagerをバインド（仕様書08 セクション7.1）
   private async linkLamAvatar(): Promise<void> {
     const controller = (window as any).__lamAvatarController;
@@ -65,17 +86,14 @@ export class ConciergeController extends CoreController {
       try {
         await controller.initialize(this.liveAudioManager);
         console.log('[ConciergeController] LAMAvatar連携完了');
-
-        // ★ 案B: アバター準備完了をサーバーに通知 → greeting発火を許可
-        if (this.socket && this.socket.connected) {
-          this.socket.emit('greeting_trigger');
-          console.log('[ConciergeController] greeting_trigger送信');
-        }
+        this.sendGreetingTrigger('ready');
       } catch (e) {
         console.error('[ConciergeController] LAMAvatar連携エラー:', e);
+        this.sendGreetingTrigger('error');
       }
     } else {
       console.warn('[ConciergeController] LAMAvatarController が見つかりません');
+      this.sendGreetingTrigger('no-controller');
     }
   }
 
