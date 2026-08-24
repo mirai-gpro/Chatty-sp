@@ -117,6 +117,15 @@ const {
   const mode = window.location.pathname.includes('concierge') ? 'concierge' : 'lesson';
   const storedUrl = localStorage.getItem('selectedAvatarUrl_' + mode);
   window.__lamAvatarConfig = { modelUrl: storedUrl || modelUrl };
+
+  // ★ アバターzipの先行読込。このスクリプトはHTMLパース時に同期実行されるため、
+  //   linkLamAvatar() → getInstance() が走るより数秒早くDLを開始できる。
+  //   crossOrigin は付けない（同一オリジン。付けると素のfetchと不一致で二重取得になる）。
+  const preloadLink = document.createElement('link');
+  preloadLink.rel = 'preload';
+  preloadLink.as = 'fetch';
+  preloadLink.href = window.__lamAvatarConfig.modelUrl;
+  document.head.appendChild(preloadLink);
 </script>
 
 <script>
