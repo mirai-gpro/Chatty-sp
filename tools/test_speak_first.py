@@ -224,6 +224,7 @@ async def run_case(client, model: str, case_id: str, level: str, wait_sec: float
         "first_audio_s": None,
         "turn_complete_s": None,
         "audio_bytes": 0,
+        "chunks": [],
         "transcript": "",
         "expect": case.get("expect") or [],
         "expect_hit": None,
@@ -283,6 +284,7 @@ async def run_case(client, model: str, case_id: str, level: str, wait_sec: float
                                 if result["first_audio_s"] is None:
                                     result["first_audio_s"] = now
                                     print(f"[{label}] ★ 最初の音声データ: {now:.2f}s")
+                                result["chunks"].append((round(now, 3), len(inline.data)))
                                 pcm.extend(inline.data)
 
                     # ターン完了
