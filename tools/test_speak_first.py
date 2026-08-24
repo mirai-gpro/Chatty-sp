@@ -311,6 +311,7 @@ async def run_case(client, model: str, case_id: str, level: str, wait_sec: float
         print(f"[{label}] 音声を保存: {out}  ({len(pcm)} bytes / {len(pcm)/48000:.1f}秒)")
     if result["transcript"]:
         print(f"[{label}] 発話内容: {result['transcript']}")
+    print(f"[{label}] chunks={result['chunks']}")
 
     return result
 
