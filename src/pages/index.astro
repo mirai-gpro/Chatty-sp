@@ -4,7 +4,8 @@
 import LessonChat from '../components/LessonChat.astro';
 
 // APIベースURL（Cloud Runのエンドポイント）
-const apiBaseUrl = import.meta.env.PUBLIC_API_URL || '';
+// ★ 実験 (exp/uika133k): 検証用 Cloud Run revision (tag cu1) を直接指す。本番には入れない
+const apiBaseUrl = 'https://cu1---chatty-sp-base-hhasiuut7q-uc.a.run.app';
 ---
 
 <!DOCTYPE html>
