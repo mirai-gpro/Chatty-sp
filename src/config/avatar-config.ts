@@ -6,6 +6,10 @@ export interface CameraParams {
   posY: number;
   posZ: number;
   targetY: number;
+  /** 横位置の平行移動 (pan)。camera.position.x と controls.target.x を同量ずらすので
+   *  見る角度は変わらず、画面内で左右にスライドするだけ。
+   *  + で被写体が画面左へ、- で右へ。未指定なら 0 (従来どおり)。 */
+  offsetX?: number;
 }
 
 export interface AvatarDef {
@@ -17,6 +21,21 @@ export interface AvatarDef {
   voiceModel: string; // REST TTS用音声モデル名（例: ja-JP-Chirp3-HD-Leda）
   liveVoice?: string; // LiveAPI用音声名（例: Leda）
   camera?: CameraParams; // カメラパラメータ
+  /** splat sort policy の既定値 (PoC)。
+   *  未指定 = 出荷版 ('stock')。`?sortPolicy=` で上書きできる。
+   *  `src/scripts/chat/poc/adaptive-sort.ts` が読む。 */
+  sortPolicy?: 'stock' | 'adaptive-gpu' | 'adaptive-cpu';
+  /** morph path の既定値。未指定 = 出荷版 ('stock')。
+   *  'steady-state' は FULL133 専用の毎フレーム経路 (centers 再構築をしない)。
+   *  `?morphPath=` で上書きできる。
+   *  `src/scripts/chat/full133-runtime.ts` が読む。 */
+  morphPath?: 'stock' | 'steady-state';
+  /** splat skinning モードの既定値。未指定 = 出荷版 ('head' = head ボーン 1 本)。
+   *  'aligned' は splatIndex 基準の 4 influence LBS。`?skinMode=` で上書きできる。
+   *  `src/scripts/chat/poc/multibone-skinning.ts` が読む。 */
+  skinMode?: 'head' | 'multi' | 'aligned';
+  /** @deprecated `morphPath` を使う。旧 PoC フラグの互換のためだけに読む。 */
+  morphFast?: boolean;
 }
 
 /** デフォルトのアバター一覧（JSONロード失敗時のフォールバック） */
