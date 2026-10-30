@@ -3,8 +3,7 @@
 import ConciergeComponent from '../components/Concierge.astro';
 import ShopCardList from '../components/ShopCardList.astro';
 
-// ★ 実験 (exp/uika133k): 検証用 Cloud Run revision (tag cu1) を直接指す。本番には入れない
-const apiBaseUrl = 'https://cu1---chatty-sp-base-fmfxldo6kq-uc.a.run.app';
+const apiBaseUrl = import.meta.env.PUBLIC_API_URL || '';
 ---
 
 <!DOCTYPE html>
