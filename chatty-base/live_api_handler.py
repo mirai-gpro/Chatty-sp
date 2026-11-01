@@ -41,7 +41,8 @@ A2E_AUTO_FLUSH_BYTES = 240000    # 2回目以降フラッシュ閾値（5秒分 
 A2E_EXPRESSION_FPS = 30
 
 # stt_stream.py から転記（変更禁止）
-LIVE_API_MODEL = "gemini-3.1-flash-live-preview"
+# 2026-11: gemini-3.8-live へ切替（ユーザー指示）。旧: "gemini-3.1-flash-live-preview"
+LIVE_API_MODEL = "gemini-3.8-live"
 MAX_AI_CHARS_BEFORE_RECONNECT = 800
 LONG_SPEECH_THRESHOLD = 500
 
@@ -417,8 +418,11 @@ def _get_lesson_returning_context(preferred_name: str, name_honorific: str,
 # Function Calling 定義（v5 §5.2）
 # ============================================================
 
+# gemini-3.8-live は Function Calling の既定が非同期（NON_BLOCKING）。
+# 3.1 と同じ同期動作（tool_response を返すまでモデルは待つ）にするため、各宣言に BLOCKING を明示する。
 SEARCH_SHOPS_DECLARATION = types.FunctionDeclaration(
     name="search_shops",
+    behavior=types.Behavior.BLOCKING,
     description="ユーザーの条件に基づいてレストランを検索する。条件が十分に揃ったと判断した時に呼び出す。user_requestには会話で確認した全条件を必ず含めること。",
     parameters=types.Schema(
         type="OBJECT",
@@ -434,6 +438,7 @@ SEARCH_SHOPS_DECLARATION = types.FunctionDeclaration(
 
 RECOMMEND_MENU_DECLARATION = types.FunctionDeclaration(
     name="recommend_menu",
+    behavior=types.Behavior.BLOCKING,
     description="ユーザーにメニューアイテムを提案する時に呼び出す。提案するメニュー名を配列で渡す。音声での説明と同時にメニューカード（画像・価格付き）がユーザーの画面に表示される。",
     parameters=types.Schema(
         type="OBJECT",
@@ -450,6 +455,7 @@ RECOMMEND_MENU_DECLARATION = types.FunctionDeclaration(
 
 ADD_TO_ORDER_DECLARATION = types.FunctionDeclaration(
     name="add_to_order",
+    behavior=types.Behavior.BLOCKING,
     description="ユーザーが注文を決めた時に呼び出す。メニュー名と個数を指定して仮注文リストに追加する。",
     parameters=types.Schema(
         type="OBJECT",
@@ -473,6 +479,7 @@ ADD_TO_ORDER_DECLARATION = types.FunctionDeclaration(
 
 SHOW_ORDER_SUMMARY_DECLARATION = types.FunctionDeclaration(
     name="show_order_summary",
+    behavior=types.Behavior.BLOCKING,
     description="ユーザーが注文内容の確認を求めた時に呼び出す。現在の仮注文一覧をカード形式で画面に表示する。",
     parameters=types.Schema(
         type="OBJECT",
@@ -482,6 +489,7 @@ SHOW_ORDER_SUMMARY_DECLARATION = types.FunctionDeclaration(
 
 UPDATE_USER_PROFILE_DECLARATION = types.FunctionDeclaration(
     name="update_user_profile",
+    behavior=types.Behavior.BLOCKING,
     description="ユーザーが名前を教えてくれた時、または名前の変更を依頼された時に呼び出す。初回の名前登録にも、名前変更にも使用する。",
     parameters=types.Schema(
         type="OBJECT",
@@ -504,6 +512,7 @@ UPDATE_USER_PROFILE_DECLARATION = types.FunctionDeclaration(
 #    REST API (gemini-2.5-flash) を Function Calling 経由で呼び出して代替する
 GOOGLE_SEARCH_DECLARATION = types.FunctionDeclaration(
     name="google_search",
+    behavior=types.Behavior.BLOCKING,
     description=(
         "Web検索で最新情報・事実情報を取得する。会話で議論されているトピック、"
         "最近のニュース、固有名詞や専門用語の確認、リアルタイム情報や"
