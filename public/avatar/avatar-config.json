@@ -9,16 +9,6 @@
     "liveVoice": "Leda",
     "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
   },
-    {
-    "id": "yui",
-    "name": "YUI",
-    "teacherName": "Yui",
-    "modelUrl": "/avatar/yui2.zip",
-    "thumbnail": "/avatar/thumbs/yui.png",
-    "voiceModel": "ja-JP-Chirp3-HD-Leda",
-    "liveVoice": "Leda",
-    "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
-  },
   {
     "id": "elf",
     "name": "エルフ",
@@ -38,26 +28,6 @@
     "voiceModel": "ja-JP-Chirp3-HD-Despina",
     "liveVoice": "Despina",
     "camera": { "posY": 1.73, "posZ": 0.43, "targetY": 1.68 }
-  },
-  {
-    "id": "mizuki",
-    "name": "みづき",
-    "teacherName": "Mizuki",
-    "modelUrl": "/avatar/mizuki.zip",
-    "thumbnail": "/avatar/thumbs/mizuki.png",
-    "voiceModel": "ja-JP-Chirp3-HD-Despina",
-    "liveVoice": "Despina",
-    "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
-  },
-  {
-    "id": "nao",
-    "name": "ナオ",
-    "teacherName": "Nao",
-    "modelUrl": "/avatar/nao.zip",
-    "thumbnail": "/avatar/thumbs/nao.png",
-    "voiceModel": "ja-JP-Chirp3-HD-Despina",
-    "liveVoice": "Despina",
-    "camera": { "posY": 1.73, "posZ": 0.45, "targetY": 1.67 }
   },
     {
     "id": "ryusei",
@@ -100,11 +70,72 @@
     "camera": { "posY": 1.82, "posZ": 0.45, "targetY": 1.68 }
   },
   {
-    "id": "uika-full133-skin",
-    "name": "UIKA FULL 133K",
-    "modelUrl": "/avatar/uika-full133-skin.zip",
+    "id": "uika-aragaki-full133",
+    "name": "UIKA aragaki",
+    "thumbnail": "/avatar/thumbs/uika-aragaki-full133.png",
+    "modelUrl": "/avatar/uika-aragaki-full133.zip",
     "voiceModel": "ja-JP-Chirp3-HD-Leda",
     "liveVoice": "Leda",
+    "camera": { "posY": 1.704, "posZ": 0.45, "targetY": 1.644, "offsetX": 0.045 },
+    "skinMode": "aligned",
+    "sortPolicy": "adaptive-cpu",
+    "morphPath": "steady-state"
+  },
+  {
+    "id": "uika-benedict-full133",
+    "name": "UIKA Benedict",
+    "thumbnail": "/avatar/thumbs/uika-benedict-full133.png",
+    "modelUrl": "/avatar/uika-benedict-full133.zip",
+    "voiceModel": "ja-JP-Chirp3-HD-Leda",
+    "liveVoice": "Leda",
+    "camera": { "posY": 1.704, "posZ": 0.45, "targetY": 1.644, "offsetX": 0.045 },
+    "skinMode": "aligned",
+    "sortPolicy": "adaptive-cpu",
+    "morphPath": "steady-state"
+  },
+  {
+    "id": "uika-machida-full133",
+    "name": "UIKA machida",
+    "thumbnail": "/avatar/thumbs/uika-machida-full133.png",
+    "modelUrl": "/avatar/uika-machida-full133.zip",
+    "voiceModel": "ja-JP-Chirp3-HD-Enceladus",
+    "liveVoice": "Enceladus",
+    "camera": { "posY": 1.704, "posZ": 0.45, "targetY": 1.644, "offsetX": 0.045 },
+    "skinMode": "aligned",
+    "sortPolicy": "adaptive-cpu",
+    "morphPath": "steady-state"
+  },
+  {
+    "id": "uika-meruru02-full133",
+    "name": "UIKA meruru02",
+    "thumbnail": "/avatar/thumbs/uika-meruru02-full133.png",
+    "modelUrl": "/avatar/uika-meruru02-full133.zip",
+    "voiceModel": "ja-JP-Chirp3-HD-Leda",
+    "liveVoice": "Leda",
+    "camera": { "posY": 1.704, "posZ": 0.45, "targetY": 1.644, "offsetX": 0.045 },
+    "skinMode": "aligned",
+    "sortPolicy": "adaptive-cpu",
+    "morphPath": "steady-state"
+  },
+  {
+    "id": "uika-okabe02-full133",
+    "name": "UIKA okabe02",
+    "thumbnail": "/avatar/thumbs/uika-okabe02-full133.png",
+    "modelUrl": "/avatar/uika-okabe02-full133.zip",
+    "voiceModel": "ja-JP-Chirp3-HD-Enceladus",
+    "liveVoice": "Enceladus",
+    "camera": { "posY": 1.704, "posZ": 0.45, "targetY": 1.644, "offsetX": 0.045 },
+    "skinMode": "aligned",
+    "sortPolicy": "adaptive-cpu",
+    "morphPath": "steady-state"
+  },
+  {
+    "id": "uika-ryusei02-full133",
+    "name": "UIKA ryusei02",
+    "thumbnail": "/avatar/thumbs/uika-ryusei02-full133.png",
+    "modelUrl": "/avatar/uika-ryusei02-full133.zip",
+    "voiceModel": "ja-JP-Chirp3-HD-Enceladus",
+    "liveVoice": "Enceladus",
     "camera": { "posY": 1.704, "posZ": 0.45, "targetY": 1.644, "offsetX": 0.045 },
     "skinMode": "aligned",
     "sortPolicy": "adaptive-cpu",
