@@ -675,20 +675,27 @@ class LiveAPISession:
         }
 
         # モードに応じたfunction calling定義
+        # Google検索: gemini-3.8-live の組み込み google_search ツールを使う（ユーザー指示で検証）。
+        #   旧方式の GOOGLE_SEARCH_DECLARATION（REST gemini-2.5-flash 代替）は tools から外す。
+        #   コード（_handle_google_search 等）は削除せず残す。
         if self.mode == 'lesson':
-            config["tools"] = [types.Tool(function_declarations=[
-                UPDATE_USER_PROFILE_DECLARATION,
-                GOOGLE_SEARCH_DECLARATION,
-            ])]
+            config["tools"] = [
+                types.Tool(function_declarations=[
+                    UPDATE_USER_PROFILE_DECLARATION,
+                ]),
+                types.Tool(google_search=types.GoogleSearch()),
+            ]
         else:
             # conciergeモード: メニュー提案 + プロファイル更新
-            config["tools"] = [types.Tool(function_declarations=[
-                RECOMMEND_MENU_DECLARATION,
-                ADD_TO_ORDER_DECLARATION,
-                SHOW_ORDER_SUMMARY_DECLARATION,
-                UPDATE_USER_PROFILE_DECLARATION,
-                GOOGLE_SEARCH_DECLARATION,
-            ])]
+            config["tools"] = [
+                types.Tool(function_declarations=[
+                    RECOMMEND_MENU_DECLARATION,
+                    ADD_TO_ORDER_DECLARATION,
+                    SHOW_ORDER_SUMMARY_DECLARATION,
+                    UPDATE_USER_PROFILE_DECLARATION,
+                ]),
+                types.Tool(google_search=types.GoogleSearch()),
+            ]
 
         return config
 
@@ -988,6 +995,11 @@ class LiveAPISession:
 
                 if response.server_content:
                     sc = response.server_content
+
+                    # 組み込み google_search の実行記録（検索クエリのみログ）
+                    gm = getattr(sc, 'grounding_metadata', None)
+                    if gm and getattr(gm, 'web_search_queries', None):
+                        logger.info(f"[GoogleSearch(Live)] 検索クエリ: {gm.web_search_queries}")
 
                     # 2. ターン完了
                     if hasattr(sc, 'turn_complete') and sc.turn_complete:
