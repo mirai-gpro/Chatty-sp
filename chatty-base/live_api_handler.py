@@ -513,6 +513,13 @@ UPDATE_USER_PROFILE_DECLARATION = types.FunctionDeclaration(
 # 検索は読み取りのみなので NON_BLOCKING（公式: read-only lookups は NON_BLOCKING）。
 # 検索中もモデルは会話を続けられ、何を調べているかを自分の言葉で伝える。
 # 結果は検索完了後に scheduling=WHEN_IDLE で返す（_google_search_in_background）。
+# google_search 呼び出し直後にモデルへ送る指示（決まったセリフではなく、言い回しはモデルに任せる）
+SEARCH_STARTED_NUDGE = (
+    "（システムからの連絡）Web検索を開始しました。結果はまだ届いていません。"
+    "何を調べているかを、ユーザーに自分の言葉で一言だけ伝えてください。"
+    "結果の内容は、検索結果が届くまで話さないでください。"
+)
+
 GOOGLE_SEARCH_DECLARATION = types.FunctionDeclaration(
     name="google_search",
     behavior=types.Behavior.NON_BLOCKING,
@@ -1250,6 +1257,14 @@ class LiveAPISession:
                 )
                 self._bg_search_tasks.add(task)
                 task.add_done_callback(self._bg_search_tasks.discard)
+                # 検索中の無言を避けるため、モデルに「何を調べているかを自分の言葉で伝える」よう促す。
+                # 決まったセリフは渡さない（言い回しはモデルが決める）。
+                # google_search は NON_BLOCKING なので、この入力で検索は取り消されない。
+                try:
+                    await session.send_realtime_input(text=SEARCH_STARTED_NUDGE)
+                    logger.info("[GoogleSearch] 検索開始の発話を促す指示を送信")
+                except Exception as e:
+                    logger.warning(f"[GoogleSearch] 検索開始の指示送信失敗: {e}")
             else:
                 logger.warning(f"[LiveAPI] 未知のfunction call: {fc.name}")
 
