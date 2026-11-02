@@ -634,6 +634,8 @@ class LiveAPISession:
         【厳守】仕様書 セクション5.2 のconfig辞書をそのまま使う。
         """
         instruction = self.system_prompt
+        # 検証用（本番に merge しない）: Travel-sp の concierge_ja.txt 音声応答ルール6 と同じ一文を足して比較する
+        instruction += "\n\n【日本語】自然な話し言葉で応答する。書き言葉にならない。\n"
 
         if with_context:
             last_user_message = ""
