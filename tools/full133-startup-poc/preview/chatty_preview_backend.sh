@@ -10,7 +10,8 @@
 #   （依存の再インストール・コードの再ビルドはしない。docs/22 §5.1 の再ビルドの危険を避ける）
 # - 新しいリビジョンは --no-traffic・タグ f133pv・最大 1 インスタンス。本番トラフィックは変えない
 # - 本番トラフィックが「最新のリビジョンに追従」の場合は、--no-traffic で固定に変わってしまうので、何もせずに止まる
-# - 環境変数の値は読まない・表示しない（名前と Secret 参照だけで確認する）
+# - サービスの設定（新しいリビジョンが引き継ぐもの）が本番リビジョンと同じかを、値をハッシュにして比べる。
+#   値は表示もファイルへの保存もしない。違えば違う項目の名前だけを出して止まる
 # =====================================================================
 set -euo pipefail
 PROJECT_ID="ai-avator-492205"
@@ -54,12 +55,41 @@ if len(live) != 1 or live[0].get('percent') != 100:
 if live[0].get('latestRevision'):
     sys.exit('停止: 本番トラフィックが「最新のリビジョンに追従」です。--no-traffic の追加で固定に変わるため、何も変更しません')
 rev = live[0]['revisionName']
-if st.get('latestCreatedRevisionName') != rev:
-    sys.exit(f'停止: サービスの設定（最新 {st.get("latestCreatedRevisionName")}）が本番リビジョン {rev} と別のものです（何も変更しません）')
 open(f'{work}/prod_rev', 'w').write(rev)
-print(f'    本番トラフィック: {rev} 100%（固定）')
+print(f'    本番トラフィック: {rev} 100%（固定）／サービスの設定の元: {st.get("latestCreatedRevisionName")}')
 PYEOF
 PROD_REV="$(cat "${WORK}/prod_rev")"
+# サービスの設定（新しいリビジョンが引き継ぐもの）と本番リビジョンの中身を比べる。
+# 値はハッシュにして比べるだけで、表示もファイルへの保存もしない（gcloud の出力をパイプで直接読む）
+python3 - "${PROD_REV}" <(gcloud run services describe "${SERVICE}" "${GC[@]}" --format=json) <(gcloud run revisions describe "${PROD_REV}" "${GC[@]}" --format=json) <<'PYEOF'
+import json, sys, hashlib
+prod_rev = sys.argv[1]
+svc, rev = json.load(open(sys.argv[2])), json.load(open(sys.argv[3]))
+tmpl = svc['spec']['template']
+h = lambda v: hashlib.sha256(json.dumps(v, sort_keys=True).encode()).hexdigest()
+def env_map(c):
+    return {e['name']: h({'value': e.get('value'), 'valueFrom': e.get('valueFrom')}) for e in (c.get('env') or [])}
+tc, rc = tmpl['spec']['containers'][0], rev['spec']['containers'][0]
+diff = []
+te, re_ = env_map(tc), env_map(rc)
+for n in sorted(set(te) | set(re_)):
+    if te.get(n) != re_.get(n): diff.append(f'環境変数 {n}')
+for k in ('resources', 'ports', 'command', 'args', 'volumeMounts', 'startupProbe', 'livenessProbe'):
+    if h(tc.get(k)) != h(rc.get(k)): diff.append(f'コンテナの {k}')
+for k in ('containerConcurrency', 'timeoutSeconds', 'serviceAccountName', 'volumes'):
+    if h(tmpl['spec'].get(k)) != h(rev['spec'].get(k)): diff.append(k)
+skip = ('client-name', 'client-version', 'operation-id', 'autoscaling.knative.dev/maxScale', 'serving.knative.dev/creator', 'serving.knative.dev/lastModifier')
+ta = {k: v for k, v in (tmpl.get('metadata', {}).get('annotations') or {}).items() if not any(x in k for x in skip)}
+ra = {k: v for k, v in (rev.get('metadata', {}).get('annotations') or {}).items() if not any(x in k for x in skip)}
+for k in sorted(set(ta) | set(ra)):
+    if k.startswith('run.googleapis.com/') or k.startswith('autoscaling.knative.dev/'):
+        if ta.get(k) != ra.get(k): diff.append(f'設定 {k}')
+if diff:
+    print('停止: サービスの設定が本番リビジョン ' + prod_rev + ' と違う項目があります（値は表示しません。何も変更しません）:')
+    for d in diff: print('    - ' + d)
+    sys.exit(1)
+print(f'    サービスの設定と本番リビジョン {prod_rev}: 環境変数の値・コンテナの設定・同時接続数・タイムアウト・サービスアカウント・実行設定がすべて同じ（値はハッシュで比較）')
+PYEOF
 gcloud run revisions describe "${PROD_REV}" "${GC[@]}" --format='json(spec.containers[0].image,spec.containers[0].env[].name,spec.containers[0].env[].valueFrom)' > "${WORK}/prod.json"
 python3 - "${WORK}/svc_before.json" "${WORK}/prod.json" "${WORK}" <<'PYEOF'
 import json, sys
